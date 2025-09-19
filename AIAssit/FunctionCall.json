@@ -1,0 +1,194 @@
+{
+  "tools": [
+    {
+      "function": {
+        "description": "获取城市的天气信息",
+        "name": "get_weather",
+        "parameters": {
+          "properties": {
+            "city": {
+              "description": "城市名",
+              "enum": [
+                "杭州",
+                "北京",
+                "苏州"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "city"
+          ],
+          "type": "object"
+        }
+      },
+      "type": "function"
+    },
+    {
+      "function": {
+        "name": "get_time",
+        "description": "获取当前系统时间",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        }
+      },
+      "type": "function"
+    },
+    {
+      "function": {
+        "name": "open_template_assistant",
+        "description": "打开平台的模板助手插件",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        }
+      },
+      "type": "function"
+    },
+    {
+      "function": {
+        "name": "run_current_visionscript",
+        "description": "运行当前视觉脚本",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        }
+      },
+      "type": "function"
+    },
+    {
+      "function": {
+        "name": "close_vision_platform",
+        "description": "关闭视觉平台",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        }
+      },
+      "type": "function"
+    },
+    {
+      "function": {
+        "name": "code_review_latest",
+        "description": "对最新的Git提交进行AI代码审查，分析代码质量、安全性和最佳实践",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "repo_path": {
+              "type": "string",
+              "description": "Git仓库路径，如果不指定则使用当前目录"
+            }
+          },
+          "required": []
+        }
+      },
+      "type": "function"
+    },
+    {
+      "function": {
+        "name": "code_review_commit",
+        "description": "对指定的Git提交进行AI代码审查",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "commit_hash": {
+              "type": "string",
+              "description": "要审查的提交哈希值（完整哈希或前8位）"
+            },
+            "repo_path": {
+              "type": "string",
+              "description": "Git仓库路径，如果不指定则使用当前目录"
+            }
+          },
+          "required": ["commit_hash"]
+        }
+      },
+      "type": "function"
+    },
+    {
+      "function": {
+        "name": "code_review_range",
+        "description": "对Git提交范围进行AI代码审查，比较两个提交之间的所有变更",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "from_commit": {
+              "type": "string",
+              "description": "起始提交哈希值（完整哈希或前8位）"
+            },
+            "to_commit": {
+              "type": "string",
+              "description": "结束提交哈希值（完整哈希或前8位）"
+            },
+            "repo_path": {
+              "type": "string",
+              "description": "Git仓库路径，如果不指定则使用当前目录"
+            }
+          },
+          "required": ["from_commit", "to_commit"]
+        }
+      },
+      "type": "function"
+    },
+    {
+      "function": {
+        "name": "code_review_working_dir",
+        "description": "对当前工作目录的未提交变更进行AI代码审查，包括暂存和未暂存的修改",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "repo_path": {
+              "type": "string",
+              "description": "Git仓库路径，如果不指定则使用当前目录"
+            }
+          },
+          "required": []
+        }
+      },
+      "type": "function"
+    },
+    {
+      "function": {
+        "name": "get_commit_info",
+        "description": "获取Git提交的详细信息，包括作者、日期、提交信息等",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "commit_hash": {
+              "type": "string",
+              "description": "提交哈希值，如果不指定则获取最新提交"
+            },
+            "repo_path": {
+              "type": "string",
+              "description": "Git仓库路径，如果不指定则使用当前目录"
+            }
+          },
+          "required": []
+        }
+      },
+      "type": "function"
+    },
+    {
+      "function": {
+        "name": "get_repo_status",
+        "description": "获取Git仓库的状态信息，包括当前分支、最新提交、未提交变更、分支列表等",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "repo_path": {
+              "type": "string",
+              "description": "Git仓库路径，如果不指定则使用当前目录"
+            }
+          },
+          "required": []
+        }
+      },
+      "type": "function"
+    }
+  ]
+}

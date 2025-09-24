@@ -115,6 +115,7 @@ void Frm_AIAssit::initUI()
 		}
 	});
 	LLMClient->checkServerConnectionAsync(5000);
+	//LLMClient->getKnowledgeBase();
 }
 
 void Frm_AIAssit::initParams()

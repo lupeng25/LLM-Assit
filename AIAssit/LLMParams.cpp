@@ -174,6 +174,16 @@ int LLMParams::getLLMPlatForm() const
 	return this->llmPlatform;
 }
 
+void LLMParams::setKnowledgeApi(const QString &apikey)
+{
+	this->KnowledgeApi = apiKey;
+}
+
+QString LLMParams::getKnowledgeApi()const
+{
+	return this->KnowledgeApi;
+}
+
 bool LLMParams::serialize(const QString& jsonPath)
 {
 	QJsonObject obj;
@@ -189,6 +199,7 @@ bool LLMParams::serialize(const QString& jsonPath)
 	obj["netSearch"] = this->bOpenNetSearch;
 	obj["NetTimesOut"] = this->iTimeOuts;
 	obj["platform"] = this->llmPlatform;
+	obj["knowledgeApiKey"] = this->KnowledgeApi;
 
 	QJsonDocument doc(obj);
 	QFile file(jsonPath);
@@ -235,5 +246,6 @@ bool LLMParams::deserialize(const QString& jsonPath)
 	this->bOpenNetSearch = obj.value("netSearch").toBool(this->bOpenNetSearch);
 	this->iTimeOuts = obj.value("NetTimesOut").toInt(this->iTimeOuts);
 	this->llmPlatform= obj.value("platform").toInt(this->llmPlatform);
+	this->KnowledgeApi = obj.value("knowledgeApiKey").toString(this->KnowledgeApi);
 	return true;
 }

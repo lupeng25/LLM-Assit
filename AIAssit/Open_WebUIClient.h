@@ -29,11 +29,16 @@ public:
 	QStringList parseModelIds(const QByteArray &jsonData) override;
 	void fetchModelsAsync(int timeoutMs = 5000) override;
 	QStringList GetFollowUpSuggestions() override;
+	void getKnowledgeBase() override;
+	void uploadFile(const QString& filePath) override;
+
 public slots:
     void onFetchModelsFinished() override;
     void onFetchModelsTimeout() override;
     void onCheckConnectionFinished() override;
     void onCheckConnectionTimeout()override;
+	void onGetKnowledgeBaseFinished() override;
+	void onFileUploadFinished() override;
 
 private slots:
 	void getAnswer() override;

@@ -1,6 +1,8 @@
 #pragma once
 #include <QNetworkAccessManager> 
-#include <QNetworkReply> 
+#include <QHttpMultiPart>
+#include <QNetworkReply>
+#include <QMimeDatabase>
 #include <QJsonArray>
 #include <QTimer>
 #include <memory> 
@@ -20,7 +22,10 @@ enum class RequestType //API请求
 	ConnectionCheck,
 	FetchModels,
 	ChatRequest,
-	FollowUpSuggest
+	FollowUpSuggest,
+	GetKonwledgeBase,
+	StopStreamAns,
+	FileUpload
 };
 struct ClientNetWork //网络
 {
@@ -28,6 +33,12 @@ struct ClientNetWork //网络
 	std::unique_ptr<QNetworkAccessManager> clientNetWorkManager;
 	std::unique_ptr<QNetworkReply> clientNetWorkReply;
 	QByteArray rawBuffer;
+};
+struct KnowledgeBase
+{
+	QString KnowledgeID;
+	QString KnowledgeName;
+	QString KnowledgeDescription;
 };
 
 class MessageManager : public QObject
@@ -75,6 +86,10 @@ public:
 	virtual QStringList parseModelIds(const QByteArray &jsonData) = 0;
 	//获取模型列表(列表)
 	virtual void fetchModelsAsync(int timeoutMs = 5000)=0;
+	//获取知识库信息
+	virtual void getKnowledgeBase() = 0;
+	//上传文件
+	virtual void uploadFile(const QString& filePath) = 0;
 
 	ClientNetWork *m_NetWorkParams;
 	LLMParams *m_LLMParams;
@@ -82,6 +97,8 @@ public:
 	QTimer* m_fetchModelsTimer = nullptr;
 	RequestType m_currentRequestType; //记录当前请求API类型
 	QStringList m_availableModelIds;  // 存储可用的模型ID列表
+	std::vector<KnowledgeBase> KnowledgeInfo;
+	QStringList m_UpFiles;
 
 public slots:
 	virtual void onFetchModelsFinished()=0;
@@ -89,6 +106,8 @@ public slots:
 	virtual void onCheckConnectionFinished() = 0;
 	virtual void onCheckConnectionTimeout() = 0;
 	virtual QStringList GetFollowUpSuggestions() = 0;
+	virtual void onGetKnowledgeBaseFinished() = 0;
+	virtual void onFileUploadFinished() =0;
 private slots:
 	// 处理Blocking数据
 	virtual void getAnswer()=0;

@@ -30,6 +30,9 @@ public:
 	void fetchModelsAsync(int timeoutMs = 5000) override;
 	QUrl buildApiUrl(const QString& apiPath) override;
 	QUrl buildApiUrl(const QString& apiPath,const QString& UserID);
+	void getKnowledgeBase() override;
+	QStringList GetFollowUpSuggestions()override;
+	void uploadFile(const QString& filePath) override;
 	 
 	//Dify¶¨ÖÆ
 	void setConversationId(const QString& conversationId);
@@ -44,16 +47,18 @@ public:
 	void resetMessageId();
 	void resetTaskId();
 	void resetUserId();
-
-	QStringList GetFollowUpSuggestions()override;
+	QByteArray buildStopAnswerBody();
+	void StopGenerateStreamAns();
 
 public slots:
     void onFetchModelsFinished() override;
     void onFetchModelsTimeout() override;
 	void onCheckConnectionFinished() override;
 	void onCheckConnectionTimeout()override;
-
+	void onGetKnowledgeBaseFinished() override;
+	void onFileUploadFinished() override;
 	void onGetFollowUpSuggestFinished() ;
+	void onStopStreamAnsFinished();
 
 private slots:
 	void getAnswer() override;
@@ -64,6 +69,5 @@ private:
 	QString m_messageId;
 	QString m_taskId;
 	QString m_userId = "GKG";
-
 };
 

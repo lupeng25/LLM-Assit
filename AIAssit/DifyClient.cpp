@@ -1,7 +1,5 @@
 #include "DifyClient.h"
 
-
-
 DifyClient::DifyClient(QObject *parent)
 	: MessageManager(parent)
 {
@@ -20,7 +18,6 @@ DifyClient::DifyClient(QObject *parent)
 
 	m_currentRequestType = RequestType::ConnectionCheck;
 }
-
 
 DifyClient::~DifyClient()
 {
@@ -184,6 +181,13 @@ QByteArray DifyClient::buildMessageBody(const ChatSendMessage& msg)
 	return QJsonDocument(SendMessageBody).toJson();
 }
 
+QByteArray DifyClient::buildStopAnswerBody()
+{
+	QJsonObject SendMessageBody;
+	SendMessageBody["user"] = m_userId;
+	return QJsonDocument(SendMessageBody).toJson();
+}
+
 void DifyClient::SendPreProcess(const ChatSendMessage& msg)
 {
 	QByteArray postData = buildMessageBody(msg);
@@ -327,6 +331,15 @@ QNetworkRequest DifyClient::createApiRequest(const QUrl& url)
 
 void DifyClient::sendApiRequest(const QNetworkRequest& request, QTimer* timeoutTimer, int timeoutMs)
 {
+	if (m_currentRequestType == RequestType::StopStreamAns)
+	{
+		QByteArray postData = buildStopAnswerBody();
+		m_NetWorkParams->clientNetWorkReply = std::unique_ptr<QNetworkReply>(
+			m_NetWorkParams->clientNetWorkManager->post(request, postData));
+		connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
+			this, &DifyClient::onStopStreamAnsFinished);
+		return;
+	}
 	m_NetWorkParams->clientNetWorkReply = std::unique_ptr<QNetworkReply>(
 		m_NetWorkParams->clientNetWorkManager->get(request));
 
@@ -346,33 +359,15 @@ void DifyClient::sendApiRequest(const QNetworkRequest& request, QTimer* timeoutT
 		connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
 			this, &DifyClient::onGetFollowUpSuggestFinished);
 	}
-
+	else if (m_currentRequestType == RequestType::GetKonwledgeBase)
+	{
+		connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
+			this, &DifyClient::onGetKnowledgeBaseFinished);
+	}
 	// 启动超时定时器
 	timeoutTimer->start(timeoutMs);
 }
 
-void DifyClient::checkServerConnectionAsync(int timeoutMs)
-{
-	// 取消之前的请求
-	cancelCurrentRequest();
-
-	// 设置请求类型
-	m_currentRequestType = RequestType::ConnectionCheck;
-
-	// 验证URL
-	if (!validateServerUrl())
-	{
-		emit serverConnectionCheckFinished(false, QStringLiteral("URL错误"));
-		return;
-	}
-
-	// Dify连接测试使用基础API端点
-	QUrl testUrl = buildApiUrl("/v1/info");
-	QNetworkRequest testRequest = createApiRequest(testUrl);
-	sendApiRequest(testRequest, m_connectionCheckTimer, timeoutMs);
-}
-
-// Dify不直接提供模型列表API，通常使用固定的应用配置
 QStringList DifyClient::parseModelIds(const QByteArray &jsonData)
 {
 	QStringList modelIds;
@@ -417,17 +412,6 @@ QStringList DifyClient::parseModelIds(const QByteArray &jsonData)
 		modelIds << "Default Chat App" << "Custom Application";
 	}
 	return modelIds;
-}
-
-// 简化后的获取模型列表函数 - Dify通常不提供模型列表
-void DifyClient::fetchModelsAsync(int timeoutMs)
-{
-	// Dify不提供模型列表API，直接返回成功
-	QStringList defaultApps;
-	defaultApps << "Chat Application" << "Text Generator" << "Workflow" << "Agent";
-	m_availableModelIds = defaultApps;
-
-	emit modelsListFetched(true, m_availableModelIds, "Using default Dify application types");
 }
 
 QUrl DifyClient::buildApiUrl(const QString& endpoint)
@@ -476,6 +460,10 @@ void DifyClient::getAnswer()
 			if (response_obj.contains("message_id"))
 			{
 				m_messageId = response_obj["message_id"].toString();
+			}
+			if (response_obj.contains("task_id"))
+			{
+				m_taskId = response_obj["task_id"].toString();
 			}
 
 			emit Answer(textresponse, false);
@@ -541,6 +529,14 @@ void DifyClient::getStreamAnswer()
 						{
 							m_conversationId = obj["conversation_id"].toString();
 						}
+						if (obj.contains("message_id"))
+						{
+							m_messageId = obj["message_id"].toString();
+						}
+						if (obj.contains("task_id"))
+						{
+							m_taskId = obj["task_id"].toString();
+						}
 					}
 					else if (event == "message_end")
 					{
@@ -565,6 +561,27 @@ void DifyClient::getStreamAnswer()
 			}
 		}
 	}
+}
+
+void DifyClient::checkServerConnectionAsync(int timeoutMs)
+{
+	// 取消之前的请求
+	cancelCurrentRequest();
+
+	// 设置请求类型
+	m_currentRequestType = RequestType::ConnectionCheck;
+
+	// 验证URL
+	if (!validateServerUrl())
+	{
+		emit serverConnectionCheckFinished(false, QStringLiteral("URL错误"));
+		return;
+	}
+
+	// Dify连接测试使用基础API端点
+	QUrl testUrl = buildApiUrl("/v1/info");
+	QNetworkRequest testRequest = createApiRequest(testUrl);
+	sendApiRequest(testRequest, m_connectionCheckTimer, timeoutMs);
 }
 
 void DifyClient::onCheckConnectionFinished()
@@ -606,6 +623,16 @@ void DifyClient::onCheckConnectionFinished()
 
 	m_NetWorkParams->clientNetWorkReply.reset();
 	emit serverConnectionCheckFinished(isConnected, errorMessage);
+}
+
+void DifyClient::fetchModelsAsync(int timeoutMs)
+{
+	// Dify不提供模型列表API，直接返回成功
+	QStringList defaultApps;
+	defaultApps << "Chat Application" << "Text Generator" << "Workflow" << "Agent";
+	m_availableModelIds = defaultApps;
+
+	emit modelsListFetched(true, m_availableModelIds, "Using default Dify application types");
 }
 
 void DifyClient::onFetchModelsFinished()
@@ -725,6 +752,275 @@ void DifyClient::onGetFollowUpSuggestFinished()
 	else
 	{
 		errorMessage = m_NetWorkParams->clientNetWorkReply->errorString();
+	}
+
+	m_NetWorkParams->clientNetWorkReply.reset();
+}
+
+void DifyClient::getKnowledgeBase()
+{
+	// 取消之前的请求
+	cancelCurrentRequest();
+
+	// 设置请求类型
+	m_currentRequestType = RequestType::GetKonwledgeBase;
+
+	if (!validateServerUrl())
+		return;
+
+	QUrl KnowledgeUrl = buildApiUrl("/v1/datasets");
+	QNetworkRequest request(KnowledgeUrl);
+
+	// 设置通用请求头
+	request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+	request.setHeader(QNetworkRequest::UserAgentHeader, "DifyClient/1.0");
+
+	// 配置SSL
+	QSslConfiguration config = QSslConfiguration::defaultConfiguration();
+	config.setProtocol(QSsl::AnyProtocol);
+	config.setPeerVerifyMode(QSslSocket::VerifyNone);
+	request.setSslConfiguration(config);
+
+	// 设置Bearer token认证
+	QVariant authHeader = m_LLMParams->getKnowledgeApi();
+	if (authHeader.isValid())
+	{
+		request.setRawHeader("Authorization", ("Bearer " + m_LLMParams->getKnowledgeApi()).toUtf8());
+	}
+	sendApiRequest(request, m_fetchModelsTimer, 50000);
+}
+
+void DifyClient::onGetKnowledgeBaseFinished()
+{
+	if (!m_NetWorkParams->clientNetWorkReply)
+		return;
+
+	bool success = false;
+	QString errorMessage;
+
+	if (m_NetWorkParams->clientNetWorkReply->error() == QNetworkReply::NoError)
+	{
+		int statusCode = m_NetWorkParams->clientNetWorkReply->attribute(
+			QNetworkRequest::HttpStatusCodeAttribute).toInt();
+
+		if (statusCode == 200)
+		{
+			QByteArray responseData = m_NetWorkParams->clientNetWorkReply->readAll();
+			QJsonParseError error;
+			QJsonDocument doc = QJsonDocument::fromJson(responseData, &error);
+			QJsonObject jsonObj = doc.object();
+			QJsonArray jsonArray = jsonObj.value("data").toArray();
+
+			for (const QJsonValue& value : jsonArray)
+			{
+				if (!value.isObject())
+					continue;
+				QJsonObject obj = value.toObject();
+
+				// 检查必需字段是否存在
+				if (!obj.contains("id") || !obj.contains("name") || !obj.contains("description"))
+					continue;
+
+				KnowledgeBase kb;
+				kb.KnowledgeID = obj["id"].toString();
+				kb.KnowledgeName = obj["name"].toString();
+				kb.KnowledgeDescription = obj["description"].toString();
+
+				// 验证字段不为空
+				if (kb.KnowledgeID.isEmpty() || kb.KnowledgeName.isEmpty())
+					continue;
+				KnowledgeInfo.push_back(kb);
+			}
+		}
+		else
+		{
+			errorMessage = QString("HTTP Error: %1").arg(statusCode);
+		}
+	}
+	else
+	{
+		errorMessage = m_NetWorkParams->clientNetWorkReply->errorString();
+	}
+	m_NetWorkParams->clientNetWorkReply.reset();
+}
+
+void DifyClient::StopGenerateStreamAns()
+{
+	// 取消之前的请求
+	cancelCurrentRequest();
+
+	// 设置请求类型
+	m_currentRequestType = RequestType::StopStreamAns;
+
+	if (!validateServerUrl())	
+		return ;
+
+	QString endpoint = "/v1/messages/" + m_taskId + "/" + "stop";
+	QUrl suggestUrl = buildApiUrl(endpoint, m_userId);
+	QNetworkRequest suggestRequest = createApiRequest(suggestUrl);
+	sendApiRequest(suggestRequest, m_fetchModelsTimer, 50000);
+}
+
+void DifyClient::onStopStreamAnsFinished()
+{
+	if (!m_NetWorkParams->clientNetWorkReply) 
+		return;
+	bool success = false;
+	QString errorMessage;
+
+	if (m_NetWorkParams->clientNetWorkReply->error() == QNetworkReply::NoError)
+	{
+		int statusCode = m_NetWorkParams->clientNetWorkReply->attribute(
+			QNetworkRequest::HttpStatusCodeAttribute).toInt();
+
+		if (statusCode == 200)
+			errorMessage = "success";
+	}
+}
+
+void DifyClient::uploadFile(const QString& filePath)
+{
+	// 取消之前的请求
+	cancelCurrentRequest();
+
+	// 设置请求类型
+	m_currentRequestType = RequestType::FileUpload;
+
+	// 验证URL
+	if (!validateServerUrl())
+		return;
+	QFileInfo fileInfo(filePath);
+	QFile* file = new QFile(filePath);
+	if (!file->open(QIODevice::ReadOnly))
+	{
+		delete file;
+		return ;
+	}
+
+	// 构建文件上传URL
+	QUrl uploadUrl = buildApiUrl("/v1/files/upload");
+	QNetworkRequest uploadRequest(uploadUrl);
+
+	// 配置SSL
+	QSslConfiguration config = QSslConfiguration::defaultConfiguration();
+	config.setProtocol(QSsl::AnyProtocol);
+	config.setPeerVerifyMode(QSslSocket::VerifyNone);
+	uploadRequest.setSslConfiguration(config);
+
+	// 设置Bearer token认证
+	QVariant authHeader = m_NetWorkParams->clientRequest.rawHeader("Authorization");
+	if (authHeader.isValid())
+	{
+		uploadRequest.setRawHeader("Authorization", authHeader.toByteArray());
+	}
+	// 创建multipart/form-data
+	QHttpMultiPart* multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
+
+	// 添加文件部分
+	QMimeDatabase mimeDb;
+
+	// 先尝试根据数据内容检测
+	QMimeType mimeType = mimeDb.mimeTypeForFile(filePath);
+	QString filenametype = mimeType.name();
+	QHttpPart filePart;
+	filePart.setHeader(QNetworkRequest::ContentTypeHeader, filenametype.toUtf8());
+	filePart.setHeader(QNetworkRequest::ContentDispositionHeader,
+		QString("form-data; name=\"file\"; filename=\"%1\"")
+		.arg(QFileInfo(filePath).fileName()));
+
+	filePart.setBodyDevice(file);
+	file->setParent(multiPart); // 确保文件对象的生命周期由multiPart管理
+
+	multiPart->append(filePart);
+
+	// 添加user参数（如果有的话）
+	if (!m_userId.isEmpty())
+	{
+		QHttpPart userPart;
+		userPart.setHeader(QNetworkRequest::ContentDispositionHeader, "form-data; name=\"user\"");
+		userPart.setBody(m_userId.toUtf8());
+		multiPart->append(userPart);
+	}
+
+	// 发送POST请求
+	m_NetWorkParams->clientNetWorkReply = std::unique_ptr<QNetworkReply>(
+		m_NetWorkParams->clientNetWorkManager->post(uploadRequest, multiPart));
+
+	// multiPart会在reply删除时自动删除
+	multiPart->setParent(m_NetWorkParams->clientNetWorkReply.get());
+
+	// 连接信号
+	connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
+		this, &DifyClient::onFileUploadFinished);
+}
+
+void DifyClient::onFileUploadFinished()
+{
+	if (!m_NetWorkParams->clientNetWorkReply) 
+		return;
+	bool success = false;
+	QString errorMessage;
+	QString fileId;
+
+	if (m_NetWorkParams->clientNetWorkReply->error() == QNetworkReply::NoError)
+	{
+		int statusCode = m_NetWorkParams->clientNetWorkReply->attribute(
+			QNetworkRequest::HttpStatusCodeAttribute).toInt();
+
+		if (statusCode == 200 || statusCode == 201)
+		{
+			QByteArray responseData = m_NetWorkParams->clientNetWorkReply->readAll();
+			QJsonParseError error;
+			QJsonDocument doc = QJsonDocument::fromJson(responseData, &error);
+
+			if (error.error == QJsonParseError::NoError && doc.isObject())
+			{
+				QJsonObject obj = doc.object();
+
+				// 解析Dify文件上传响应
+				if (obj.contains("id"))
+				{
+					fileId = obj["id"].toString();
+					m_UpFiles.append(fileId);
+					success = true;
+					errorMessage = "文件上传成功";
+				}
+				else
+				{
+					errorMessage = "响应中未找到文件ID";
+				}
+			}
+			else
+			{
+				errorMessage = "响应解析失败: " + error.errorString();
+			}
+		}
+		else
+		{
+			QByteArray responseData = m_NetWorkParams->clientNetWorkReply->readAll();
+			QJsonDocument doc = QJsonDocument::fromJson(responseData);
+			if (doc.isObject())
+			{
+				QJsonObject obj = doc.object();
+				if (obj.contains("message"))
+				{
+					errorMessage = QString("HTTP %1: %2").arg(statusCode).arg(obj["message"].toString());
+				}
+				else
+				{
+					errorMessage = QString("HTTP错误: %1").arg(statusCode);
+				}
+			}
+			else
+			{
+				errorMessage = QString("HTTP错误: %1").arg(statusCode);
+			}
+		}
+	}
+	else
+	{
+		errorMessage = GetError(m_NetWorkParams->clientNetWorkReply->errorString(),
+			m_NetWorkParams->clientNetWorkReply->readAll());
 	}
 
 	m_NetWorkParams->clientNetWorkReply.reset();

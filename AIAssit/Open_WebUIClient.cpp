@@ -386,9 +386,64 @@ void Open_WebUIClient::sendApiRequest(const QNetworkRequest& request, QTimer* ti
 		connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
 			this, &Open_WebUIClient::onCheckConnectionFinished);
 	}
+	else if (m_currentRequestType == RequestType::GetKonwledgeBase)
+	{
+		connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
+			this, &Open_WebUIClient::onGetKnowledgeBaseFinished);
+	}
 
 	// 启动超时定时器
 	timeoutTimer->start(timeoutMs);
+}
+
+QStringList Open_WebUIClient::parseModelIds(const QByteArray &jsonData)
+{
+	QStringList modelIds;
+
+	QJsonParseError parseError;
+	QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData, &parseError);
+
+	if (parseError.error != QJsonParseError::NoError)
+	{
+		return modelIds;
+	}
+
+	QJsonObject jsonObj = jsonDoc.object();
+	QJsonArray modelsArray;
+
+	// 检查不同的JSON结构
+	if (jsonObj.contains("data"))
+	{
+		// OpenWebUI格式: {"data": [...]}
+		modelsArray = jsonObj["data"].toArray();
+	}
+	else if (jsonObj.contains("models"))
+	{
+		// 其他格式: {"models": [...]}
+		modelsArray = jsonObj["models"].toArray();
+	}
+	else if (jsonDoc.isArray())
+	{
+		// 直接是数组格式: [...]
+		modelsArray = jsonDoc.array();
+	}
+
+	for (const QJsonValue &modelValue : modelsArray)
+	{
+		if (modelValue.isObject())
+		{
+			QJsonObject modelObj = modelValue.toObject();
+			if (modelObj.contains("id"))
+			{
+				QString modelId = modelObj["id"].toString();
+				if (!modelId.isEmpty())
+				{
+					modelIds.append(modelId);
+				}
+			}
+		}
+	}
+	return modelIds;
 }
 
 void Open_WebUIClient::checkServerConnectionAsync(int timeoutMs)
@@ -410,27 +465,6 @@ void Open_WebUIClient::checkServerConnectionAsync(int timeoutMs)
 	QUrl testUrl = buildApiUrl("/api/models");
 	QNetworkRequest testRequest = createApiRequest(testUrl);
 	sendApiRequest(testRequest, m_connectionCheckTimer, timeoutMs);
-}
-
-void Open_WebUIClient::fetchModelsAsync(int timeoutMs)
-{
-	// 取消之前的请求
-	cancelCurrentRequest();
-
-	// 设置请求类型
-	m_currentRequestType = RequestType::FetchModels;
-
-	// 验证URL
-	if (!validateServerUrl())
-	{
-		emit modelsListFetched(false, QStringList(), QStringLiteral("URL错误"));
-		return;
-	}
-
-	// 构建请求并发送
-	QUrl modelsUrl = buildApiUrl("/api/models");
-	QNetworkRequest modelsRequest = createApiRequest(modelsUrl);
-	sendApiRequest(modelsRequest, m_fetchModelsTimer, timeoutMs);
 }
 
 void Open_WebUIClient::onCheckConnectionFinished()
@@ -472,6 +506,27 @@ void Open_WebUIClient::onCheckConnectionFinished()
 
 	m_NetWorkParams->clientNetWorkReply.reset();
 	emit serverConnectionCheckFinished(isConnected, errorMessage);
+}
+
+void Open_WebUIClient::fetchModelsAsync(int timeoutMs)
+{
+	// 取消之前的请求
+	cancelCurrentRequest();
+
+	// 设置请求类型
+	m_currentRequestType = RequestType::FetchModels;
+
+	// 验证URL
+	if (!validateServerUrl())
+	{
+		emit modelsListFetched(false, QStringList(), QStringLiteral("URL错误"));
+		return;
+	}
+
+	// 构建请求并发送
+	QUrl modelsUrl = buildApiUrl("/api/models");
+	QNetworkRequest modelsRequest = createApiRequest(modelsUrl);
+	sendApiRequest(modelsRequest, m_fetchModelsTimer, timeoutMs);
 }
 
 void Open_WebUIClient::onFetchModelsFinished()
@@ -555,58 +610,222 @@ void Open_WebUIClient::onFetchModelsTimeout()
 	emit modelsListFetched(false, QStringList(), QStringLiteral("获取模型列表超时"));
 }
 
-QStringList Open_WebUIClient::parseModelIds(const QByteArray &jsonData)
-{
-	QStringList modelIds;
-
-	QJsonParseError parseError;
-	QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData, &parseError);
-
-	if (parseError.error != QJsonParseError::NoError) 
-	{
-		return modelIds;
-	}
-
-	QJsonObject jsonObj = jsonDoc.object();
-	QJsonArray modelsArray;
-
-	// 检查不同的JSON结构
-	if (jsonObj.contains("data")) 
-	{
-		// OpenWebUI格式: {"data": [...]}
-		modelsArray = jsonObj["data"].toArray();
-	}
-	else if (jsonObj.contains("models")) 
-	{
-		// 其他格式: {"models": [...]}
-		modelsArray = jsonObj["models"].toArray();
-	}
-	else if (jsonDoc.isArray())
-	{
-		// 直接是数组格式: [...]
-		modelsArray = jsonDoc.array();
-	}
-
-	for (const QJsonValue &modelValue : modelsArray)
-	{
-		if (modelValue.isObject()) 
-		{
-			QJsonObject modelObj = modelValue.toObject();
-			if (modelObj.contains("id"))
-			{
-				QString modelId = modelObj["id"].toString();
-				if (!modelId.isEmpty()) 
-				{
-					modelIds.append(modelId);
-				}
-			}
-		}
-	}
-	return modelIds;
-}
-
 QStringList Open_WebUIClient::GetFollowUpSuggestions()
 {
 	//to be continue
 	return QStringList();
+}
+
+void Open_WebUIClient::getKnowledgeBase()
+{
+	// 取消之前的请求
+	cancelCurrentRequest();
+
+	// 设置请求类型
+	m_currentRequestType = RequestType::GetKonwledgeBase;
+
+	// 验证URL
+	if (!validateServerUrl())
+		return;
+
+	// 构建请求并发送
+	QUrl modelsUrl = buildApiUrl("/api/v1/knowledge/");
+	QNetworkRequest modelsRequest = createApiRequest(modelsUrl);
+	sendApiRequest(modelsRequest, m_fetchModelsTimer, 50000);
+}
+
+void Open_WebUIClient::onGetKnowledgeBaseFinished()
+{
+	if (!m_NetWorkParams->clientNetWorkReply) 
+		return;
+
+	bool success = false;
+	QString errorMessage;
+
+	if (m_NetWorkParams->clientNetWorkReply->error() == QNetworkReply::NoError)
+	{
+		int statusCode = m_NetWorkParams->clientNetWorkReply->attribute(
+			QNetworkRequest::HttpStatusCodeAttribute).toInt();
+
+		if (statusCode == 200)
+		{
+			QByteArray responseData = m_NetWorkParams->clientNetWorkReply->readAll();
+			QJsonParseError error;
+			QJsonDocument doc = QJsonDocument::fromJson(responseData, &error);
+
+			if (error.error != QJsonParseError::NoError|| !doc.isArray())
+				return ;
+
+			QJsonArray jsonArray = doc.array();
+
+			for (const QJsonValue& value : jsonArray) 
+			{
+				if (!value.isObject())
+					continue;
+				QJsonObject obj = value.toObject();
+
+				// 检查必需字段是否存在
+				if (!obj.contains("id") || !obj.contains("name") || !obj.contains("description")) 
+					continue;
+
+				KnowledgeBase kb;
+				kb.KnowledgeID = obj["id"].toString();
+				kb.KnowledgeName = obj["name"].toString();
+				kb.KnowledgeDescription = obj["description"].toString();
+
+				// 验证字段不为空
+				if (kb.KnowledgeID.isEmpty() || kb.KnowledgeName.isEmpty())
+					continue;
+				KnowledgeInfo.push_back(kb);
+			}
+		}
+		else
+		{
+			errorMessage = QString("HTTP Error: %1").arg(statusCode);
+		}
+	}
+	else
+	{
+		errorMessage = m_NetWorkParams->clientNetWorkReply->errorString();
+	}
+	m_NetWorkParams->clientNetWorkReply.reset();
+}
+
+void Open_WebUIClient::uploadFile(const QString& filePath)
+{
+	// 取消之前的请求
+	cancelCurrentRequest();
+
+	// 设置请求类型
+	m_currentRequestType = RequestType::FileUpload;
+
+	// 验证URL
+	if (!validateServerUrl())
+		return;
+	QFileInfo fileInfo(filePath);
+	QFile* file = new QFile(filePath);
+	if (!file->open(QIODevice::ReadOnly))
+	{
+		delete file;
+		return;
+	}
+
+	// 构建文件上传URL
+	QUrl uploadUrl = buildApiUrl("/api/v1/files/");
+	QNetworkRequest uploadRequest(uploadUrl);
+
+	// 配置SSL
+	QSslConfiguration config = QSslConfiguration::defaultConfiguration();
+	config.setProtocol(QSsl::AnyProtocol);
+	config.setPeerVerifyMode(QSslSocket::VerifyNone);
+	uploadRequest.setSslConfiguration(config);
+
+	// 设置Bearer token认证
+	QVariant authHeader = m_NetWorkParams->clientRequest.rawHeader("Authorization");
+	if (authHeader.isValid())
+	{
+		uploadRequest.setRawHeader("Authorization", authHeader.toByteArray());
+	}
+	// 创建multipart/form-data
+	QHttpMultiPart* multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
+
+	// 添加文件部分
+	QMimeDatabase mimeDb;
+
+	// 先尝试根据数据内容检测
+	QMimeType mimeType = mimeDb.mimeTypeForFile(filePath);
+	QString filenametype = mimeType.name();
+	QHttpPart filePart;
+	filePart.setHeader(QNetworkRequest::ContentTypeHeader, filenametype.toUtf8());
+	filePart.setHeader(QNetworkRequest::ContentDispositionHeader,
+		QString("form-data; name=\"file\"; filename=\"%1\"")
+		.arg(QFileInfo(filePath).fileName()));
+
+	filePart.setBodyDevice(file);
+	file->setParent(multiPart); // 确保文件对象的生命周期由multiPart管理
+
+	multiPart->append(filePart);
+
+	// 发送POST请求
+	m_NetWorkParams->clientNetWorkReply = std::unique_ptr<QNetworkReply>(
+		m_NetWorkParams->clientNetWorkManager->post(uploadRequest, multiPart));
+
+	// multiPart会在reply删除时自动删除
+	multiPart->setParent(m_NetWorkParams->clientNetWorkReply.get());
+
+	// 连接信号
+	connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
+		this, &Open_WebUIClient::onFileUploadFinished);
+}
+
+void Open_WebUIClient::onFileUploadFinished()
+{
+	if (!m_NetWorkParams->clientNetWorkReply)
+		return;
+	bool success = false;
+	QString errorMessage;
+	QString fileId;
+
+	if (m_NetWorkParams->clientNetWorkReply->error() == QNetworkReply::NoError)
+	{
+		int statusCode = m_NetWorkParams->clientNetWorkReply->attribute(
+			QNetworkRequest::HttpStatusCodeAttribute).toInt();
+
+		if (statusCode == 200 || statusCode == 201)
+		{
+			QByteArray responseData = m_NetWorkParams->clientNetWorkReply->readAll();
+			QJsonParseError error;
+			QJsonDocument doc = QJsonDocument::fromJson(responseData, &error);
+
+			if (error.error == QJsonParseError::NoError && doc.isObject())
+			{
+				QJsonObject obj = doc.object();
+
+				// 解析Dify文件上传响应
+				if (obj.contains("id"))
+				{
+					fileId = obj["id"].toString();
+					m_UpFiles.append(fileId);
+					success = true;
+					errorMessage = "文件上传成功";
+				}
+				else
+				{
+					errorMessage = "响应中未找到文件ID";
+				}
+			}
+			else
+			{
+				errorMessage = "响应解析失败: " + error.errorString();
+			}
+		}
+		else
+		{
+			QByteArray responseData = m_NetWorkParams->clientNetWorkReply->readAll();
+			QJsonDocument doc = QJsonDocument::fromJson(responseData);
+			if (doc.isObject())
+			{
+				QJsonObject obj = doc.object();
+				if (obj.contains("message"))
+				{
+					errorMessage = QString("HTTP %1: %2").arg(statusCode).arg(obj["message"].toString());
+				}
+				else
+				{
+					errorMessage = QString("HTTP错误: %1").arg(statusCode);
+				}
+			}
+			else
+			{
+				errorMessage = QString("HTTP错误: %1").arg(statusCode);
+			}
+		}
+	}
+	else
+	{
+		errorMessage = GetError(m_NetWorkParams->clientNetWorkReply->errorString(),
+			m_NetWorkParams->clientNetWorkReply->readAll());
+	}
+
+	m_NetWorkParams->clientNetWorkReply.reset();
 }

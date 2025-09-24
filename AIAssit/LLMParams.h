@@ -26,6 +26,7 @@ public:
 	void setOpenNetSearch(const bool& bOpenNetSearch);
 	void setFunctionCallTools(const QJsonArray& tools);
 	void setApiKey(const QString &apiKey);
+	void setKnowledgeApi(const QString &apikey);
 	void setBaseUrl(const QString &baseUrl);
 	void setStreamUrl(const QString &StreamUrl);
 	void setTimeout(int timeoutMs);
@@ -40,6 +41,7 @@ public:
 	bool getOpenNetSearch()const;
 	QJsonArray getFunctionCallTools()const;
 	QString getApiKey()const;
+	QString getKnowledgeApi()const;
 	QString getBaseUrl()const;
 	QString getStreamUrl()const;
 	int getTimeout()const;
@@ -60,6 +62,7 @@ private:
 	QString chatIP = "http://172.16.1.58:8080/api/chat/completions";
 	QString streamChatIP = "http://172.16.1.58:8080/api/chat/completions";
 	QString apiKey = "sk-73d0cbe04fd148568420d237079acefb";
+	QString KnowledgeApi = "dataset-eMXQPtWnRmhcOB1QycBglXtf";
 	int iTimeOuts = 30000;
 	//funcall
 	QJsonArray tools;

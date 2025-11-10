@@ -1,4 +1,18 @@
 ﻿#include "Frm_AIAssit.h"
+#include <QResizeEvent>
+#include <QGraphicsOpacityEffect>
+#include <QEasingCurve>
+
+namespace
+{
+	constexpr int kSidebarExpandWidth = 280;
+	constexpr int kSidebarCompactWidth = 248;
+	constexpr int kSidebarTightWidth = 220;
+	constexpr int kCompactBreakpoint = 1320;
+	constexpr int kTightBreakpoint = 1080;
+	constexpr int kCollapseBreakpoint = 900;
+	constexpr int kResponsiveAnimationDelayMs = 60;
+}
 Frm_AIAssit::Frm_AIAssit(QWidget *parent)
 	: QWidget(parent)
 	, m_configRepository(std::make_unique<AppConfigRepository>())
@@ -138,6 +152,8 @@ void Frm_AIAssit::initUI()
 	else
 		PreLoadChat();
 	ui.ChatShow->updateEmptyState();
+	updateSidebarWidth(width());
+	applyResponsiveLayout(width());
 
 	// 初始化阶段禁用发送按钮，等待连接成功后再启用
 	PushBtnChanged(false);
@@ -149,6 +165,123 @@ void Frm_AIAssit::initUI()
 	else if (LLMClient) {
 		LLMClient->checkServerConnectionAsync(5000);
 	}
+}
+void Frm_AIAssit::updateSidebarWidth(int windowWidth)
+{
+	if (!ui.ChatListWidget)
+	{
+		return;
+	}
+
+	int targetWidth = kSidebarExpandWidth;
+	if (windowWidth <= kTightBreakpoint)
+	{
+		targetWidth = kSidebarTightWidth;
+	}
+	else if (windowWidth <= kCompactBreakpoint)
+	{
+		targetWidth = kSidebarCompactWidth;
+	}
+	ui.ChatListWidget->setMinimumWidth(targetWidth);
+	ui.ChatListWidget->setMaximumWidth(targetWidth);
+	if (ui.mainHorizontalLayout)
+	{
+		ui.mainHorizontalLayout->setStretch(0, targetWidth > 0 ? 1 : 0);
+		ui.mainHorizontalLayout->setStretch(1, 4);
+	}
+}
+void Frm_AIAssit::applyResponsiveLayout(int windowWidth)
+{
+	if (!ui.ChatListWidget)
+	{
+		return;
+	}
+
+	const bool shouldCollapse = windowWidth <= kCollapseBreakpoint;
+	updateSidebarWidth(windowWidth);
+
+	if (shouldCollapse)
+	{
+		m_sidebarCollapsedByResponsive = true;
+		if (ui.ChatListWidget->isVisible())
+		{
+			setSidebarVisible(false, false, true);
+		}
+	}
+	else
+	{
+		const bool shouldRestore = m_sidebarCollapsedByResponsive && !m_sidebarManuallyHidden;
+		m_sidebarCollapsedByResponsive = false;
+		if (shouldRestore)
+		{
+			setSidebarVisible(true, false, true);
+		}
+	}
+}
+void Frm_AIAssit::setSidebarVisible(bool visible, bool animated, bool triggeredByResponsive)
+{
+	if (!ui.ChatListWidget)
+	{
+		return;
+	}
+
+	const bool currentlyVisible = ui.ChatListWidget->isVisible();
+	if (currentlyVisible == visible && (!animated || triggeredByResponsive))
+	{
+		if (!triggeredByResponsive)
+		{
+			m_sidebarManuallyHidden = !visible;
+		}
+		return;
+	}
+
+	auto updateToggleIcon = [this, visible]()
+	{
+		ui.ChatShow->setToggleIcon(QIcon(visible
+			? ":/QtWidgetsApp/ICONs/icon_open.png"
+			: ":/QtWidgetsApp/ICONs/icon_close.png"));
+	};
+
+	if (animated)
+	{
+		if (visible && !currentlyVisible)
+		{
+			ui.ChatListWidget->setVisible(true);
+		}
+		auto* effect = new QGraphicsOpacityEffect(ui.ChatListWidget);
+		ui.ChatListWidget->setGraphicsEffect(effect);
+		auto* animation = new QPropertyAnimation(effect, "opacity", ui.ChatListWidget);
+		animation->setDuration(220);
+		animation->setEasingCurve(QEasingCurve::OutCubic);
+		animation->setStartValue(visible ? 0.0 : 1.0);
+		animation->setEndValue(visible ? 1.0 : 0.0);
+		connect(animation, &QPropertyAnimation::finished, ui.ChatListWidget, [this, visible, effect]()
+		{
+			if (!visible)
+			{
+				ui.ChatListWidget->setVisible(false);
+			}
+			effect->deleteLater();
+		});
+		animation->start(QAbstractAnimation::DeleteWhenStopped);
+	}
+	else
+	{
+		ui.ChatListWidget->setVisible(visible);
+		ui.ChatListWidget->setGraphicsEffect(nullptr);
+	}
+
+	updateToggleIcon();
+	ui.mainHorizontalLayout->update();
+	this->update();
+
+	if (!triggeredByResponsive)
+	{
+		m_sidebarManuallyHidden = !visible;
+	}
+	m_sidebarCollapsedByResponsive = triggeredByResponsive && !visible;
+
+	QTimer::singleShot(kResponsiveAnimationDelayMs, this, &Frm_AIAssit::recalculateAllChatBubbles);
 }
 void Frm_AIAssit::initParams()
 {
@@ -739,30 +872,8 @@ void Frm_AIAssit::renameCurrentConversation()
 }
 void Frm_AIAssit::toggleSidebar()
 {
-	bool isVisible = ui.ChatListWidget->isVisible();
-	if (isVisible)
-	{
-		// 收起侧边栏
-		ui.ChatListWidget->setVisible(false);
-		ui.ChatShow->setToggleIcon(QIcon(":/QtWidgetsApp/ICONs/icon_close.png"));
-	}
-	else
-	{
-		// 展开侧边栏
-		ui.ChatListWidget->setVisible(true);
-		ui.ChatShow->setToggleIcon(QIcon(":/QtWidgetsApp/ICONs/icon_open.png"));
-	}
-	// 强制更新布局
-	ui.mainHorizontalLayout->update();
-	this->update();
-	QGraphicsOpacityEffect *effect = new QGraphicsOpacityEffect();
-	ui.ChatListWidget->setGraphicsEffect(effect);
-	QPropertyAnimation *animation = new QPropertyAnimation(effect, "opacity");
-	animation->setDuration(300);
-	animation->setStartValue(isVisible ? 1.0 : 0.0);
-	animation->setEndValue(isVisible ? 0.0 : 1.0);
-	animation->start(QAbstractAnimation::DeleteWhenStopped);
-	QTimer::singleShot(50, this, &Frm_AIAssit::recalculateAllChatBubbles);
+	const bool targetVisible = !ui.ChatListWidget->isVisible();
+	setSidebarVisible(targetVisible, true, false);
 }
 QString Frm_AIAssit::GetLastestAsk(QString msg)
 {
@@ -795,6 +906,7 @@ void Frm_AIAssit::ChangeModel(int iModel)
 void Frm_AIAssit::resizeEvent(QResizeEvent *event)
 {
 	QWidget::resizeEvent(event);
+	applyResponsiveLayout(event->size().width());
 	// 使用成员变量存储定时器
 	if (!m_resizeTimer) {
 		m_resizeTimer = new QTimer(this);

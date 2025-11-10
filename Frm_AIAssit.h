@@ -59,6 +59,9 @@ private:
 	void recalculateVisibleBubbles();
 	//UI初始化
 	void initUI();
+	void applyResponsiveLayout(int windowWidth);
+	void setSidebarVisible(bool visible, bool animated = true, bool triggeredByResponsive = false);
+	void updateSidebarWidth(int windowWidth);
 	//参数初始化
 	void initParams();
 	//初始化历史文件
@@ -111,6 +114,8 @@ private:
 	MessageManager* LLMClient = nullptr;
 	std::unique_ptr<LLMParams> params;
 	QTimer* m_resizeTimer = nullptr;
+	bool m_sidebarManuallyHidden = false;
+	bool m_sidebarCollapsedByResponsive = false;
 	QTimer* m_scrollTimer = nullptr; // UI性能优化：流式更新时的滚动定时器
 	QTimer* m_streamDebounceTimer = nullptr;
 	QString m_pendingStreamChunk;

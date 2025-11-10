@@ -7,6 +7,8 @@
 #include <QListWidgetItem>
 #include <QMenu>
 #include <QAction>
+#include <QString>
+#include <QPoint>
 
 class ChatList : public QWidget
 {
@@ -30,6 +32,7 @@ public:
 	QListWidgetItem* getCurrentItem() const;
 	// 设置当前选中项的文本
 	void setCurrentItemText(const QString& text);
+	void setConversationTimestamp(const QString& id, const QString& timestamp);
 	// 获取列表项数量
 	int count() const { return m_conversationList->count(); }
 	// 设置当前行
@@ -51,10 +54,17 @@ signals:
 private:
 	void setupUI();
 	void connectSignals();
+	QListWidgetItem* findItemById(const QString& id) const;
 	// UI组件
 	QVBoxLayout* mainLayout;
 	QPushButton* btnNewConversation;
 	QListWidget* m_conversationList;
+
+	enum ConversationRole
+	{
+		IdRole = Qt::UserRole,
+		TimestampRole = Qt::UserRole + 1
+	};
 };
 
 #endif // CHATLIST_H

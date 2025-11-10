@@ -1,0 +1,600 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Frm_AIAssit</class>
+ <widget class="QWidget" name="Frm_AIAssit">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1225</width>
+    <height>800</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>900</width>
+    <height>600</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>GKG AI助手</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QWidget#Frm_AIAssit {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #eef2ff, stop:1 #e0f2fe);
+    border-radius: 18px;
+    font-family: &quot;Microsoft YaHei UI&quot;, &quot;Segoe UI&quot;, sans-serif;
+    font-size: 14px;
+    color: #0f172a;
+}
+
+QWidget#Frm_AIAssit QPushButton {
+    font-family: &quot;Microsoft YaHei UI&quot;, &quot;Segoe UI&quot;, sans-serif;
+    font-weight: 600;
+}
+
+QWidget#Frm_AIAssit QFrame,
+QWidget#Frm_AIAssit QListWidget,
+QWidget#Frm_AIAssit QScrollArea {
+    background: transparent;
+}
+
+QToolTip {
+    background: rgba(15, 23, 42, 0.92);
+    color: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    padding: 6px 10px;
+    border-radius: 6px;
+}
+
+/* 全局滚动条美化 */
+QScrollBar:vertical {
+    background: transparent;
+    width: 12px;
+    margin: 4px;
+}
+
+QScrollBar::handle:vertical {
+    background: rgba(100, 116, 139, 0.35);
+    border-radius: 6px;
+    min-height: 40px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: rgba(59, 130, 246, 0.55);
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical,
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    height: 0;
+    width: 0;
+}
+
+QScrollBar:horizontal {
+    background: transparent;
+    height: 10px;
+    margin: 4px;
+}
+
+QScrollBar::handle:horizontal {
+    background: rgba(100, 116, 139, 0.35);
+    border-radius: 6px;
+    min-width: 40px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: rgba(59, 130, 246, 0.55);
+}
+
+QScrollBar::add-line:horizontal,
+QScrollBar::sub-line:horizontal,
+QScrollBar::add-page:horizontal,
+QScrollBar::sub-page:horizontal {
+    height: 0;
+    width: 0;
+}</string>
+  </property>
+  <layout class="QHBoxLayout" name="mainHorizontalLayout">
+   <property name="spacing">
+    <number>10</number>
+   </property>
+   <property name="leftMargin">
+    <number>10</number>
+   </property>
+   <property name="topMargin">
+    <number>10</number>
+   </property>
+   <property name="rightMargin">
+    <number>10</number>
+   </property>
+   <property name="bottomMargin">
+    <number>10</number>
+   </property>
+   <item>
+    <widget class="ChatList" name="ChatListWidget" native="true">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>200</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>280</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">ChatList {
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 14px;
+    padding: 10px 6px;
+    backdrop-filter: blur(14px);
+}
+
+ChatList QPushButton#btnNewConversation {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #2563eb, stop:1 #1d4ed8);
+    color: #f8fafc;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    padding: 14px 20px;
+    margin: 12px 10px 10px 10px;
+    min-height: 52px;
+    text-align: left;
+    letter-spacing: 0.2px;
+}
+
+ChatList QPushButton#btnNewConversation:hover {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #3b82f6, stop:1 #2563eb);
+}
+
+ChatList QPushButton#btnNewConversation:pressed {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #1d4ed8, stop:1 #1e40af);
+}
+
+QListWidget#m_conversationList {
+    border: none;
+    background: transparent;
+    outline: 0;
+    padding: 6px 4px 12px 4px;
+    font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+}
+
+QListWidget#m_conversationList::item {
+    padding: 14px 18px;
+    margin: 6px 8px;
+    border-radius: 12px;
+    color: #1e293b;
+    font-weight: 500;
+    font-size: 14px;
+    background: rgba(248, 250, 252, 0.95);
+    border: 1px solid rgba(203, 213, 225, 0.6);
+    min-height: 26px;
+}
+
+QListWidget#m_conversationList::item:hover {
+    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.45);
+}
+
+QListWidget#m_conversationList::item:selected {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 rgba(37, 99, 235, 0.18), stop:1 rgba(37, 99, 235, 0.28));
+    color: #1d4ed8;
+    font-weight: 600;
+    border: 2px solid rgba(37, 99, 235, 0.35);
+}
+
+QListWidget#m_conversationList::item:selected:hover {
+    border-color: rgba(37, 99, 235, 0.58);
+}
+
+QListWidget#m_conversationList QScrollBar:vertical {
+    background: transparent;
+    width: 8px;
+    margin: 4px;
+}
+
+QListWidget#m_conversationList QScrollBar::handle:vertical {
+    background: rgba(100, 116, 139, 0.35);
+    border-radius: 4px;
+    min-height: 30px;
+}
+
+QListWidget#m_conversationList QScrollBar::handle:vertical:hover {
+    background: rgba(59, 130, 246, 0.6);
+}
+
+QListWidget#m_conversationList QScrollBar::add-line:vertical,
+QListWidget#m_conversationList QScrollBar::sub-line:vertical,
+QListWidget#m_conversationList QScrollBar::add-page:vertical,
+QListWidget#m_conversationList QScrollBar::sub-page:vertical {
+    height: 0;
+    width: 0;
+}
+
+ChatList QLabel {
+    color: #0f172a;
+    font-weight: 600;
+    font-size: 16px;
+    padding: 12px 16px 6px 16px;
+    background: transparent;
+}
+
+ChatList QLabel[objectName=&quot;sectionTitle&quot;] {
+    border-bottom: 1px solid rgba(203, 213, 225, 0.5);
+    margin-bottom: 8px;
+}</string>
+     </property>
+     <layout class="QVBoxLayout" name="conversationLayout">
+      <property name="spacing">
+       <number>8</number>
+      </property>
+      <property name="leftMargin">
+       <number>12</number>
+      </property>
+      <property name="topMargin">
+       <number>12</number>
+      </property>
+      <property name="rightMargin">
+       <number>12</number>
+      </property>
+      <property name="bottomMargin">
+       <number>12</number>
+      </property>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QWidget" name="widget_3" native="true">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="ChatShowWidget" name="ChatShow" native="true">
+        <property name="styleSheet">
+         <string notr="true">/* =================== 头部区域样式 =================== */
+QWidget#chatHeader {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 rgba(255, 255, 255, 0.96), stop:1 rgba(241, 245, 249, 0.94));
+    border: none;
+    border-radius: 14px 14px 0 0;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.75);
+    padding: 0;
+}
+
+QLabel#chatTitle {
+    color: #0f172a;
+    font-weight: 700;
+    font-size: 19px;
+    letter-spacing: 0.3px;
+    padding: 0 18px;
+    background: transparent;
+}
+
+QPushButton#toggleButton {
+    background-color: rgba(37, 99, 235, 0.1);
+    border: 1px solid rgba(37, 99, 235, 0.35);
+    border-radius: 12px;
+    padding: 10px;
+    min-width: 46px;
+    min-height: 46px;
+    max-width: 46px;
+    max-height: 46px;
+    color: #2563eb;
+}
+
+QPushButton#toggleButton:hover {
+    background-color: rgba(37, 99, 235, 0.18);
+    border-color: rgba(37, 99, 235, 0.55);
+}
+
+QPushButton#toggleButton:pressed {
+    background-color: rgba(37, 99, 235, 0.28);
+    border-color: rgba(37, 99, 235, 0.65);
+}
+
+QPushButton#btnParamSet {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #f97316, stop:1 #ea580c);
+    color: #fff9f0;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    padding: 10px 22px;
+}
+
+QPushButton#btnParamSet:hover {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #fb923c, stop:1 #f97316);
+}
+
+QPushButton#btnParamSet:pressed {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #ea580c, stop:1 #c2410c);
+}
+
+QFrame#frame {
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 0 0 14px 14px;
+    border: 1px solid rgba(203, 213, 225, 0.6);
+}
+
+
+
+
+
+QWidget#emptyStateWidget,
+QLabel#emptyIconLabel {
+    background: transparent;
+    border: none;
+}
+
+QLabel#emptyTextLabel {
+    color: #475569;
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+
+
+
+QPushButton#UpButton,
+QPushButton#DownButton {
+    background-color: rgba(37, 99, 235, 0.12);
+    border: none;
+    border-radius: 16px;
+    margin: 3px;
+    min-width: 38px;
+    min-height: 38px;
+    max-width: 38px;
+    max-height: 38px;
+    color: #1d4ed8;
+}
+
+QPushButton#UpButton:hover,
+QPushButton#DownButton:hover {
+    background-color: rgba(37, 99, 235, 0.24);
+}
+
+QPushButton#UpButton:pressed,
+QPushButton#DownButton:pressed {
+    background-color: rgba(37, 99, 235, 0.35);
+}
+
+QPushButton#UpButton:focus,
+QPushButton#DownButton:focus {
+    outline: none;
+}</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="ChatInputWidget" name="ChatInput" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>120</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="AIParamWidget" name="AIParams" native="true">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>280</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>320</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">AIParamWidget {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 12px;
+    padding: 16px;
+    backdrop-filter: blur(10px);
+}
+
+QLabel {
+    font-weight: 600;
+    color: #334155;
+    font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+    font-size: 14px;
+    background: transparent;
+}
+
+QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
+    border: 1px solid rgba(203, 213, 225, 0.8);
+    border-radius: 8px;
+    padding: 8px 12px;
+    background: rgba(248, 250, 252, 0.8);
+    selection-background-color: #3b82f6;
+    selection-color: white;
+    font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+    font-size: 14px;
+    color: #1e293b;
+    transition: all 0.3s ease;
+}
+
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {
+    border-color: #3b82f6;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+QLineEdit:hover, QComboBox:hover, QSpinBox:hover, QDoubleSpinBox:hover {
+    border-color: rgba(148, 163, 184, 0.8);
+    background: rgba(241, 245, 249, 0.9);
+}
+
+QCheckBox {
+    spacing: 10px;
+    color: #475569;
+    font-weight: 500;
+    font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+    font-size: 14px;
+    background: transparent;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(148, 163, 184, 0.8);
+    border-radius: 4px;
+    background: rgba(248, 250, 252, 0.8);
+}
+
+QCheckBox::indicator:hover {
+    border-color: #3b82f6;
+}
+
+QCheckBox::indicator:checked {
+    background: #3b82f6;
+    border-color: #3b82f6;
+}
+
+QCheckBox::indicator:checked:hover {
+    background: #60a5fa;
+    border-color: #60a5fa;
+}
+
+QPushButton {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+        stop:0 #3b82f6, stop:1 #1d4ed8);
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+    font-size: 14px;
+    min-width: 90px;
+    min-height: 36px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+}
+
+QPushButton:hover {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+        stop:0 #60a5fa, stop:1 #3b82f6);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+}
+
+QPushButton:pressed {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+        stop:0 #1d4ed8, stop:1 #1e40af);
+    transform: translateY(0px);
+    box-shadow: 0 2px 4px -1px rgba(59, 130, 246, 0.2);
+}
+
+QPushButton:disabled {
+    background: #cbd5e1;
+    color: #94a3b8;
+    box-shadow: none;
+    transform: none;
+}
+
+/* 参数面板标题样式 */
+QLabel[objectName^=&quot;label&quot;] {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+}</string>
+     </property>
+     <layout class="QVBoxLayout" name="parameterLayout">
+      <property name="spacing">
+       <number>16</number>
+      </property>
+      <property name="leftMargin">
+       <number>16</number>
+      </property>
+      <property name="topMargin">
+       <number>16</number>
+      </property>
+      <property name="rightMargin">
+       <number>16</number>
+      </property>
+      <property name="bottomMargin">
+       <number>16</number>
+      </property>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>ChatInputWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">AIAssit\chatinputwidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ChatShowWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">AIAssit\chatshowwidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>AIParamWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">AIAssit\aiparamwidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ChatList</class>
+   <extends>QWidget</extends>
+   <header location="global">AIAssit\ChatList.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

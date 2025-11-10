@@ -9,6 +9,8 @@
 #include <QColor>
 #include <QPainterPath>
 #include <QLinearGradient>
+#include <QEvent>
+#include <QtGlobal>
 #include <QHash>
 const QColor LLMChatFrame::ColorScheme::REASONING_BACKGROUND(238, 243, 255);
 const QColor LLMChatFrame::ColorScheme::REASONING_BORDER(199, 210, 254);
@@ -112,9 +114,16 @@ LLMChatFrame::LLMChatFrame(QWidget *parent)
 {
 	QFont font("Microsoft YaHei", 12);
 	setFont(font);
+	setAttribute(Qt::WA_Hover, true);
 	initRescource();
 	initTalkPic();
 	initButtons();
+	m_shadowEffect = new QGraphicsDropShadowEffect(this);
+	m_shadowEffect->setBlurRadius(28);
+	m_shadowEffect->setOffset(0, 12);
+	m_shadowEffect->setColor(QColor(15, 23, 42, 70));
+	m_shadowEffect->setEnabled(false);
+	setGraphicsEffect(m_shadowEffect);
 	setMouseTracking(true);
 }
 LLMChatFrame::~LLMChatFrame()
@@ -180,6 +189,12 @@ void LLMChatFrame::initButtons()
 		btn->setMinimumWidth(88);
 		btn->setCursor(Qt::PointingHandCursor);
 		btn->setFocusPolicy(Qt::NoFocus);
+		btn->installEventFilter(this);
+		auto* effect = new QGraphicsDropShadowEffect(btn);
+		effect->setBlurRadius(18);
+		effect->setOffset(0, 6);
+		effect->setColor(QColor(37, 99, 235, 120));
+		btn->setGraphicsEffect(effect);
 	}
 	// 设置图标和工具提示
 	m_ui.buttons.copyThinking->setIcon(QIcon(":/QtWidgetsApp/ICONs/icon_CopyThink.png"));
@@ -760,14 +775,31 @@ void LLMChatFrame::drawCustomerMessage(QPainter& painter)
 	painter.drawEllipse(ringRect);
 	painter.drawPixmap(iconRect, *m_ui.icons.leftPix);
 	painter.restore();
+	QColor reasoningBackground = ColorScheme::REASONING_BACKGROUND;
+	QColor reasoningBorder = ColorScheme::REASONING_BORDER;
+	QColor answerBackground = ColorScheme::ANSWER_BACKGROUND;
+	QColor answerBorder = ColorScheme::ANSWER_BORDER;
 	QColor reasoningShadow = ColorScheme::SHADOW_COLOR;
-	reasoningShadow.setAlpha(qRound(reasoningShadow.alpha() * 0.7));
+	QColor answerShadow = ColorScheme::SHADOW_COLOR;
+	if (m_isHovered)
+	{
+		reasoningBackground = reasoningBackground.lighter(108);
+		reasoningBorder = reasoningBorder.lighter(115);
+		answerBackground = answerBackground.lighter(107);
+		answerBorder = answerBorder.lighter(112);
+		reasoningShadow.setAlpha(qMin(255, reasoningShadow.alpha() + 40));
+		answerShadow.setAlpha(qMin(255, answerShadow.alpha() + 50));
+	}
+	else
+	{
+		reasoningShadow.setAlpha(qRound(reasoningShadow.alpha() * 0.7));
+	}
 	drawBubble(painter, m_layoutData.rects.frameLeftReason, QRect(), true,
-		ColorScheme::REASONING_BACKGROUND, ColorScheme::REASONING_BORDER,
+		reasoningBackground, reasoningBorder,
 		reasoningShadow, LayoutConstants::BORDER_RADIUS, LayoutConstants::SHADOW_OFFSET / 2);
 	drawBubble(painter, m_layoutData.rects.frameLeft, m_layoutData.rects.triangleLeft, true,
-		ColorScheme::ANSWER_BACKGROUND, ColorScheme::ANSWER_BORDER,
-		ColorScheme::SHADOW_COLOR, LayoutConstants::BORDER_RADIUS, LayoutConstants::SHADOW_OFFSET);
+		answerBackground, answerBorder,
+		answerShadow, LayoutConstants::BORDER_RADIUS, LayoutConstants::SHADOW_OFFSET);
 	const QString primaryTextColor = QStringLiteral("#0F172A");
 	const bool hasReasoningBubble = m_layoutData.rects.frameLeftReason.isValid();
 	if (m_state.isStreamEnd)
@@ -819,6 +851,11 @@ void LLMChatFrame::drawOwnerMessage(QPainter& painter)
 	ringTop.setAlpha(110);
 	QColor ringBottom = ColorScheme::USER_BACKGROUND;
 	ringBottom.setAlpha(60);
+	if (m_isHovered)
+	{
+		ringTop = ringTop.lighter(118);
+		ringBottom = ringBottom.lighter(122);
+	}
 	ringGradient.setColorAt(0.0, ringTop);
 	ringGradient.setColorAt(1.0, ringBottom);
 	painter.setPen(Qt::NoPen);
@@ -826,10 +863,18 @@ void LLMChatFrame::drawOwnerMessage(QPainter& painter)
 	painter.drawEllipse(ringRect);
 	painter.drawPixmap(iconRect, *m_ui.icons.rightPix);
 	painter.restore();
+	QColor ownerBackground = ColorScheme::USER_BACKGROUND;
 	QColor ownerBorder = ColorScheme::USER_BACKGROUND.darker(115);
+	QColor ownerShadow = ColorScheme::SHADOW_COLOR;
+	if (m_isHovered)
+	{
+		ownerBackground = ownerBackground.lighter(110);
+		ownerBorder = ownerBorder.lighter(118);
+		ownerShadow.setAlpha(qMin(255, ownerShadow.alpha() + 50));
+	}
 	drawBubble(painter, m_layoutData.rects.frameRight, m_layoutData.rects.triangleRight, false,
-		ColorScheme::USER_BACKGROUND, ownerBorder,
-		ColorScheme::SHADOW_COLOR, LayoutConstants::BORDER_RADIUS, LayoutConstants::SHADOW_OFFSET);
+		ownerBackground, ownerBorder,
+		ownerShadow, LayoutConstants::BORDER_RADIUS, LayoutConstants::SHADOW_OFFSET);
 	QTextDocument doc;
 	setTextDocs(doc, m_messageData.msg, m_layoutData.rects.textRight.width(), QStringLiteral("#F8FAFC"));
 	painter.save();
@@ -876,6 +921,77 @@ void LLMChatFrame::paintEvent(QPaintEvent *event)
 
 	// 清除更新标志
 	m_needsUpdate = false;
+}
+
+bool LLMChatFrame::eventFilter(QObject* watched, QEvent* event)
+{
+	const auto buttons = { m_ui.buttons.copyThinking.get(),
+		m_ui.buttons.copyAnswer.get(),
+		m_ui.buttons.regenerate.get() };
+	for (auto* btn : buttons)
+	{
+		if (watched == btn && btn)
+		{
+			switch (event->type())
+			{
+			case QEvent::Enter:
+				updateButtonHoverState(btn, true);
+				return false;
+			case QEvent::Leave:
+				updateButtonHoverState(btn, false);
+				return false;
+			case QEvent::MouseButtonPress:
+				if (auto* effect = qobject_cast<QGraphicsDropShadowEffect*>(btn->graphicsEffect()))
+				{
+					effect->setBlurRadius(14);
+					effect->setOffset(0, 3);
+				}
+				return false;
+			case QEvent::MouseButtonRelease:
+				updateButtonHoverState(btn, btn->underMouse());
+				return false;
+			default:
+				break;
+			}
+		}
+	}
+	return QWidget::eventFilter(watched, event);
+}
+
+void LLMChatFrame::enterEvent(QEvent* event)
+{
+	m_isHovered = true;
+	if (m_shadowEffect)
+	{
+		m_shadowEffect->setEnabled(true);
+	}
+	update();
+	QWidget::enterEvent(event);
+}
+
+void LLMChatFrame::leaveEvent(QEvent* event)
+{
+	m_isHovered = false;
+	if (m_shadowEffect)
+	{
+		m_shadowEffect->setEnabled(false);
+	}
+	update();
+	QWidget::leaveEvent(event);
+}
+
+void LLMChatFrame::updateButtonHoverState(QPushButton* button, bool hovered)
+{
+	if (!button)
+	{
+		return;
+	}
+	if (auto* effect = qobject_cast<QGraphicsDropShadowEffect*>(button->graphicsEffect()))
+	{
+		effect->setBlurRadius(hovered ? 24 : 18);
+		effect->setOffset(0, hovered ? 9 : 6);
+		effect->setColor(hovered ? QColor(37, 99, 235, 160) : QColor(37, 99, 235, 120));
+	}
 }
 void LLMChatFrame::resizeEvent(QResizeEvent *event)
 {

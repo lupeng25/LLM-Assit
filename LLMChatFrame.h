@@ -8,6 +8,7 @@
 #include <QClipboard>
 #include <QScrollBar>
 #include <QWidget>
+#include <QGraphicsDropShadowEffect>
 #include <QMenu>
 #include <QUuid>
 #include <memory>
@@ -15,6 +16,7 @@
 #include "SyntaxHighlighter.h"
 class QPaintEvent;
 class QPainter;
+class QEvent;
 class QLabel;
 class QMovie;
 class LLMChatFrame : public QWidget
@@ -104,6 +106,9 @@ protected:
 	void mousePressEvent(QMouseEvent *event) override;
 	void mouseReleaseEvent(QMouseEvent *event) override;
 	void contextMenuEvent(QContextMenuEvent *event) override;
+	void enterEvent(QEvent* event) override;
+	void leaveEvent(QEvent* event) override;
+	bool eventFilter(QObject* watched, QEvent* event) override;
 	private slots:
 	void onCopyThinkingClicked();
 	void onCopyAnswerClicked();
@@ -122,6 +127,7 @@ private:
 	QSize getRealString(QString src);
 	QSize getRealString(const QString& reasoning, const QString& answer);
 	void setTextDocs(QTextDocument& docText, const QString& src, const int& iWidth, const QString& defaultColor = QString());
+	void updateButtonHoverState(QPushButton* button, bool hovered);
 	int computeTimeExtraHeight() const;
 	void layoutSingleMessage(const QSize& contentSize, int timeExtraHeight);
 	void layoutReasoningMessage(const QSize& reasoningSize, const QSize& answerSize, int timeExtraHeight);
@@ -177,6 +183,8 @@ private:
 	// UI性能优化：减少不必要的重绘
 	bool m_needsUpdate = false;
 	bool m_layoutDirty = false;
+	bool m_isHovered = false;
+	QGraphicsDropShadowEffect* m_shadowEffect = nullptr;
 	struct UIComponents
 	{
 		struct Loading

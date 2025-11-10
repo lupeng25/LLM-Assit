@@ -335,7 +335,7 @@ void Frm_AIAssit::getAnswerShow(const QString& word, bool bError)
 		if (matchThinking.hasMatch())
 		{
 			// 包含 <think></think> 标识符的情况
-			TextAnswer = ANSWER_HEADER_NEWLINE + match.captured(1).trimmed();
+			TextAnswer = match.captured(1).trimmed();
 			TextReasoning = REASONING_HEADER + (matchThinking.captured(1).trimmed().isEmpty() ?
 				REASONING_NOT_ENABLED : matchThinking.captured(1).trimmed());
 			// 替换标识符
@@ -433,19 +433,11 @@ void Frm_AIAssit::getStreamAnswerShow(const QString& word)
 						latestWidget->ChangeAccpetStatus();
 						QString answerPart = chunk.mid(closePos + reasoningEndTag.length());
 						if (!answerPart.isEmpty()) {
-							if (!m_streamAnswerHeaderInserted && !answerPart.trimmed().isEmpty()) {
-								latestWidget->appendText(QStringLiteral("\n ### 回答 \n\n"));
-								m_streamAnswerHeaderInserted = true;
-							}
 							latestWidget->appendText(answerPart);
 						}
 					}
 				}
 				else {
-					if (!m_streamAnswerHeaderInserted && !chunk.trimmed().isEmpty()) {
-						latestWidget->appendText(QStringLiteral("\n ### 回答 \n\n"));
-						m_streamAnswerHeaderInserted = true;
-					}
 					latestWidget->appendText(chunk);
 				}
 			}

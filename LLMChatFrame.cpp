@@ -347,9 +347,19 @@ QString LLMChatFrame::markdownToHtml(const QString &markdown)
 void LLMChatFrame::setTextDocs(QTextDocument& docText, const QString& src, const int& iWidth, const QString& defaultColor)
 {
 	QString html = src;
+	const QString baseStyle = QStringLiteral(
+		"font-family:'Source Sans Pro','Microsoft YaHei','Segoe UI',sans-serif;"
+		"font-size:14.5px; line-height:1.7;"
+	);
 	if (!defaultColor.isEmpty())
 	{
-		html = QStringLiteral("<div style=\"color:%1;\">").arg(defaultColor) + src + QStringLiteral("</div>");
+		html = QStringLiteral("<div style=\"color:%1;%2\">%3</div>")
+			.arg(defaultColor, baseStyle, src);
+	}
+	else
+	{
+		html = QStringLiteral("<div style=\"%1\">%2</div>")
+			.arg(baseStyle, src);
 	}
 	docText.setHtml(html);
 	QFont font("MicrosoftYaHei", 12);
@@ -683,8 +693,10 @@ void LLMChatFrame::appendText(const QString& delta)
 	}
 	else
 	{
-		if (!delta.trimmed().isEmpty() &&
-			!m_messageData.rawMsg.contains(QStringLiteral("### 回答")))
+		const QString trimmedDelta = delta.trimmed();
+		if (!trimmedDelta.isEmpty() &&
+			!m_messageData.rawMsg.contains(QStringLiteral("### 回答")) &&
+			!trimmedDelta.startsWith(QStringLiteral("### 回答")))
 		{
 			const QString header = QStringLiteral("\n ### 回答 \n\n");
 			m_messageData.msg += header;

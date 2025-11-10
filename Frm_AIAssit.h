@@ -115,7 +115,6 @@ private:
 	QTimer* m_streamDebounceTimer = nullptr;
 	QString m_pendingStreamChunk;
 	bool m_pendingReasoningEnd = false;
-	bool m_streamAnswerHeaderInserted = false;
 	std::unique_ptr<AppConfigRepository> m_configRepository;
 	std::unique_ptr<ChatSessionService> m_chatSessionService;
 	std::unique_ptr<LLMClientManager> m_clientManager;

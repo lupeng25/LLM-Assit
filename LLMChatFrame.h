@@ -12,7 +12,7 @@
 #include <QMenu>
 #include <QUuid>
 #include <memory>
-#include "..\include\cmark\cmark.h"
+#include"include/cmark/cmark.h"
 #include "SyntaxHighlighter.h"
 class QPaintEvent;
 class QPainter;

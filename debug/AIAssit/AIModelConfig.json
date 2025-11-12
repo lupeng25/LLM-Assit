@@ -1,0 +1,15 @@
+{
+    "NetTimesOut": 30000,
+    "apiKey": "sk-73d0cbe04fd148568420d237079acefb",
+    "chatIP": "http://localhost:8080/api/chat/completions",
+    "chatMode": 0,
+    "knowledgeApiKey": "dataset-eMXQPtWnRmhcOB1QycBglXtf",
+    "maxToken": 4096,
+    "model": 0,
+    "netSearch": false,
+    "openThink": true,
+    "platform": 1,
+    "streamChat": false,
+    "streamChatIP": "http://172.16.1.58:8080/api/chat/completions",
+    "temperature": 0.7
+}

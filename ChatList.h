@@ -37,6 +37,11 @@ public:
 	int count() const { return m_conversationList->count(); }
 	// 设置当前行
 	void setCurrentRow(int row) { m_conversationList->setCurrentRow(row); }
+    enum ConversationRole
+    {
+        IdRole = Qt::UserRole,
+        TimestampRole = Qt::UserRole + 1
+    };
 
 signals:
 	void newConversationRequested();
@@ -59,12 +64,6 @@ private:
 	QVBoxLayout* mainLayout;
 	QPushButton* btnNewConversation;
 	QListWidget* m_conversationList;
-
-	enum ConversationRole
-	{
-		IdRole = Qt::UserRole,
-		TimestampRole = Qt::UserRole + 1
-	};
 };
 
 #endif // CHATLIST_H

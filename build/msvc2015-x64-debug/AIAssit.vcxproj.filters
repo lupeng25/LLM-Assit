@@ -1,0 +1,256 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\mocs_compilation_Debug.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\AIParamWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\AppConfigRepository.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\ChatInputWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\ChatList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\ChatSessionService.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\ChatShowWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\DifyClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\Frm_AIAssit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\GitLogReader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\LLMChatFrame.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\LLMClientManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\LLMFunctionCall.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\LLMParams.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\MessageManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\OllamaClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\Open_WebUIClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\SyntaxHighlighter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\CMakeFiles\4.2.0-rc1\CompilerIdCXX\CMakeCXXCompilerId.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\include_Debug\EWIEGA46WW\moc_AIParamWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\include_Debug\EWIEGA46WW\moc_ChatInputWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\include_Debug\EWIEGA46WW\moc_ChatList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\include_Debug\EWIEGA46WW\moc_ChatSessionService.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\include_Debug\EWIEGA46WW\moc_ChatShowWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\include_Debug\EWIEGA46WW\moc_DifyClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\include_Debug\EWIEGA46WW\moc_Frm_AIAssit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\include_Debug\EWIEGA46WW\moc_LLMChatFrame.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\include_Debug\EWIEGA46WW\moc_LLMClientManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\include_Debug\EWIEGA46WW\moc_LLMFunctionCall.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\include_Debug\EWIEGA46WW\moc_LLMParams.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\include_Debug\EWIEGA46WW\moc_MessageManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\include_Debug\EWIEGA46WW\moc_OllamaClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\include_Debug\EWIEGA46WW\moc_Open_WebUIClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\CMakeFiles\4.2.0-rc1\CompilerIdCXX\CMakeCXXCompilerId.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\mocs_compilation_Release.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\mocs_compilation_MinSizeRel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\mocs_compilation_RelWithDebInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="E:\code\AIAssit\AIParamWidget.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\AppConfigRepository.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\ChatInputWidget.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\ChatList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\ChatSessionService.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\ChatSessionTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\ChatShowWidget.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\DifyClient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\Frm_AIAssit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\GitLogReader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\LLMChatFrame.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\LLMClientManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\LLMFunctionCall.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\LLMParams.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\MessageManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\OllamaClient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\Open_WebUIClient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\SyntaxHighlighter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\include_Debug\ui_Frm_AIAssit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\include\cmark\buffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\include\cmark\chunk.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\include\cmark\cmark.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\include\cmark\cmark_ctype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\include\cmark\cmark_export.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\include\cmark\cmark_version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\include\cmark\houdini.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\include\cmark\inlines.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\include\cmark\iterator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\include\cmark\node.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\include\cmark\parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\include\cmark\references.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\include\cmark\render.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\include\cmark\scanners.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\include\cmark\utf8.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\include_Release\ui_Frm_AIAssit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\include_MinSizeRel\ui_Frm_AIAssit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\include_RelWithDebInfo\ui_Frm_AIAssit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="E:\code\AIAssit\build\msvc2015-x64-debug\CMakeFiles\375f6d6ea318ebd280e01f8ac77fdf6c\autouic_(CONFIG).stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="E:\code\AIAssit\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="E:\code\AIAssit\Frm_AIAssit.ui" />
+    <None Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\autouic_Debug.stamp" />
+    <None Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\autouic_Release.stamp" />
+    <None Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\autouic_MinSizeRel.stamp" />
+    <None Include="E:\code\AIAssit\build\msvc2015-x64-debug\AIAssit_autogen\autouic_RelWithDebInfo.stamp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{0CD8258A-425C-38E4-9A28-0E993A2B27B9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{E6A16AB1-7666-326E-83F4-2EDB0DECB48C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{EAC859BC-FCBD-3235-ABA5-7E0D7D3BCF89}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

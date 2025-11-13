@@ -41,7 +41,25 @@ void AIParamWidget::setupUI() {
 	m_scrollArea->setFrameShape(QFrame::NoFrame);
 
 	// 主布局
-	auto* widgetLayout = new QVBoxLayout(this);
+	QVBoxLayout* widgetLayout = nullptr;
+	if (QLayout* existingLayout = layout())
+	{
+		if (auto* existingVBox = qobject_cast<QVBoxLayout*>(existingLayout))
+		{
+			widgetLayout = existingVBox;
+		}
+		else
+		{
+			delete existingLayout;
+			widgetLayout = new QVBoxLayout();
+			setLayout(widgetLayout);
+		}
+	}
+	else
+	{
+		widgetLayout = new QVBoxLayout();
+		setLayout(widgetLayout);
+	}
 	widgetLayout->setContentsMargins(0, 0, 0, 0);
 	widgetLayout->addWidget(m_scrollArea);
 

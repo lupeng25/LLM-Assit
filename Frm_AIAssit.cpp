@@ -2,6 +2,7 @@
 #include <QResizeEvent>
 #include <QGraphicsOpacityEffect>
 #include <QEasingCurve>
+#include <QSignalBlocker>
 
 namespace
 {
@@ -18,6 +19,11 @@ Frm_AIAssit::Frm_AIAssit(QWidget *parent)
 	, m_configRepository(std::make_unique<AppConfigRepository>())
 	, m_chatSessionService(std::make_unique<ChatSessionService>(this))
 	, m_clientManager(std::make_unique<LLMClientManager>(this)) {
+	m_enableBubblePool = true;
+	m_bubblePoolHost = new QWidget(this);
+	m_bubblePoolHost->setObjectName("BubblePoolHost");
+	m_bubblePoolHost->setAttribute(Qt::WA_DontShowOnScreen, true);
+	m_bubblePoolHost->hide();
 	ui.setupUi(this);
 
 	connect(m_clientManager.get(), &LLMClientManager::clientChanged, this, &Frm_AIAssit::attachToClient);
@@ -35,8 +41,8 @@ Frm_AIAssit::~Frm_AIAssit()
 	if (m_chatSessionService) {
 		m_chatSessionService->saveSessions();
 	}
-	QListWidget* chatFrame = ui.ChatShow->getChatFrame();
-	chatFrame->clear();
+	releaseAllBubbles();
+	clearBubblePool();
 	ui.ChatListWidget->clearConversations();
 }
 void Frm_AIAssit::setupSignals()
@@ -299,9 +305,17 @@ void Frm_AIAssit::initParams()
 }
 void Frm_AIAssit::addChatBubble(const QString& text, bool bIsUser)
 {
-	LLMChatFrame* userBubble = new LLMChatFrame();
-	//再生成信号连接
-	connect(userBubble, &LLMChatFrame::regenerateClicked, this, &Frm_AIAssit::AskQuestionAgain);
+	QListWidget* chatFrame = ui.ChatShow->getChatFrame();
+	if (!chatFrame)
+	{
+		return;
+	}
+
+	LLMChatFrame* userBubble = acquireBubble(chatFrame);
+	if (QWidget* viewport = chatFrame->viewport())
+	{
+		userBubble->resize(viewport->width(), userBubble->height());
+	}
 	LLMChatFrame::User_Type bubbleType = bIsUser ? LLMChatFrame::User_Customer : LLMChatFrame::User_Owner;
 	userBubble->setUserType(bubbleType);
 	//文本以及大小设置
@@ -313,10 +327,10 @@ void Frm_AIAssit::addChatBubble(const QString& text, bool bIsUser)
 	QString bubbleID = QUuid::createUuid().toString();
 	userBubble->setBubbleID(bubbleID);
 	//将最新项添加至当前对话下并滚动至最新项
-	QListWidget* chatFrame = ui.ChatShow->getChatFrame();
-	QListWidgetItem* item = new QListWidgetItem(chatFrame);
+	QListWidgetItem* item = new QListWidgetItem();
 	chatFrame->addItem(item);
 	chatFrame->setItemWidget(item, userBubble);
+	userBubble->setAttribute(Qt::WA_DeleteOnClose, false);
 	refreshBubbleSize(userBubble, item);
 	chatFrame->scrollToBottom();
 	// 添加消息后更新空状态
@@ -655,65 +669,64 @@ void Frm_AIAssit::createNewConversation() {
 	ui.ChatListWidget->setCurrentConversation(convId);
 	m_currentConversationId = convId;
 	QListWidget* chatFrame = ui.ChatShow->getChatFrame();
-	chatFrame->clear(); // 清空聊天列表
-	chatFrame->scrollToBottom();
+	releaseAllBubbles();
 	// 新建对话后更新空状态（此时应该显示空状态）
 	ui.ChatShow->updateEmptyState();
 }
 void Frm_AIAssit::onConversationSelected(QListWidgetItem* current, QListWidgetItem* previous) {
 	if (!current) return;
-	// 清空旧对话
+
 	QListWidget* chatFrame = ui.ChatShow->getChatFrame();
-	chatFrame->clear();
-	// 获取新对话ID
+	releaseAllBubbles();
+
 	m_currentConversationId = current->data(Qt::UserRole).toString();
 	sMsgList* session = m_chatSessionService ? m_chatSessionService->session(m_currentConversationId) : nullptr;
 	if (!session) {
 		return;
 	}
 	const sMsgList& ml = *session;
-	// 批量处理，避免频繁更新
-	chatFrame->setUpdatesEnabled(false); // 禁用更新
+
+	chatFrame->setUpdatesEnabled(false);
 	for (int idx = 0; idx < session->sMsg.size(); ++idx)
 	{
 		auto& frame = session->sMsg[idx];
-		// bubble设置
-		LLMChatFrame* userBubble = new LLMChatFrame();
-		connect(userBubble, &LLMChatFrame::regenerateClicked, this, &Frm_AIAssit::AskQuestionAgain);
+		LLMChatFrame* userBubble = acquireBubble(chatFrame);
+		if (QWidget* viewport = chatFrame->viewport())
+		{
+			userBubble->resize(viewport->width(), userBubble->height());
+		}
+
 		LLMChatFrame::User_Type Auth = frame.userType == 2 ? LLMChatFrame::User_Customer : LLMChatFrame::User_Owner;
 		userBubble->setUserType(Auth);
-		// 直接使用保存的大小，避免重复计算
+
 		QSize textSize = frame.m_AllSize;
-		// 只在大小无效时才重新计算
 		if (!textSize.isValid() || textSize.isEmpty())
 		{
 			textSize = userBubble->fontRect(frame.m_ChatReasonMsg, frame.m_ChatMsg);
-			frame.m_AllSize = textSize; // 缓存计算结果
+			frame.m_AllSize = textSize;
 		}
+
 		userBubble->setTextWithReason(frame.m_ChatReasonMsg, frame.m_ChatMsg,
 			frame.m_ChatTime, textSize, Auth);
 		userBubble->setTextSuccess();
 		userBubble->setBubbleID(frame.m_BubbleID);
+
 		QSize finalSize = userBubble->getSize();
-		// 更新缓存尺寸
 		frame.m_AllSize = finalSize;
-		// 将bubble添加进新对话
-		QListWidgetItem* item = new QListWidgetItem(chatFrame);
+
+		QListWidgetItem* item = new QListWidgetItem();
 		item->setSizeHint(finalSize);
 		chatFrame->addItem(item);
 		chatFrame->setItemWidget(item, userBubble);
 	}
-	// 重新启用更新
+
 	chatFrame->setUpdatesEnabled(true);
 	chatFrame->scrollToBottom();
-	// 更新空状态
 	ui.ChatShow->updateEmptyState();
-	// 延迟调用recalculate，避免阻塞UI
-	// 使用更长的延迟，并且只在真正需要时调用
 	if (ml.sMsg.size() > 0)
 	{
 		QTimer::singleShot(100, this, [this]() {
-			recalculateVisibleBubbles(); // 只计算可见的气泡
+			recalculateVisibleBubbles();
 		});
 	}
 }
@@ -809,6 +822,132 @@ QString Frm_AIAssit::updateDialogName(const QString& dialogName)
 	ui.ChatListWidget->setCurrentItemText(tempName);
 	return tempName;
 }
+
+LLMChatFrame* Frm_AIAssit::acquireBubble(QWidget* parent)
+{
+	QWidget* targetParent = parent;
+	if (auto* listWidget = qobject_cast<QListWidget*>(parent))
+	{
+		targetParent = listWidget->viewport();
+	}
+
+	if (!m_enableBubblePool)
+	{
+		LLMChatFrame* bubble = new LLMChatFrame(targetParent);
+		bubble->setAttribute(Qt::WA_DeleteOnClose, false);
+		connect(bubble, &LLMChatFrame::regenerateClicked, this, &Frm_AIAssit::AskQuestionAgain, Qt::UniqueConnection);
+		return bubble;
+	}
+
+	while (!m_bubblePool.isEmpty())
+	{
+		QPointer<LLMChatFrame> candidate = m_bubblePool.takeLast();
+		if (candidate)
+		{
+			LLMChatFrame* bubble = candidate.data();
+			disconnect(bubble, &QObject::destroyed, nullptr, nullptr);
+			bubble->resetForReuse();
+			bubble->setAttribute(Qt::WA_DeleteOnClose, false);
+			if (targetParent && bubble->parent() != targetParent)
+			{
+				bubble->setParent(targetParent);
+			}
+			bubble->show();
+			connect(bubble, &LLMChatFrame::regenerateClicked, this, &Frm_AIAssit::AskQuestionAgain, Qt::UniqueConnection);
+			return bubble;
+		}
+	}
+
+	LLMChatFrame* bubble = new LLMChatFrame(targetParent);
+	bubble->setAttribute(Qt::WA_DeleteOnClose, false);
+	connect(bubble, &LLMChatFrame::regenerateClicked, this, &Frm_AIAssit::AskQuestionAgain, Qt::UniqueConnection);
+	return bubble;
+}
+
+void Frm_AIAssit::releaseBubble(LLMChatFrame* bubble)
+{
+	if (!bubble)
+	{
+		return;
+	}
+
+	bubble->resetForReuse();
+	bubble->hide();
+
+	if (m_enableBubblePool && m_bubblePool.size() < kBubblePoolMaxSize)
+	{
+		if (m_bubblePoolHost && bubble->parent() != m_bubblePoolHost)
+		{
+			bubble->setParent(m_bubblePoolHost);
+		}
+		bubble->setAttribute(Qt::WA_DeleteOnClose, false);
+		m_bubblePool.append(QPointer<LLMChatFrame>(bubble));
+	}
+	else
+	{
+		disconnect(bubble, &QObject::destroyed, nullptr, nullptr);
+		bubble->prepareForDeletion();
+		bubble->deleteLater();
+	}
+}
+
+void Frm_AIAssit::releaseAllBubbles()
+{
+	QListWidget* chatFrame = ui.ChatShow ? ui.ChatShow->getChatFrame() : nullptr;
+	if (!chatFrame)
+	{
+		return;
+	}
+
+	const QSignalBlocker blocker(chatFrame);
+	for (int idx = chatFrame->count() - 1; idx >= 0; --idx)
+	{
+		QListWidgetItem* item = chatFrame->item(idx);
+		if (!item)
+		{
+			continue;
+		}
+
+		if (QWidget* widget = chatFrame->itemWidget(item))
+		{
+			chatFrame->removeItemWidget(item);
+			if (auto* bubble = qobject_cast<LLMChatFrame*>(widget))
+			{
+				releaseBubble(bubble);
+			}
+			else
+			{
+				widget->deleteLater();
+			}
+		}
+
+		QListWidgetItem* removed = chatFrame->takeItem(idx);
+		delete removed;
+	}
+
+	if (!m_enableBubblePool)
+	{
+		m_bubblePool.clear();
+	}
+}
+
+void Frm_AIAssit::clearBubblePool()
+{
+	if (!m_enableBubblePool)
+	{
+		return;
+	}
+	for (QPointer<LLMChatFrame>& bubblePtr : m_bubblePool)
+	{
+		if (LLMChatFrame* bubble = bubblePtr.data())
+		{
+			bubble->prepareForDeletion();
+			bubble->deleteLater();
+		}
+	}
+	m_bubblePool.clear();
+}
+
 void Frm_AIAssit::deleteCurrentConversation()
 {
 	QListWidgetItem* currentItem = ui.ChatListWidget->getConversationList()->currentItem();
@@ -832,8 +971,7 @@ void Frm_AIAssit::deleteCurrentConversation()
 		// 如果是当前对话，清空聊天区域
 		if (convId == m_currentConversationId)
 		{
-			QListWidget* chatFrame = ui.ChatShow->getChatFrame();
-			chatFrame->clear();
+			releaseAllBubbles();
 			if (ui.ChatListWidget->getConversationList()->count() > 0)
 			{
 				ui.ChatListWidget->getConversationList()->setCurrentRow(0);
@@ -928,6 +1066,15 @@ void Frm_AIAssit::refreshBubbleSize(LLMChatFrame* bubble, QListWidgetItem* item,
 	if (!bubbleSize.isValid())
 	{
 		bubbleSize = bubble->size();
+	}
+	if (QListWidget* ownerList = item->listWidget())
+	{
+		const int availableWidth = ownerList->viewport()->width();
+		if (availableWidth > 0)
+		{
+			bubble->resize(availableWidth, bubbleSize.height());
+			bubbleSize.setWidth(availableWidth);
+		}
 	}
 	item->setSizeHint(bubbleSize);
 	QString convId = conversationId.isEmpty() ? m_currentConversationId : conversationId;

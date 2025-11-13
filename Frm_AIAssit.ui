@@ -139,7 +139,6 @@ QScrollBar::sub-page:horizontal {
     border: 1px solid rgba(148, 163, 184, 0.28);
     border-radius: 14px;
     padding: 10px 6px;
-    backdrop-filter: blur(14px);
 }
 
 ChatList QPushButton#btnNewConversation {
@@ -153,7 +152,6 @@ ChatList QPushButton#btnNewConversation {
     margin: 12px 10px 10px 10px;
     min-height: 52px;
     text-align: left;
-    letter-spacing: 0.2px;
 }
 
 ChatList QPushButton#btnNewConversation:hover {
@@ -285,7 +283,6 @@ QLabel#chatTitle {
     color: #0f172a;
     font-weight: 700;
     font-size: 19px;
-    letter-spacing: 0.3px;
     padding: 0 18px;
     background: transparent;
 }
@@ -354,7 +351,6 @@ QLabel#emptyTextLabel {
     border: none;
     font-size: 20px;
     font-weight: 600;
-    letter-spacing: 0.2px;
 }
 
 
@@ -434,7 +430,6 @@ QPushButton#DownButton:focus {
     border: 1px solid rgba(226, 232, 240, 0.8);
     border-radius: 12px;
     padding: 16px;
-    backdrop-filter: blur(10px);
 }
 
 QLabel {
@@ -455,13 +450,11 @@ QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
     font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
     font-size: 14px;
     color: #1e293b;
-    transition: all 0.3s ease;
 }
 
 QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {
     border-color: #3b82f6;
     background: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 QLineEdit:hover, QComboBox:hover, QSpinBox:hover, QDoubleSpinBox:hover {
@@ -501,7 +494,7 @@ QCheckBox::indicator:checked:hover {
 }
 
 QPushButton {
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
         stop:0 #3b82f6, stop:1 #1d4ed8);
     border: none;
     color: white;
@@ -512,33 +505,25 @@ QPushButton {
     font-size: 14px;
     min-width: 90px;
     min-height: 36px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
 }
 
 QPushButton:hover {
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
         stop:0 #60a5fa, stop:1 #3b82f6);
-    transform: translateY(-1px);
-    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
 }
 
 QPushButton:pressed {
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
         stop:0 #1d4ed8, stop:1 #1e40af);
-    transform: translateY(0px);
-    box-shadow: 0 2px 4px -1px rgba(59, 130, 246, 0.2);
 }
 
 QPushButton:disabled {
     background: #cbd5e1;
     color: #94a3b8;
-    box-shadow: none;
-    transform: none;
 }
 
 /* 参数面板标题样式 */
-QLabel[objectName^=&quot;label&quot;] {
+QLabel[objectName^="label"] {
     font-size: 16px;
     font-weight: 700;
     color: #1e293b;

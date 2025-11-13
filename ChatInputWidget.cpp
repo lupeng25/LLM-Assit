@@ -595,7 +595,6 @@ void ChatInputWidget::setupStyles()
 		"font-weight: 600;"
 		"font-size: 13px;"
 		"font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;"
-		"transition: all 0.3s ease;"
 		"}"
 
 		"QPushButton#sendButton {"
@@ -608,7 +607,6 @@ void ChatInputWidget::setupStyles()
 		"QPushButton#sendButton:hover:enabled {"
 		"background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
 		"stop:0 #5dade2, stop:1 #3498db);"
-		"transform: translateY(-1px);"
 		"}"
 
 		"QPushButton#sendButton:pressed {"
@@ -631,7 +629,6 @@ void ChatInputWidget::setupStyles()
 		"QPushButton#attachButton:hover {"
 		"background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
 		"stop:0 #a9b9ba, stop:1 #95a5a6);"
-		"transform: scale(1.05);"
 		"}"
 
 		"QComboBox {"

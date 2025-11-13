@@ -96,11 +96,13 @@ public:
 	bool isSending() const { return m_state.isSending; }
 	void setBubbleID(QString id) { m_messageData.uniqueID = id; };
 	void resetForReuse();
+	void prepareForDeletion();
 signals:
 	void copyThinkingClicked();
 	void copyAnswerClicked();
 	void regenerateClicked(QString msg);
 protected:
+	bool event(QEvent* event) override;
 	void paintEvent(QPaintEvent *event) override;
 	void resizeEvent(QResizeEvent *event) override;
 	void mousePressEvent(QMouseEvent *event) override;
@@ -184,6 +186,7 @@ private:
 	bool m_needsUpdate = false;
 	bool m_layoutDirty = false;
 	bool m_isHovered = false;
+	bool m_allowDeferredDelete = false;
 	QGraphicsDropShadowEffect* m_shadowEffect = nullptr;
 	struct UIComponents
 	{

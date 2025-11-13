@@ -5,13 +5,13 @@
 #include <QPainter>
 #include <QMovie>
 #include <QLabel>
-#include <QDebug>
 #include <QColor>
 #include <QPainterPath>
 #include <QLinearGradient>
 #include <QEvent>
 #include <QtGlobal>
 #include <QHash>
+
 const QColor LLMChatFrame::ColorScheme::REASONING_BACKGROUND(238, 243, 255);
 const QColor LLMChatFrame::ColorScheme::REASONING_BORDER(199, 210, 254);
 const QColor LLMChatFrame::ColorScheme::ANSWER_BACKGROUND(225, 239, 255);
@@ -125,9 +125,23 @@ LLMChatFrame::LLMChatFrame(QWidget *parent)
 	m_shadowEffect->setEnabled(false);
 	setGraphicsEffect(m_shadowEffect);
 	setMouseTracking(true);
+	m_allowDeferredDelete = false;
 }
 LLMChatFrame::~LLMChatFrame()
 {
+}
+
+bool LLMChatFrame::event(QEvent* event)
+{
+	if (event->type() == QEvent::DeferredDelete)
+	{
+		if (!m_allowDeferredDelete)
+		{
+			event->setAccepted(false);
+			return true;
+		}
+	}
+	return QWidget::event(event);
 }
 void LLMChatFrame::initTalkPic()
 {
@@ -553,6 +567,64 @@ void LLMChatFrame::setTextSuccess()
 	updateButtonsVisibility();
 	// 注意：fontRect()内部已经调用了update()，所以这里不需要再次调用
 }
+void LLMChatFrame::resetForReuse()
+{
+	// 恢复基础数据
+	m_messageData = MessageData();
+	m_layoutData = LayoutData();
+	m_state = StateFlags();
+	m_layoutCache = LayoutCache();
+	m_UserType = User_System;
+	m_allowDeferredDelete = false;
+
+	// 标记状态
+	m_needsUpdate = false;
+	m_layoutDirty = true;
+	m_isHovered = false;
+
+	// 停止动画并隐藏加载指示
+	if (m_ui.loading.movie)
+	{
+		m_ui.loading.movie->stop();
+	}
+	if (m_ui.loading.label)
+	{
+		m_ui.loading.label->hide();
+	}
+
+	// 重置按钮状态
+	if (m_ui.buttons.copyThinking)
+	{
+		m_ui.buttons.copyThinking->setEnabled(true);
+	}
+	if (m_ui.buttons.copyAnswer)
+	{
+		m_ui.buttons.copyAnswer->setEnabled(true);
+	}
+	if (m_ui.buttons.regenerate)
+	{
+		m_ui.buttons.regenerate->setEnabled(true);
+	}
+	m_ui.buttons.hideAll();
+
+	// 清空辅助状态
+	m_SuggestButton.clear();
+
+	// 关掉阴影效果，等待重新布局时启用
+	if (m_shadowEffect)
+	{
+		m_shadowEffect->setEnabled(false);
+	}
+
+	setMinimumSize(QSize(0, 0));
+	update();
+}
+
+void LLMChatFrame::prepareForDeletion()
+{
+	m_allowDeferredDelete = true;
+}
+
 QSize LLMChatFrame::fontRect(const QString& str)
 {
 	if (str.isEmpty()) return QSize();

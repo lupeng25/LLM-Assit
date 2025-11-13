@@ -3,7 +3,6 @@
 #include <QPropertyAnimation>
 #include <QNetworkReply> 
 #include <QJsonDocument> 
-#include <QElapsedTimer>
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QJsonObject> 
@@ -17,6 +16,8 @@
 #include <QUuid>
 #include <QDir>
 #include <memory> 
+#include <QVector>
+#include <QPointer>
 #include "LLMParams.h"
 #include "ui_Frm_AIAssit.h" 
 #include "LLMChatFrame.h"
@@ -89,6 +90,11 @@ private:
 		const QString& answerHtml, const QString& reasoningHtml, bool markStreamCompleted);
 	//使用最新回答更新对话名
 	QString updateDialogName(const QString& dialogName);
+	// 气泡对象池
+	LLMChatFrame* acquireBubble(QWidget* parent);
+	void releaseBubble(LLMChatFrame* bubble);
+	void releaseAllBubbles();
+	void clearBubblePool();
 	// 发送消息到服务器 
 	int send(const ChatSendMessage& msg);
 	// 发送消息到流式服务器 
@@ -123,6 +129,10 @@ private:
 	std::unique_ptr<AppConfigRepository> m_configRepository;
 	std::unique_ptr<ChatSessionService> m_chatSessionService;
 	std::unique_ptr<LLMClientManager> m_clientManager;
+	QVector<QPointer<LLMChatFrame>> m_bubblePool;
+	QWidget* m_bubblePoolHost = nullptr;
+	static constexpr int kBubblePoolMaxSize = 64;
+	bool m_enableBubblePool = false;
 	ChatSession* currentSession();
 	const ChatSession* currentSession() const;
 	ChatSessionMap& sessionMap();

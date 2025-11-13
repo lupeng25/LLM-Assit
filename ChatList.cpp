@@ -145,8 +145,25 @@ void ChatList::setupUI()
 	setMinimumWidth(220);
 	setMaximumWidth(320);
 
-	// 创建主布局
-	mainLayout = new QVBoxLayout(this);
+	// 创建主布局（若已有布局则复用）
+	if (QLayout* existingLayout = layout())
+	{
+		if (auto* existing = qobject_cast<QVBoxLayout*>(existingLayout))
+		{
+			mainLayout = existing;
+		}
+		else
+		{
+			delete existingLayout;
+			mainLayout = new QVBoxLayout();
+			setLayout(mainLayout);
+		}
+	}
+	else
+	{
+		mainLayout = new QVBoxLayout();
+		setLayout(mainLayout);
+	}
 	mainLayout->setSpacing(12);
 	mainLayout->setContentsMargins(16, 16, 16, 16);
 
@@ -167,7 +184,6 @@ void ChatList::setupUI()
 			color: #F8FAFC;
 			font-size: 15px;
 			font-weight: 600;
-			letter-spacing: 0.5px;
 		}
 		QPushButton:hover {
 			background: qlineargradient(x1:0, y1:0, x2:1, y2:1,

@@ -254,10 +254,10 @@ void ChatList::insertConversationItem(int index, const QString& text, const QStr
 
 void ChatList::removeConversationItem(const QString& id)
 {
-	for (int i = 0; i < m_conversationList->count(); ++i) 
+	for (int i = 0; i < m_conversationList->count(); ++i)
 	{
 		QListWidgetItem* item = m_conversationList->item(i);
-		if (item && item->data(IdRole).toString() == id) 
+		if (item && item->data(IdRole).toString() == id)
 		{
 			delete m_conversationList->takeItem(i);
 			break;
@@ -272,10 +272,10 @@ void ChatList::clearConversations()
 
 void ChatList::setCurrentConversation(const QString& id)
 {
-	for (int i = 0; i < m_conversationList->count(); ++i) 
+	for (int i = 0; i < m_conversationList->count(); ++i)
 	{
 		QListWidgetItem* item = m_conversationList->item(i);
-		if (item && item->data(IdRole).toString() == id) 
+		if (item && item->data(IdRole).toString() == id)
 		{
 			m_conversationList->setCurrentItem(item);
 			break;
@@ -286,7 +286,7 @@ void ChatList::setCurrentConversation(const QString& id)
 QString ChatList::getCurrentConversationId() const
 {
 	QListWidgetItem* current = m_conversationList->currentItem();
-	if (current) 
+	if (current)
 	{
 		return current->data(IdRole).toString();
 	}
@@ -379,3 +379,4 @@ void ChatList::setConversationTimestamp(const QString& id, const QString& timest
 		m_conversationList->update(m_conversationList->visualItemRect(item));
 	}
 }
+ 

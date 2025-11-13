@@ -9,7 +9,7 @@
     "netSearch": false,
     "openThink": true,
     "platform": 1,
-    "streamChat": false,
+    "streamChat": true,
     "streamChatIP": "http://172.16.1.58:8080/api/chat/completions",
     "temperature": 0.7
 }

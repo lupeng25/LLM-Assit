@@ -315,9 +315,9 @@ QString LLMChatFrame::markdownToHtml(const QString &markdown)
 	QByteArray markdownData = markdown.toUtf8();
 	char *html = cmark_markdown_to_html(markdownData.data(), markdownData.size(), CMARK_OPT_DEFAULT);
 	QString htmlString = QString::fromUtf8(html);
-//	free(html);  // 释放cmark分配的内存
+	//	free(html);  // 释放cmark分配的内存
 
-				 // 使用 SyntaxHighlighter 处理代码块
+	// 使用 SyntaxHighlighter 处理代码块
 	static const QRegularExpression codeBlockRegex(
 		"<pre><code(?:\\s+class=\"language-([^\"]*)\")?(.*?)>(.*?)</code></pre>",
 		QRegularExpression::DotMatchesEverythingOption);
@@ -365,7 +365,7 @@ void LLMChatFrame::setTextDocs(QTextDocument& docText, const QString& src, const
 	const QString baseStyle = QStringLiteral(
 		"font-family:'Source Sans Pro','Microsoft YaHei','Segoe UI',sans-serif;"
 		"font-size:14.5px; line-height:1.7;"
-	);
+		);
 	if (!defaultColor.isEmpty())
 	{
 		html = QStringLiteral("<div style=\"color:%1;%2\">%3</div>")

@@ -127,7 +127,7 @@
             {
                 "bubbleid": "{29932276-e709-405c-8431-d363ce2d4da0}",
                 "dialogname": "在 Python 中，输...",
-                "height": 1392,
+                "height": 1366,
                 "important": false,
                 "msg": "\n ### 回答 \n\n在 Python 中，输出 \"Hello World\" 是最基础的入门示例。你可以使用 `print()` 函数来实现。以下是完整示例：\n\n```python\nprint(\"Hello World\")\n```\n\n### 说明：\n- `print()` 是 Python 的内置函数，用于将内容输出到控制台。\n- `\"Hello World\"` 是一个字符串，被双引号包裹，表示输出的内容。\n- 在 Python 3 中，`print()` 函数需要括号包裹参数（与 Python 2 不同）。\n\n### 运行方式：\n1. 将代码保存为 `.py` 文件（例如 `hello.py`）。\n2. 在命令行中运行：`python hello.py`。\n3. 或者在 Python 交互式环境中直接输入代码。\n\n### 输出结果：\n```\nHello World\n```\n\n如果需要进一步扩展（例如输出到文件、图形界面等），可以基于此基础进行修改。",
                 "note": "",

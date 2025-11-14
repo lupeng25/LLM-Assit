@@ -757,6 +757,50 @@ void LLMChatFrame::initButtons()
 	connect(m_ui.buttons.copyThinking.get(), &QPushButton::clicked, this, &LLMChatFrame::onCopyThinkingClicked);
 	connect(m_ui.buttons.copyAnswer.get(), &QPushButton::clicked, this, &LLMChatFrame::onCopyAnswerClicked);
 	connect(m_ui.buttons.regenerate.get(), &QPushButton::clicked, this, &LLMChatFrame::onRegenerateClicked);
+	m_ui.buttons.collapseToggle->setToolTip(tr("Collapse/Expand Message"));
+	m_ui.buttons.collapseToggle->setText("-");
+	m_ui.buttons.collapseToggle->setFixedSize(28, 28);
+	m_ui.buttons.collapseToggle->setStyleSheet(
+		"QPushButton {"
+		"    background-color: rgba(255, 255, 255, 0.8);"
+		"    border: 1px solid rgba(100, 116, 139, 0.3);"
+		"    color: #64748b;"
+		"    font-size: 16px;"
+		"    font-weight: bold;"
+		"    border-radius: 4px;"
+		"}"
+		"QPushButton:hover {"
+		"    background-color: rgba(100, 116, 139, 0.15);"
+		"    border-color: rgba(100, 116, 139, 0.5);"
+		"}"
+		"QPushButton:pressed {"
+		"    background-color: rgba(100, 116, 139, 0.25);"
+		"}"
+	);
+	connect(m_ui.buttons.collapseToggle.get(), &QPushButton::clicked, this, &LLMChatFrame::onCollapseToggleClicked);
+	
+	m_ui.buttons.reasoningCollapseToggle->setToolTip(tr("Collapse/Expand Reasoning"));
+	m_ui.buttons.reasoningCollapseToggle->setText("-");
+	m_ui.buttons.reasoningCollapseToggle->setFixedSize(28, 28);
+	m_ui.buttons.reasoningCollapseToggle->setStyleSheet(
+		"QPushButton {"
+		"    background-color: rgba(255, 255, 255, 0.8);"
+		"    border: 1px solid rgba(100, 116, 139, 0.3);"
+		"    color: #64748b;"
+		"    font-size: 16px;"
+		"    font-weight: bold;"
+		"    border-radius: 4px;"
+		"}"
+		"QPushButton:hover {"
+		"    background-color: rgba(100, 116, 139, 0.15);"
+		"    border-color: rgba(100, 116, 139, 0.5);"
+		"}"
+		"QPushButton:pressed {"
+		"    background-color: rgba(100, 116, 139, 0.25);"
+		"}"
+	);
+	connect(m_ui.buttons.reasoningCollapseToggle.get(), &QPushButton::clicked, this, &LLMChatFrame::onReasoningCollapseToggleClicked);
+	
 	// 初始时隐藏按钮
 	m_ui.buttons.hideAll();
 }
@@ -770,6 +814,8 @@ void LLMChatFrame::initRescource()
 	m_ui.buttons.copyThinking = std::make_unique<QPushButton>(this);
 	m_ui.buttons.copyAnswer = std::make_unique<QPushButton>(this);
 	m_ui.buttons.regenerate = std::make_unique<QPushButton>(this);
+	m_ui.buttons.collapseToggle = std::make_unique<QPushButton>(this);
+	m_ui.buttons.reasoningCollapseToggle = std::make_unique<QPushButton>(this);
 }
 void LLMChatFrame::updateButtonsPosition()
 {
@@ -803,6 +849,34 @@ void LLMChatFrame::updateButtonsPosition()
 	// 设置"重新生成"按钮
 	m_ui.buttons.regenerate->setGeometry(currentX, buttonY, buttonWidth, buttonHeight);
 	m_ui.buttons.regenerate->show();
+	
+	// 设置推理框折叠/展开按钮
+	if (m_layoutData.rects.frameLeftReason.isValid())
+	{
+		int collapseButtonX = m_layoutData.rects.frameLeftReason.right() - 30;
+		int collapseButtonY = m_layoutData.rects.frameLeftReason.top() + 5;
+		m_ui.buttons.reasoningCollapseToggle->setGeometry(collapseButtonX, collapseButtonY, 28, 28);
+		m_ui.buttons.reasoningCollapseToggle->show();
+		m_ui.buttons.reasoningCollapseToggle->setText(m_messageData.isReasoningCollapsed ? "+" : "-");
+	}
+	else
+	{
+		m_ui.buttons.reasoningCollapseToggle->hide();
+	}
+	
+	// 设置回答框折叠/展开按钮
+	if (m_layoutData.rects.frameLeft.isValid())
+	{
+		int collapseButtonX = m_layoutData.rects.frameLeft.right() - 30;
+		int collapseButtonY = m_layoutData.rects.frameLeft.top() + 5;
+		m_ui.buttons.collapseToggle->setGeometry(collapseButtonX, collapseButtonY, 28, 28);
+		m_ui.buttons.collapseToggle->show();
+		m_ui.buttons.collapseToggle->setText(m_messageData.isCollapsed ? "+" : "-");
+	}
+	else
+	{
+		m_ui.buttons.collapseToggle->hide();
+	}
 }
 void LLMChatFrame::updateButtonsVisibility()
 {
@@ -814,7 +888,49 @@ void LLMChatFrame::updateButtonsVisibility()
 	}
 	else
 	{
-		m_ui.buttons.hideAll();
+		// 折叠按钮始终显示（如果消息不是时间类型）
+		if (m_UserType != User_Time && m_UserType != User_System)
+		{
+			// 设置推理框折叠按钮
+			if (m_UserType == User_Customer && m_layoutData.rects.frameLeftReason.isValid())
+			{
+				int collapseButtonX = m_layoutData.rects.frameLeftReason.right() - 30;
+				int collapseButtonY = m_layoutData.rects.frameLeftReason.top() + 5;
+				m_ui.buttons.reasoningCollapseToggle->setGeometry(collapseButtonX, collapseButtonY, 28, 28);
+				m_ui.buttons.reasoningCollapseToggle->show();
+				m_ui.buttons.reasoningCollapseToggle->setText(m_messageData.isReasoningCollapsed ? "+" : "-");
+			}
+			else
+			{
+				m_ui.buttons.reasoningCollapseToggle->hide();
+			}
+			
+			// 设置回答框折叠按钮
+			const QRect& answerBubbleRect = (m_UserType == User_Customer)
+				? m_layoutData.rects.frameLeft
+				: m_layoutData.rects.frameRight;
+			if (answerBubbleRect.isValid())
+			{
+				int collapseButtonX = answerBubbleRect.right() - 30;
+				int collapseButtonY = answerBubbleRect.top() + 5;
+				m_ui.buttons.collapseToggle->setGeometry(collapseButtonX, collapseButtonY, 28, 28);
+				m_ui.buttons.collapseToggle->show();
+				m_ui.buttons.collapseToggle->setText(m_messageData.isCollapsed ? "+" : "-");
+			}
+			else
+			{
+				m_ui.buttons.collapseToggle->hide();
+			}
+		}
+		else
+		{
+			m_ui.buttons.collapseToggle->hide();
+			m_ui.buttons.reasoningCollapseToggle->hide();
+		}
+		// 隐藏其他按钮
+		if (m_ui.buttons.copyThinking) m_ui.buttons.copyThinking->hide();
+		if (m_ui.buttons.copyAnswer) m_ui.buttons.copyAnswer->hide();
+		if (m_ui.buttons.regenerate) m_ui.buttons.regenerate->hide();
 	}
 }
 void LLMChatFrame::onCopyThinkingClicked()
@@ -837,6 +953,87 @@ void LLMChatFrame::onRegenerateClicked()
 {
 	emit regenerateClicked(m_messageData.uniqueID);
 }
+
+void LLMChatFrame::setCollapsed(bool collapsed)
+{
+	if (m_messageData.isCollapsed == collapsed)
+	{
+		return;
+	}
+	m_messageData.isCollapsed = collapsed;
+	refreshLayoutAfterContentChange();
+	if (!m_messageData.uniqueID.isEmpty())
+	{
+		emit bubbleCollapsedToggled(m_messageData.uniqueID, m_messageData.isCollapsed);
+	}
+}
+
+void LLMChatFrame::toggleCollapsed()
+{
+	setCollapsed(!m_messageData.isCollapsed);
+}
+
+void LLMChatFrame::onCollapseToggleClicked()
+{
+	toggleCollapsed();
+}
+
+void LLMChatFrame::onReasoningCollapseToggleClicked()
+{
+	toggleReasoningCollapsed();
+}
+
+QString LLMChatFrame::getCollapsedSummary() const
+{
+	QString content = m_messageData.rawMsg.isEmpty() ? m_messageData.msg : m_messageData.rawMsg;
+	QTextDocument doc;
+	doc.setHtml(content);
+	QString plainText = doc.toPlainText();
+	
+	// 获取前100个字符作为摘要
+	const int maxLength = 100;
+	if (plainText.length() > maxLength)
+	{
+		return plainText.left(maxLength) + "...";
+	}
+	return plainText;
+}
+
+QString LLMChatFrame::getReasoningCollapsedSummary() const
+{
+	QString content = m_messageData.rawReasoningMsg.isEmpty() ? m_messageData.reasoningText : m_messageData.rawReasoningMsg;
+	QTextDocument doc;
+	doc.setHtml(content);
+	QString plainText = doc.toPlainText();
+	
+	// 获取前100个字符作为摘要
+	const int maxLength = 100;
+	if (plainText.length() > maxLength)
+	{
+		return plainText.left(maxLength) + "...";
+	}
+	return plainText;
+}
+
+void LLMChatFrame::setReasoningCollapsed(bool collapsed)
+{
+	if (m_messageData.isReasoningCollapsed == collapsed)
+	{
+		return;
+	}
+	m_messageData.isReasoningCollapsed = collapsed;
+	refreshLayoutAfterContentChange();
+	if (!m_messageData.uniqueID.isEmpty())
+	{
+		emit bubbleCollapsedToggled(m_messageData.uniqueID, m_messageData.isReasoningCollapsed);
+	}
+}
+
+void LLMChatFrame::toggleReasoningCollapsed()
+{
+	setReasoningCollapsed(!m_messageData.isReasoningCollapsed);
+}
+
 QString LLMChatFrame::markdownToHtml(const QString &markdown)
 {
 	// 添加Markdown转换缓存以提高性能
@@ -1150,6 +1347,8 @@ void LLMChatFrame::resetForReuse()
 	}
 	m_messageData.isImportant = false;
 	m_messageData.userNote.clear();
+	m_messageData.isCollapsed = false;
+	m_messageData.isReasoningCollapsed = false;
 	applyNoteToolTip();
 
 	// 重置按钮状态
@@ -1205,7 +1404,9 @@ QSize LLMChatFrame::fontRect(const QString& str)
 	QString html = str.contains("</p>") ? str : markdownToHtml(str);
 	m_messageData.msg = html;
 	calculateLayout();
-	QSize size = getRealString(m_messageData.msg);
+	// 如果折叠，使用摘要文本计算高度
+	QString contentForLayout = m_messageData.isCollapsed ? getCollapsedSummary() : m_messageData.msg;
+	QSize size = getRealString(contentForLayout);
 	int timeExtraHeight = computeTimeExtraHeight();
 	int extraHeight = computeAdditionalHeight();
 	layoutSingleMessage(size, timeExtraHeight);
@@ -1231,8 +1432,11 @@ QSize LLMChatFrame::fontRect(const QString& reasoning, const QString& answer)
 	m_messageData.reasoningText = reasoning.contains("</p>") ? reasoning : markdownToHtml(reasoning);
 	m_messageData.msg = answer.contains("</p>") ? answer : markdownToHtml(answer);
 	calculateLayout();
-	QSize answerSize = getRealString(m_messageData.msg);
-	QSize reasoningSize = getRealString(m_messageData.reasoningText);
+	// 如果折叠，使用摘要文本计算高度
+	QString answerForLayout = m_messageData.isCollapsed ? getCollapsedSummary() : m_messageData.msg;
+	QString reasoningForLayout = m_messageData.isReasoningCollapsed ? getReasoningCollapsedSummary() : m_messageData.reasoningText;
+	QSize answerSize = getRealString(answerForLayout);
+	QSize reasoningSize = getRealString(reasoningForLayout);
 	int timeExtraHeight = computeTimeExtraHeight();
 	int extraHeight = computeAdditionalHeight();
 	layoutReasoningMessage(reasoningSize, answerSize, timeExtraHeight);
@@ -1445,7 +1649,16 @@ void LLMChatFrame::drawCustomerMessage(QPainter& painter)
 		if (hasReasoningBubble)
 		{
 			QTextDocument docReasoning;
-			setTextDocs(docReasoning, markdownToHtml(m_messageData.rawReasoningMsg), m_layoutData.rects.textLeftReason.width(), primaryTextColor);
+			if (m_messageData.isReasoningCollapsed)
+			{
+				// 推理框折叠时只显示摘要
+				QString summary = getReasoningCollapsedSummary();
+				setTextDocs(docReasoning, summary, m_layoutData.rects.textLeftReason.width(), primaryTextColor);
+			}
+			else
+			{
+				setTextDocs(docReasoning, markdownToHtml(m_messageData.rawReasoningMsg), m_layoutData.rects.textLeftReason.width(), primaryTextColor);
+			}
 			painter.save();
 			painter.translate(m_layoutData.rects.textLeftReason.topLeft());
 			docReasoning.documentLayout()->draw(&painter, QAbstractTextDocumentLayout::PaintContext());
@@ -1457,14 +1670,32 @@ void LLMChatFrame::drawCustomerMessage(QPainter& painter)
 		if (hasReasoningBubble)
 		{
 			QTextDocument docReasoning;
-			setTextDocs(docReasoning, m_messageData.reasoningText, m_layoutData.rects.textLeftReason.width(), primaryTextColor);
+			if (m_messageData.isReasoningCollapsed)
+			{
+				// 推理框折叠时只显示摘要
+				QString summary = getReasoningCollapsedSummary();
+				setTextDocs(docReasoning, summary, m_layoutData.rects.textLeftReason.width(), primaryTextColor);
+			}
+			else
+			{
+				setTextDocs(docReasoning, m_messageData.reasoningText, m_layoutData.rects.textLeftReason.width(), primaryTextColor);
+			}
 			painter.save();
 			painter.translate(m_layoutData.rects.textLeftReason.topLeft());
 			docReasoning.documentLayout()->draw(&painter, QAbstractTextDocumentLayout::PaintContext());
 			painter.restore();
 		}
 		QTextDocument docAnswer;
-		setTextDocs(docAnswer, m_messageData.msg, m_layoutData.rects.textLeft.width(), primaryTextColor);
+		if (m_messageData.isCollapsed)
+		{
+			// 折叠时只显示摘要
+			QString summary = getCollapsedSummary();
+			setTextDocs(docAnswer, summary, m_layoutData.rects.textLeft.width(), primaryTextColor);
+		}
+		else
+		{
+			setTextDocs(docAnswer, m_messageData.msg, m_layoutData.rects.textLeft.width(), primaryTextColor);
+		}
 		painter.save();
 		painter.translate(m_layoutData.rects.textLeft.topLeft());
 		docAnswer.documentLayout()->draw(&painter, QAbstractTextDocumentLayout::PaintContext());
@@ -1508,7 +1739,16 @@ void LLMChatFrame::drawOwnerMessage(QPainter& painter)
 		ownerBackground, ownerBorder,
 		ownerShadow, LayoutConstants::BORDER_RADIUS, LayoutConstants::SHADOW_OFFSET);
 	QTextDocument doc;
-	setTextDocs(doc, m_messageData.msg, m_layoutData.rects.textRight.width(), QStringLiteral("#F8FAFC"));
+	if (m_messageData.isCollapsed)
+	{
+		// 折叠时只显示摘要
+		QString summary = getCollapsedSummary();
+		setTextDocs(doc, summary, m_layoutData.rects.textRight.width(), QStringLiteral("#F8FAFC"));
+	}
+	else
+	{
+		setTextDocs(doc, m_messageData.msg, m_layoutData.rects.textRight.width(), QStringLiteral("#F8FAFC"));
+	}
 	painter.save();
 	painter.translate(m_layoutData.rects.textRight.topLeft());
 	doc.documentLayout()->draw(&painter, QAbstractTextDocumentLayout::PaintContext());
@@ -1550,6 +1790,8 @@ void LLMChatFrame::paintEvent(QPaintEvent *event)
 	{
 		drawTimeMessage(painter);
 	}
+
+	// 折叠按钮由 QPushButton 绘制，不需要在这里绘制
 
 	if (m_UserType == User_Customer || m_UserType == User_Owner)
 	{
@@ -1818,4 +2060,13 @@ void LLMChatFrame::handleCodeBlockCopy(const QString& codeBlockId)
 			// 可以使用 QToolTip 或状态栏提示
 		}
 	}
+}
+
+void LLMChatFrame::drawCollapseButton(QPainter& painter, const QRect& bubbleRect, bool isReasoning)
+{
+	// 按钮由 QPushButton 绘制，这里不需要绘制
+	// 保留函数以保持接口一致性
+	Q_UNUSED(painter);
+	Q_UNUSED(bubbleRect);
+	Q_UNUSED(isReasoning);
 }

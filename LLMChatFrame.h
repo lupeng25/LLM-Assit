@@ -91,6 +91,20 @@ public:
 	void setUserNote(const QString& note);
 	// 获取用户笔记
 	const QString& userNote() const { return m_messageData.userNote; }
+	// 设置折叠状态
+	void setCollapsed(bool collapsed);
+	// 获取折叠状态
+	bool isCollapsed() const { return m_messageData.isCollapsed; }
+	// 切换折叠状态
+	void toggleCollapsed();
+	// 设置推理框折叠状态
+	void setReasoningCollapsed(bool collapsed);
+	// 获取推理框折叠状态
+	bool isReasoningCollapsed() const { return m_messageData.isReasoningCollapsed; }
+	// 切换推理框折叠状态
+	void toggleReasoningCollapsed();
+	// 获取推理框折叠时的摘要文本
+	QString getReasoningCollapsedSummary() const;
 	//框计算
 	// 计算单条消息的尺寸
 	QSize fontRect(const QString& str);
@@ -164,6 +178,8 @@ signals:
 	void bubbleNoteChanged(const QString& bubbleId, const QString& note);
 	// 气泡重要性切换信号
 	void bubbleImportantToggled(const QString& bubbleId, bool isImportant);
+	// 气泡折叠状态切换信号
+	void bubbleCollapsedToggled(const QString& bubbleId, bool isCollapsed);
 protected:
 	// 事件处理
 	bool event(QEvent* event) override;
@@ -190,6 +206,10 @@ protected:
 	void onCopyAnswerClicked();
 	// 重新生成按钮点击处理
 	void onRegenerateClicked();
+	// 折叠按钮点击处理
+	void onCollapseToggleClicked();
+	// 推理框折叠按钮点击处理
+	void onReasoningCollapseToggleClicked();
 private:
 	// 初始化头像图片
 	void initTalkPic();
@@ -231,6 +251,11 @@ private:
 	void handleNoteRequested();
 	// 切换重要性
 	void toggleImportant();
+	// 绘制折叠/展开按钮
+	// isReasoning: true表示推理框，false表示回答框
+	void drawCollapseButton(QPainter& painter, const QRect& bubbleRect, bool isReasoning = false);
+	// 获取折叠时的摘要文本
+	QString getCollapsedSummary() const;
 	// 计算时间额外高度
 	int computeTimeExtraHeight() const;
 	// 布局单条消息
@@ -250,6 +275,8 @@ private:
 		QString uniqueID;
 		bool isImportant = false;
 		QString userNote;
+		bool isCollapsed = false;  // 消息是否折叠
+		bool isReasoningCollapsed = false;  // 推理框是否折叠
 	} m_messageData;
 	struct LayoutData
 	{
@@ -312,11 +339,15 @@ private:
 			std::unique_ptr<QPushButton> copyThinking;
 			std::unique_ptr<QPushButton> copyAnswer;
 			std::unique_ptr<QPushButton> regenerate;
+			std::unique_ptr<QPushButton> collapseToggle;
+			std::unique_ptr<QPushButton> reasoningCollapseToggle;
 			void hideAll()
 			{
 				if (copyThinking) copyThinking->hide();
 				if (copyAnswer) copyAnswer->hide();
 				if (regenerate) regenerate->hide();
+				if (collapseToggle) collapseToggle->hide();
+				if (reasoningCollapseToggle) reasoningCollapseToggle->hide();
 			}
 		} buttons;
 	} m_ui;

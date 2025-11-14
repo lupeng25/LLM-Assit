@@ -360,10 +360,10 @@ QPushButton#DownButton {
     border: none;
     border-radius: 16px;
     margin: 3px;
-    min-width: 38px;
-    min-height: 38px;
-    max-width: 38px;
-    max-height: 38px;
+    min-width: 30px;
+    min-height: 30px;
+    max-width: 30px;
+    max-height: 30px;
     color: #1d4ed8;
 }
 

@@ -11,6 +11,20 @@
 #include <QEvent>
 #include <QtGlobal>
 #include <QHash>
+#include <QFileDialog>
+#include <QStandardPaths>
+#include <QDir>
+#include <QTextStream>
+#include <QMessageBox>
+#include <QFileInfo>
+#include <QMimeData>
+#include <QInputDialog>
+#include <QDialog>
+#include <QTextEdit>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QtMath>
+#include <cmath>
 
 const QColor LLMChatFrame::ColorScheme::REASONING_BACKGROUND(238, 243, 255);
 const QColor LLMChatFrame::ColorScheme::REASONING_BORDER(199, 210, 254);
@@ -108,6 +122,526 @@ namespace
 		painter.end();
 		return result;
 	}
+}
+
+void LLMChatFrame::copyToClipboardPlain(bool reasoningSection)
+{
+	const QString html = (reasoningSection && !m_messageData.reasoningText.isEmpty())
+		? m_messageData.reasoningText
+		: m_messageData.msg;
+	const QString plainText = htmlToPlainText(html);
+	if (plainText.isEmpty())
+	{
+		return;
+	}
+	if (QClipboard* clipboard = QApplication::clipboard())
+	{
+		clipboard->setText(plainText);
+	}
+}
+
+void LLMChatFrame::copyToClipboardMarkdown(bool reasoningSection)
+{
+	const QString titleReasoning = tr("### Thinking");
+	const QString titleAnswer = tr("### Answer");
+	const QString html = (reasoningSection && !m_messageData.reasoningText.isEmpty())
+		? m_messageData.reasoningText
+		: m_messageData.msg;
+	const QString plainText = htmlToPlainText(html).trimmed();
+	if (plainText.isEmpty())
+	{
+		return;
+	}
+	const QString heading = (reasoningSection && !m_messageData.reasoningText.isEmpty()) ? titleReasoning : titleAnswer;
+	const QString markdown = QStringLiteral("%1\n\n%2").arg(heading, plainText);
+	if (QClipboard* clipboard = QApplication::clipboard())
+	{
+		clipboard->setText(markdown);
+	}
+}
+
+void LLMChatFrame::copyToClipboardHtml(bool reasoningSection)
+{
+	const QString html = (reasoningSection && !m_messageData.reasoningText.isEmpty())
+		? m_messageData.reasoningText
+		: m_messageData.msg;
+	if (html.isEmpty())
+	{
+		return;
+	}
+	if (QClipboard* clipboard = QApplication::clipboard())
+	{
+		auto* mimeData = new QMimeData();
+		mimeData->setHtml(html);
+		mimeData->setText(htmlToPlainText(html));
+		clipboard->setMimeData(mimeData);
+	}
+}
+
+QString LLMChatFrame::buildPlainExport() const
+{
+	QStringList sections;
+	if (!m_messageData.reasoningText.isEmpty())
+	{
+		const QString reasoning = htmlToPlainText(m_messageData.reasoningText).trimmed();
+		if (!reasoning.isEmpty())
+		{
+			sections << tr("### Thinking") << reasoning;
+		}
+	}
+	const QString answer = htmlToPlainText(m_messageData.msg).trimmed();
+	if (!answer.isEmpty())
+	{
+		sections << tr("### Answer") << answer;
+	}
+	return sections.join(QStringLiteral("\n\n")).trimmed();
+}
+
+QString LLMChatFrame::buildMarkdownExport() const
+{
+	QStringList lines;
+	if (!m_messageData.reasoningText.isEmpty())
+	{
+		const QString reasoning = htmlToPlainText(m_messageData.reasoningText).trimmed();
+		if (!reasoning.isEmpty())
+		{
+			lines << tr("### Thinking") << QString() << reasoning << QString();
+		}
+	}
+	const QString answer = htmlToPlainText(m_messageData.msg).trimmed();
+	if (!answer.isEmpty())
+	{
+		lines << tr("### Answer") << QString() << answer;
+	}
+	return lines.join(QStringLiteral("\n")).trimmed();
+}
+
+QString LLMChatFrame::buildHtmlExport() const
+{
+	const QString roleClass = (m_UserType == User_Customer)
+		? QStringLiteral("assistant")
+		: (m_UserType == User_Owner ? QStringLiteral("user") : QStringLiteral("system"));
+	QString reasoningSection;
+	if (!m_messageData.reasoningText.isEmpty())
+	{
+		reasoningSection = QStringLiteral(
+			"<section class=\"reasoning\">"
+			"<h3>%1</h3>%2"
+			"</section>").arg(tr("Thinking"), m_messageData.reasoningText);
+	}
+	QString answerSection = QStringLiteral(
+		"<section class=\"answer\">"
+		"<h3>%1</h3>%2"
+		"</section>").arg(tr("Answer"), m_messageData.msg);
+
+static const QString kTemplate = QStringLiteral(
+	R"(<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>%1</title>
+<style>
+body { font-family: "Helvetica Neue", "Microsoft YaHei", sans-serif; background-color: #f9fafb; padding: 40px; color: #0f172a; }
+.chat-bubble { max-width: 680px; margin: 0 auto; background: #ffffff; border-radius: 20px; box-shadow: 0 24px 48px rgba(15, 23, 42, 0.08); padding: 32px 40px; line-height: 1.75; }
+.chat-bubble.assistant { border-top: 6px solid #3b82f6; }
+.chat-bubble.user { border-top: 6px solid #10b981; }
+.chat-bubble.system { border-top: 6px solid #6366f1; }
+.chat-bubble h3 { margin-top: 0; font-size: 20px; color: #111827; }
+.chat-bubble section { margin-bottom: 28px; }
+.chat-bubble section:last-child { margin-bottom: 0; }
+pre { background: #0f172a; color: #e2e8f0; padding: 12px 16px; border-radius: 12px; overflow-x: auto; font-family: "JetBrains Mono", "Courier New", monospace; }
+code { background: rgba(15, 23, 42, 0.08); padding: 2px 6px; border-radius: 6px; font-size: 90%; }
+</style>
+</head>
+<body>
+<article class="chat-bubble %2">
+%3
+%4
+</article>
+</body>
+</html>)");
+
+	return kTemplate.arg(tr("Export Chat"), roleClass, reasoningSection, answerSection);
+}
+
+QString LLMChatFrame::htmlToPlainText(const QString& html) const
+{
+	if (html.isEmpty())
+	{
+		return QString();
+	}
+	QTextDocument doc;
+	doc.setHtml(html);
+	return doc.toPlainText();
+}
+
+void LLMChatFrame::setImportant(bool important)
+{
+	if (m_messageData.isImportant == important)
+	{
+		return;
+	}
+	m_messageData.isImportant = important;
+	update();
+}
+
+void LLMChatFrame::setUserNote(const QString& note)
+{
+	QString trimmed = note;
+	m_messageData.userNote = trimmed;
+	applyNoteToolTip();
+	update();
+}
+
+void LLMChatFrame::refreshLayoutAfterContentChange()
+{
+	m_layoutCache.isValid = false;
+	m_layoutDirty = true;
+	if (m_UserType == User_Customer)
+	{
+		fontRect(m_messageData.reasoningText, m_messageData.msg);
+	}
+	else
+	{
+		fontRect(m_messageData.msg);
+	}
+	updateButtonsVisibility();
+	update();
+}
+
+void LLMChatFrame::drawImportanceBadge(QPainter& painter, const QRect& bubbleRect)
+{
+	if (!bubbleRect.isValid())
+	{
+		return;
+	}
+	const int badgeSize = 18;
+	const QPointF center = (m_UserType == User_Customer)
+		? QPointF(bubbleRect.left() + badgeSize * 0.5 + 8, bubbleRect.top() + badgeSize * 0.5 + 6)
+		: QPointF(bubbleRect.right() - badgeSize * 0.5 - 8, bubbleRect.top() + badgeSize * 0.5 + 6);
+	const qreal outerRadius = badgeSize * 0.5;
+	const qreal innerRadius = outerRadius * 0.5;
+
+	QPolygonF star;
+	for (int i = 0; i < 10; ++i)
+	{
+		const qreal angle = qDegreesToRadians(36.0 * i - 90.0);
+		const qreal radius = (i % 2 == 0) ? outerRadius : innerRadius;
+		star << QPointF(center.x() + radius * std::cos(angle),
+			center.y() + radius * std::sin(angle));
+	}
+
+	painter.save();
+	painter.setRenderHint(QPainter::Antialiasing, true);
+	painter.setPen(QPen(QColor(217, 119, 6), 1.2));
+	painter.setBrush(QColor(252, 211, 77));
+	painter.drawPolygon(star);
+	painter.restore();
+}
+
+void LLMChatFrame::drawNoteBadge(QPainter& painter, const QRect& bubbleRect)
+{
+	if (m_messageData.userNote.trimmed().isEmpty())
+	{
+		return;
+	}
+	if (!bubbleRect.isValid())
+	{
+		return;
+	}
+	const QString badgeText = tr("NOTE");
+	QFont badgeFont = font();
+	badgeFont.setPointSize(8);
+	badgeFont.setBold(true);
+
+	QFontMetrics metrics(badgeFont);
+	const int paddingH = 6;
+	const int paddingV = 2;
+	const int textWidth = metrics.horizontalAdvance(badgeText);
+	const int textHeight = metrics.height();
+	const QSize badgeSize(textWidth + paddingH * 2, textHeight + paddingV * 2);
+
+	const QPoint badgePos = (m_UserType == User_Customer)
+		? QPoint(bubbleRect.right() - badgeSize.width() - 12, bubbleRect.bottom() - badgeSize.height() - 8)
+		: QPoint(bubbleRect.left() + 12, bubbleRect.bottom() - badgeSize.height() - 8);
+	const QRect badgeRect(badgePos, badgeSize);
+
+	painter.save();
+	painter.setRenderHint(QPainter::Antialiasing, true);
+	painter.setBrush(QColor(14, 165, 233, 200));
+	painter.setPen(Qt::NoPen);
+	painter.drawRoundedRect(badgeRect, badgeRect.height() / 2.0, badgeRect.height() / 2.0);
+	painter.setPen(Qt::white);
+	painter.setFont(badgeFont);
+	painter.drawText(badgeRect, Qt::AlignCenter, badgeText);
+	painter.restore();
+}
+
+void LLMChatFrame::applyNoteToolTip()
+{
+	const QString trimmed = m_messageData.userNote.trimmed();
+	if (trimmed.isEmpty())
+	{
+		setToolTip(QString());
+	}
+	else
+	{
+		setToolTip(tr("Note: %1").arg(trimmed));
+	}
+}
+
+void LLMChatFrame::handleNoteRequested()
+{
+	QDialog dialog(this);
+	dialog.setWindowTitle(tr("Edit Note"));
+	dialog.setMinimumSize(500, 300);
+	dialog.resize(500, 300);
+	dialog.setModal(true);
+	dialog.setWindowFlags(Qt::Dialog | Qt::WindowTitleHint | Qt::WindowCloseButtonHint);
+
+	// 应用与软件整体风格一致的样式
+	dialog.setStyleSheet(
+		"QDialog {"
+		"    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,"
+		"        stop:0 #eef2ff, stop:1 #e0f2fe);"
+		"    border-radius: 12px;"
+		"    font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;"
+		"}"
+		"QLabel {"
+		"    color: #1e293b;"
+		"    font-size: 14px;"
+		"    font-weight: 600;"
+		"    padding: 8px 0px;"
+		"    background: transparent;"
+		"}"
+		"QTextEdit {"
+		"    border: 1px solid rgba(203, 213, 225, 0.8);"
+		"    border-radius: 8px;"
+		"    padding: 12px;"
+		"    background: rgba(248, 250, 252, 0.95);"
+		"    selection-background-color: #3b82f6;"
+		"    selection-color: white;"
+		"    font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;"
+		"    font-size: 14px;"
+		"    color: #1e293b;"
+		"    min-height: 150px;"
+		"}"
+		"QTextEdit:focus {"
+		"    border-color: #3b82f6;"
+		"    background: rgba(255, 255, 255, 0.98);"
+		"}"
+		"QPushButton {"
+		"    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+		"        stop:0 #3b82f6, stop:1 #1d4ed8);"
+		"    border: none;"
+		"    color: white;"
+		"    padding: 10px 24px;"
+		"    border-radius: 8px;"
+		"    font-weight: 600;"
+		"    font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;"
+		"    font-size: 14px;"
+		"    min-width: 90px;"
+		"    min-height: 36px;"
+		"}"
+		"QPushButton:hover {"
+		"    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+		"        stop:0 #60a5fa, stop:1 #3b82f6);"
+		"}"
+		"QPushButton:pressed {"
+		"    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+		"        stop:0 #1d4ed8, stop:1 #1e40af);"
+		"}"
+		"QPushButton:disabled {"
+		"    background: #cbd5e1;"
+		"    color: #94a3b8;"
+		"}"
+	);
+
+	QVBoxLayout* mainLayout = new QVBoxLayout(&dialog);
+	mainLayout->setSpacing(16);
+	mainLayout->setContentsMargins(24, 24, 24, 24);
+
+	QLabel* label = new QLabel(tr("Note:"), &dialog);
+	mainLayout->addWidget(label);
+
+	QTextEdit* textEdit = new QTextEdit(&dialog);
+	textEdit->setPlainText(m_messageData.userNote);
+	textEdit->setPlaceholderText(tr("Enter your note here..."));
+	mainLayout->addWidget(textEdit);
+
+	QHBoxLayout* buttonLayout = new QHBoxLayout();
+	buttonLayout->setSpacing(12);
+	buttonLayout->addStretch();
+
+	QPushButton* cancelButton = new QPushButton(tr("Cancel"), &dialog);
+	QPushButton* okButton = new QPushButton(tr("OK"), &dialog);
+	okButton->setDefault(true);
+
+	buttonLayout->addWidget(cancelButton);
+	buttonLayout->addWidget(okButton);
+	mainLayout->addLayout(buttonLayout);
+
+	QObject::connect(cancelButton, &QPushButton::clicked, &dialog, &QDialog::reject);
+	QObject::connect(okButton, &QPushButton::clicked, &dialog, &QDialog::accept);
+	QObject::connect(textEdit, &QTextEdit::textChanged, [okButton, textEdit]() {
+		// 可以在这里添加验证逻辑
+	});
+
+	// 居中显示对话框
+	dialog.adjustSize();
+	if (QWidget* parentWindow = window())
+	{
+		QPoint parentCenter = parentWindow->geometry().center();
+		QRect dialogRect = dialog.geometry();
+		dialog.move(parentCenter.x() - dialogRect.width() / 2, parentCenter.y() - dialogRect.height() / 2);
+	}
+
+	// 设置焦点到文本编辑框
+	textEdit->setFocus();
+	textEdit->selectAll();
+
+	if (dialog.exec() != QDialog::Accepted)
+	{
+		return;
+	}
+
+	const QString input = textEdit->toPlainText();
+	const QString trimmed = input.trimmed();
+	if (trimmed == m_messageData.userNote)
+	{
+		return;
+	}
+	m_messageData.userNote = trimmed;
+	applyNoteToolTip();
+	update();
+	if (!m_messageData.uniqueID.isEmpty())
+	{
+		emit bubbleNoteChanged(m_messageData.uniqueID, m_messageData.userNote);
+	}
+}
+
+void LLMChatFrame::toggleImportant()
+{
+	m_messageData.isImportant = !m_messageData.isImportant;
+	update();
+	if (!m_messageData.uniqueID.isEmpty())
+	{
+		emit bubbleImportantToggled(m_messageData.uniqueID, m_messageData.isImportant);
+	}
+}
+
+bool LLMChatFrame::exportTextToFile(const QString& content, const QString& dialogTitle, const QString& filter, const QString& suffix)
+{
+	if (content.isEmpty())
+	{
+		QMessageBox::information(this, tr("No Export Content"), tr("The current bubble has no exportable text."));
+		return false;
+	}
+
+	QString defaultDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+	if (defaultDir.isEmpty())
+	{
+		defaultDir = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+	}
+	if (defaultDir.isEmpty())
+	{
+		defaultDir = QStringLiteral(".");
+	}
+	QString suggestedName = buildDefaultFileName(suffix);
+	QString defaultPath = QDir(defaultDir).filePath(suggestedName);
+
+	QString filePath = QFileDialog::getSaveFileName(this, dialogTitle, defaultPath, filter);
+	if (filePath.isEmpty())
+	{
+		return false;
+	}
+
+	QFileInfo info(filePath);
+	if (info.suffix().isEmpty() && !suffix.isEmpty())
+	{
+		filePath += QStringLiteral(".") + suffix;
+	}
+
+	QFile file(filePath);
+	if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		QMessageBox::warning(this, tr("Export Failed"), tr("Cannot write to file: %1").arg(file.errorString()));
+		return false;
+	}
+
+	QTextStream out(&file);
+	out.setCodec("UTF-8");
+	out << content;
+	file.close();
+	return true;
+}
+
+bool LLMChatFrame::exportBubbleAsImage()
+{
+	QPixmap pixmap = this->grab();
+	if (pixmap.isNull())
+	{
+		QMessageBox::warning(this, tr("Export Failed"), tr("Unable to capture the current bubble."));
+		return false;
+	}
+
+	QString defaultDir = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+	if (defaultDir.isEmpty())
+	{
+		defaultDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+	}
+	if (defaultDir.isEmpty())
+	{
+		defaultDir = QStringLiteral(".");
+	}
+	QString defaultPath = QDir(defaultDir).filePath(buildDefaultFileName(QStringLiteral("png")));
+
+	QString filePath = QFileDialog::getSaveFileName(
+		this,
+		tr("Export As Image"),
+		defaultPath,
+		tr("PNG Images (*.png);;JPEG Images (*.jpg *.jpeg);;WebP Images (*.webp)")
+	);
+	if (filePath.isEmpty())
+	{
+		return false;
+	}
+
+	QFileInfo info(filePath);
+	QString chosenSuffix = info.suffix().toLower();
+	if (chosenSuffix.isEmpty())
+	{
+		chosenSuffix = QStringLiteral("png");
+		filePath += QStringLiteral(".png");
+	}
+
+	if (!pixmap.save(filePath, chosenSuffix.toUpper().toUtf8().constData()))
+	{
+		QMessageBox::warning(this, tr("Export Failed"), tr("Unable to save the image file. Please check write permissions."));
+		return false;
+	}
+	return true;
+}
+
+QString LLMChatFrame::buildDefaultFileName(const QString& suffix) const
+{
+	QDateTime timestamp;
+	bool ok = false;
+	const qint64 epoch = m_messageData.time.toLongLong(&ok);
+	if (ok)
+	{
+		timestamp = QDateTime::fromSecsSinceEpoch(epoch);
+	}
+	if (!timestamp.isValid())
+	{
+		timestamp = QDateTime::currentDateTime();
+	}
+	const QString role = (m_UserType == User_Customer)
+		? QStringLiteral("assistant")
+		: (m_UserType == User_Owner ? QStringLiteral("user") : QStringLiteral("system"));
+	const QString baseName = QStringLiteral("%1_%2")
+		.arg(role, timestamp.toString(QStringLiteral("yyyyMMdd_HHmmss")));
+	return suffix.isEmpty() ? baseName : QStringLiteral("%1.%2").arg(baseName, suffix);
 }
 LLMChatFrame::LLMChatFrame(QWidget *parent)
 	: QWidget(parent)
@@ -212,11 +746,11 @@ void LLMChatFrame::initButtons()
 	}
 	// 设置图标和工具提示
 	m_ui.buttons.copyThinking->setIcon(QIcon(":/QtWidgetsApp/ICONs/icon_CopyThink.png"));
-	m_ui.buttons.copyThinking->setToolTip(tr("Copy the reasoning"));
+	m_ui.buttons.copyThinking->setToolTip(tr("Copy Reasoning"));
 	m_ui.buttons.copyAnswer->setIcon(QIcon(":/QtWidgetsApp/ICONs/icon_CopyAnswer.png"));
-	m_ui.buttons.copyAnswer->setToolTip(tr("Copy the answer"));
+	m_ui.buttons.copyAnswer->setToolTip(tr("Copy Answer"));
 	m_ui.buttons.regenerate->setIcon(QIcon(":/QtWidgetsApp/ICONs/icon_Regenerate.png"));
-	m_ui.buttons.regenerate->setToolTip(tr("Regengrate"));
+	m_ui.buttons.regenerate->setToolTip(tr("Regenerate Response"));
 	// 连接信号槽
 	connect(m_ui.buttons.copyThinking.get(), &QPushButton::clicked, this, &LLMChatFrame::onCopyThinkingClicked);
 	connect(m_ui.buttons.copyAnswer.get(), &QPushButton::clicked, this, &LLMChatFrame::onCopyAnswerClicked);
@@ -500,6 +1034,12 @@ void LLMChatFrame::setText(QString text, QString time, QSize allSize, LLMChatFra
 {
 	QString AnswerHtml = markdownToHtml(text);
 	m_messageData.msg = AnswerHtml;
+	m_messageData.rawMsg = AnswerHtml;
+	m_messageData.rawReasoningMsg.clear();
+	m_messageData.reasoningText.clear();
+	m_messageData.isImportant = false;
+	m_messageData.userNote.clear();
+	applyNoteToolTip();
 	m_UserType = userType;
 	m_messageData.time = time;
 	m_messageData.curTime = QDateTime::fromTime_t(time.toInt()).toString("hh:mm");
@@ -526,6 +1066,9 @@ void LLMChatFrame::setTextWithReason(const QString& reasoning, const QString& an
 	m_messageData.time = time;
 	m_messageData.curTime = QDateTime::fromTime_t(time.toInt()).toString("hh:mm");
 	m_layoutData.allSize = allSize;
+	m_messageData.isImportant = false;
+	m_messageData.userNote.clear();
+	applyNoteToolTip();
 	if (userType == User_Customer)
 	{
 		QString ReasoningHtml = markdownToHtml(reasoning);
@@ -542,6 +1085,8 @@ void LLMChatFrame::setTextWithReason(const QString& reasoning, const QString& an
 	else
 	{
 		m_ui.loading.label->hide();
+		m_messageData.rawReasoningMsg.clear();
+		m_messageData.reasoningText.clear();
 	}
 	this->update();
 }
@@ -591,6 +1136,9 @@ void LLMChatFrame::resetForReuse()
 	{
 		m_ui.loading.label->hide();
 	}
+	m_messageData.isImportant = false;
+	m_messageData.userNote.clear();
+	applyNoteToolTip();
 
 	// 重置按钮状态
 	if (m_ui.buttons.copyThinking)
@@ -991,6 +1539,21 @@ void LLMChatFrame::paintEvent(QPaintEvent *event)
 		drawTimeMessage(painter);
 	}
 
+	if (m_UserType == User_Customer || m_UserType == User_Owner)
+	{
+		const QRect& bubbleRect = (m_UserType == User_Customer)
+			? m_layoutData.rects.frameLeft
+			: m_layoutData.rects.frameRight;
+		if (m_messageData.isImportant)
+		{
+			drawImportanceBadge(painter, bubbleRect);
+		}
+		if (!m_messageData.userNote.trimmed().isEmpty())
+		{
+			drawNoteBadge(painter, bubbleRect);
+		}
+	}
+
 	// 清除更新标志
 	m_needsUpdate = false;
 }
@@ -1118,23 +1681,75 @@ void LLMChatFrame::mouseReleaseEvent(QMouseEvent *event)
 }
 void LLMChatFrame::contextMenuEvent(QContextMenuEvent *event)
 {
+	const QPoint localPos = mapFromGlobal(event->globalPos());
+	const bool hasReasoning = !m_messageData.reasoningText.isEmpty();
+	const bool reasoningSection = hasReasoning
+		&& m_layoutData.rects.frameLeftReason.contains(localPos)
+		&& m_UserType == User_Customer;
+
 	QMenu menu(this);
-	QAction* copyAction = menu.addAction(tr("Copy"));
+	QAction* editNoteAction = menu.addAction(tr("Edit Note..."));
+	QAction* toggleImportantAction = menu.addAction(m_messageData.isImportant ? tr("Unmark Important") : tr("Mark As Important"));
+	menu.addSeparator();
+	QMenu* copyMenu = menu.addMenu(tr("Copy"));
+	QAction* copyPlainAction = copyMenu->addAction(tr("Copy Text"));
+	QAction* copyMarkdownAction = copyMenu->addAction(tr("Copy Markdown"));
+	QAction* copyHtmlAction = copyMenu->addAction(tr("Copy HTML"));
+	QMenu* exportMenu = menu.addMenu(tr("Export To File"));
+	QAction* exportImageAction = exportMenu->addAction(tr("Export As Image..."));
+	QAction* exportMarkdownAction = exportMenu->addAction(tr("Export As Markdown..."));
+	QAction* exportHtmlAction = exportMenu->addAction(tr("Export As HTML..."));
+	QAction* exportTextAction = exportMenu->addAction(tr("Export As Text..."));
+
 	QAction* selectedAction = menu.exec(event->globalPos());
-	if (selectedAction == copyAction)
+	if (!selectedAction)
 	{
-		QClipboard *clipboard = QApplication::clipboard();
-		QTextDocument doc;
-		QPoint SelectPoint = this->mapFromGlobal(event->globalPos());
-		if (m_layoutData.rects.frameLeftReason.contains(SelectPoint))
-		{
-			doc.setHtml(m_messageData.reasoningText);
-		}
-		else
-		{
-			doc.setHtml(m_messageData.msg);
-		}
-		QString plainText = doc.toPlainText();
-		clipboard->setText(plainText);
+		return;
+	}
+
+	if (selectedAction == editNoteAction)
+	{
+		handleNoteRequested();
+	}
+	else if (selectedAction == toggleImportantAction)
+	{
+		toggleImportant();
+	}
+	else if (selectedAction == copyPlainAction)
+	{
+		copyToClipboardPlain(reasoningSection);
+	}
+	else if (selectedAction == copyMarkdownAction)
+	{
+		copyToClipboardMarkdown(reasoningSection);
+	}
+	else if (selectedAction == copyHtmlAction)
+	{
+		copyToClipboardHtml(reasoningSection);
+	}
+	else if (selectedAction == exportImageAction)
+	{
+		exportBubbleAsImage();
+	}
+	else if (selectedAction == exportMarkdownAction)
+	{
+		exportTextToFile(buildMarkdownExport(),
+			tr("Export As Markdown"),
+			tr("Markdown Files (*.md)"),
+			QStringLiteral("md"));
+	}
+	else if (selectedAction == exportHtmlAction)
+	{
+		exportTextToFile(buildHtmlExport(),
+			tr("Export As HTML"),
+			tr("HTML Files (*.html *.htm)"),
+			QStringLiteral("html"));
+	}
+	else if (selectedAction == exportTextAction)
+	{
+		exportTextToFile(buildPlainExport(),
+			tr("Export As Text"),
+			tr("Text Files (*.txt)"),
+			QStringLiteral("txt"));
 	}
 }

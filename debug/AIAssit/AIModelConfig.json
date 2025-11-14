@@ -5,11 +5,11 @@
     "chatMode": 0,
     "knowledgeApiKey": "dataset-eMXQPtWnRmhcOB1QycBglXtf",
     "maxToken": 4096,
-    "model": 14,
+    "model": 0,
     "netSearch": false,
-    "openThink": true,
+    "openThink": false,
     "platform": 1,
-    "streamChat": false,
+    "streamChat": true,
     "streamChatIP": "http://172.16.1.58:8080/api/chat/completions",
     "temperature": 0.7
 }

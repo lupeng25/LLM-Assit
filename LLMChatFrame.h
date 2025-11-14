@@ -74,6 +74,10 @@ public:
 	void setTextWithReason(const QString& reasoning, const QString& answer, QString time, QSize allSize, User_Type userType);
 	void setTextSuccess();
 	void setUserType(User_Type auth) { this->m_UserType = auth; };
+	void setImportant(bool important);
+	bool isImportant() const { return m_messageData.isImportant; }
+	void setUserNote(const QString& note);
+	const QString& userNote() const { return m_messageData.userNote; }
 	//框计算
 	QSize fontRect(const QString& str);
 	QSize fontRect(const QString& reasoning, const QString& answer);
@@ -97,10 +101,22 @@ public:
 	void setBubbleID(QString id) { m_messageData.uniqueID = id; };
 	void resetForReuse();
 	void prepareForDeletion();
+	QString buildPlainExport() const;
+	QString buildMarkdownExport() const;
+	QString buildHtmlExport() const;
+	QString htmlToPlainText(const QString& html) const;
+	bool exportTextToFile(const QString& content, const QString& dialogTitle, const QString& filter, const QString& suffix);
+	bool exportBubbleAsImage();
+	QString buildDefaultFileName(const QString& suffix) const;
+	void copyToClipboardPlain(bool reasoningSection);
+	void copyToClipboardMarkdown(bool reasoningSection);
+	void copyToClipboardHtml(bool reasoningSection);
 signals:
 	void copyThinkingClicked();
 	void copyAnswerClicked();
 	void regenerateClicked(QString msg);
+	void bubbleNoteChanged(const QString& bubbleId, const QString& note);
+	void bubbleImportantToggled(const QString& bubbleId, bool isImportant);
 protected:
 	bool event(QEvent* event) override;
 	void paintEvent(QPaintEvent *event) override;
@@ -130,6 +146,12 @@ private:
 	QSize getRealString(const QString& reasoning, const QString& answer);
 	void setTextDocs(QTextDocument& docText, const QString& src, const int& iWidth, const QString& defaultColor = QString());
 	void updateButtonHoverState(QPushButton* button, bool hovered);
+	void refreshLayoutAfterContentChange();
+	void drawImportanceBadge(QPainter& painter, const QRect& bubbleRect);
+	void drawNoteBadge(QPainter& painter, const QRect& bubbleRect);
+	void applyNoteToolTip();
+	void handleNoteRequested();
+	void toggleImportant();
 	int computeTimeExtraHeight() const;
 	void layoutSingleMessage(const QSize& contentSize, int timeExtraHeight);
 	void layoutReasoningMessage(const QSize& reasoningSize, const QSize& answerSize, int timeExtraHeight);
@@ -143,6 +165,8 @@ private:
 		QString time;
 		QString curTime;
 		QString uniqueID;
+		bool isImportant = false;
+		QString userNote;
 	} m_messageData;
 	struct LayoutData
 	{

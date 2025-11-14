@@ -90,6 +90,7 @@ private:
 		const QString& answerHtml, const QString& reasoningHtml, bool markStreamCompleted);
 	//使用最新回答更新对话名
 	QString updateDialogName(const QString& dialogName);
+	void attachBubbleSignals(LLMChatFrame* bubble);
 	// 气泡对象池
 	LLMChatFrame* acquireBubble(QWidget* parent);
 	void releaseBubble(LLMChatFrame* bubble);
@@ -157,4 +158,7 @@ signals:
 	void deleteCurrentConversation();
 	void renameCurrentConversation();
 	void ChangeModel(int iModel);
+    //void onStopGenerationRequested();
+	void onBubbleNoteChanged(const QString& bubbleId, const QString& note);
+	void onBubbleImportantToggled(const QString& bubbleId, bool isImportant);
 };

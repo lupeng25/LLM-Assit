@@ -1,0 +1,94 @@
+{
+    "{0a17cd21-922a-4bd2-9ac0-c9953be3a61b}": {
+        "messages": [
+            {
+                "bubbleid": "{7096b4e8-ecbc-480a-8d51-ba2736b1ffd9}",
+                "dialogname": "New Conversation",
+                "height": 162,
+                "important": false,
+                "msg": "您好",
+                "note": "",
+                "reasoningMsg": "",
+                "time": "1763079155",
+                "userType": 1,
+                "width": 895
+            },
+            {
+                "bubbleid": "{0c6ee306-601c-4dee-ac7d-b1dd53c75b69}",
+                "dialogname": "New Conversation",
+                "height": 411,
+                "important": false,
+                "msg": "",
+                "note": "",
+                "reasoningMsg": "您好！看起来您可能在使用一个AI助手，但您的消息中似乎包含了一些非标准或不完整的输入（如“o_think”）。请问您希望我帮助您做什么？是有关问题咨询、任务协助、还是其他需求？请告诉我您的具体问题，我会尽力为您提供帮助！",
+                "time": "1763079158",
+                "userType": 2,
+                "width": 895
+            },
+            {
+                "bubbleid": "{339b831c-33aa-4873-8d90-71f260b50763}",
+                "dialogname": "New Conversation",
+                "height": 162,
+                "important": false,
+                "msg": "你是谁",
+                "note": "",
+                "reasoningMsg": "",
+                "time": "1763079162",
+                "userType": 1,
+                "width": 895
+            },
+            {
+                "bubbleid": "{a950baea-4d93-4da0-9138-62f48606651f}",
+                "dialogname": "New Conversation",
+                "height": 447,
+                "important": false,
+                "msg": "",
+                "note": "",
+                "reasoningMsg": "我是通义千问（Qwen），阿里巴巴集团旗下的通义实验室自主研发的超大规模语言模型。我的中文名是“通义千问”，英文名是“Qwen”。我能够回答问题、创作文字，比如写故事、写公文、写邮件、写剧本、写诗等，还能进行逻辑推理和编程，以及表达观点和玩游戏等。如果您有任何问题或需要帮助，欢迎随时向我提问！",
+                "time": "1763079163",
+                "userType": 2,
+                "width": 895
+            }
+        ],
+        "saveTime": "2025-11-14T08:12:43"
+    },
+    "{0ac272a1-b9d1-4502-9e6f-af41718ec108}": {
+        "messages": [
+            {
+                "bubbleid": "{1c83880c-5be3-440a-a624-8f59b0e7a42d}",
+                "dialogname": "New Conversation",
+                "height": 162,
+                "important": false,
+                "msg": "<p>更改</p>\n",
+                "note": "",
+                "reasoningMsg": "",
+                "time": "1763078703",
+                "userType": 1,
+                "width": 895
+            },
+            {
+                "bubbleid": "{b03cada9-39ba-4c2e-bd47-7b7ad0f6dca5}",
+                "dialogname": "您好！很高兴见到您。有什...",
+                "height": 527,
+                "important": false,
+                "msg": "\n ### 回答 \n\n您好！很高兴见到您。有什么我可以帮您的吗？",
+                "note": "发给四个",
+                "reasoningMsg": "\n ### 推理 \n嗯，用户发来了“您好”，看起来是想开始对话。首先，我需要确认他们的意图。可能只是礼貌地打招呼，或者有具体的问题需要帮助。我应该友好回应，同时保持开放，以便他们可以进一步说明需求。需要确保回复简洁，避免使用复杂术语，让用户感到亲切。另外，要检查是否有拼写错误或格式问题，但这里看起来没问题。可能用户需要帮助，但不确定具体是什么，所以应该用欢迎语并邀请他们提出问题。还要注意文化差异，确保用词合适。最后，保持专业但友好的语气，让用户感到被重视。\n",
+                "time": "1763078708",
+                "userType": 2,
+                "width": 895
+            }
+        ],
+        "saveTime": "2025-11-14T08:11:55"
+    },
+    "{a2021336-b62c-4cef-9f61-b39d918ab543}": {
+        "messages": [
+        ],
+        "saveTime": "2025-11-14T08:04:52"
+    },
+    "{dc57d42c-4f65-4c01-bb66-d0d029887ae9}": {
+        "messages": [
+        ],
+        "saveTime": "2025-11-14T08:05:31"
+    }
+}

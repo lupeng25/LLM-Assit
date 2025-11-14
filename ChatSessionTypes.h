@@ -16,6 +16,8 @@ struct ChatMessageData {
 	int userType = 1;
 	QString m_DialogName;
 	QString m_BubbleID;
+	bool m_IsImportant = false;
+	QString m_Note;
 
 	ChatMessageData() = default;
 
@@ -25,14 +27,18 @@ struct ChatMessageData {
 		int type,
 		QString dialog,
 		QString reasoning,
-		QString id = QString())
+		QString id = QString(),
+		bool isImportant = false,
+		QString note = QString())
 		: m_ChatMsg(std::move(message))
 		, m_ChatReasonMsg(std::move(reasoning))
 		, m_ChatTime(std::move(time))
 		, m_AllSize(size)
 		, userType(type)
 		, m_DialogName(std::move(dialog))
-		, m_BubbleID(std::move(id)) {}
+		, m_BubbleID(std::move(id))
+		, m_IsImportant(isImportant)
+		, m_Note(std::move(note)) {}
 
 	QJsonObject toJson() const {
 		QJsonObject obj;
@@ -44,6 +50,8 @@ struct ChatMessageData {
 		obj["dialogname"] = m_DialogName;
 		obj["reasoningMsg"] = m_ChatReasonMsg;
 		obj["bubbleid"] = m_BubbleID;
+		obj["important"] = m_IsImportant;
+		obj["note"] = m_Note;
 		return obj;
 	}
 
@@ -55,6 +63,8 @@ struct ChatMessageData {
 		m_DialogName = obj["dialogname"].toString();
 		m_ChatReasonMsg = obj["reasoningMsg"].toString();
 		m_BubbleID = obj["bubbleid"].toString();
+		m_IsImportant = obj.value("important").toBool(false);
+		m_Note = obj.value("note").toString();
 	}
 };
 

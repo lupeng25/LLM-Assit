@@ -3,6 +3,7 @@
 #include <QGraphicsOpacityEffect>
 #include <QEasingCurve>
 #include <QSignalBlocker>
+#include <QTextDocument>
 
 namespace
 {
@@ -13,6 +14,23 @@ namespace
 	constexpr int kTightBreakpoint = 1080;
 	constexpr int kCollapseBreakpoint = 900;
 	constexpr int kResponsiveAnimationDelayMs = 60;
+
+	QString buildDialogTitleSource(const QString& reasoningHtml, const QString& answerHtml)
+	{
+		QTextDocument answerDoc;
+		answerDoc.setHtml(answerHtml);
+		const QString answerPlain = answerDoc.toPlainText().trimmed();
+
+		QTextDocument reasoningDoc;
+		reasoningDoc.setHtml(reasoningHtml);
+		const QString reasoningPlain = reasoningDoc.toPlainText().trimmed();
+
+		if (!reasoningPlain.isEmpty())
+		{
+			return QStringLiteral("\n ### 推理 \n%1\n ### 回答 \n%2").arg(reasoningPlain, answerPlain);
+		}
+		return QStringLiteral("\n ### 回答 \n\n%1").arg(answerPlain);
+	}
 }
 Frm_AIAssit::Frm_AIAssit(QWidget *parent)
 	: QWidget(parent)
@@ -709,6 +727,8 @@ void Frm_AIAssit::onConversationSelected(QListWidgetItem* current, QListWidgetIt
 		userBubble->setTextWithReason(frame.m_ChatReasonMsg, frame.m_ChatMsg,
 			frame.m_ChatTime, textSize, Auth);
 		userBubble->setTextSuccess();
+		userBubble->setImportant(frame.m_IsImportant);
+		userBubble->setUserNote(frame.m_Note);
 		userBubble->setBubbleID(frame.m_BubbleID);
 
 		QSize finalSize = userBubble->getSize();
@@ -823,6 +843,17 @@ QString Frm_AIAssit::updateDialogName(const QString& dialogName)
 	return tempName;
 }
 
+void Frm_AIAssit::attachBubbleSignals(LLMChatFrame* bubble)
+{
+	if (!bubble)
+	{
+		return;
+	}
+	connect(bubble, &LLMChatFrame::regenerateClicked, this, &Frm_AIAssit::AskQuestionAgain, Qt::UniqueConnection);
+	connect(bubble, &LLMChatFrame::bubbleNoteChanged, this, &Frm_AIAssit::onBubbleNoteChanged, Qt::UniqueConnection);
+	connect(bubble, &LLMChatFrame::bubbleImportantToggled, this, &Frm_AIAssit::onBubbleImportantToggled, Qt::UniqueConnection);
+}
+
 LLMChatFrame* Frm_AIAssit::acquireBubble(QWidget* parent)
 {
 	QWidget* targetParent = parent;
@@ -835,7 +866,7 @@ LLMChatFrame* Frm_AIAssit::acquireBubble(QWidget* parent)
 	{
 		LLMChatFrame* bubble = new LLMChatFrame(targetParent);
 		bubble->setAttribute(Qt::WA_DeleteOnClose, false);
-		connect(bubble, &LLMChatFrame::regenerateClicked, this, &Frm_AIAssit::AskQuestionAgain, Qt::UniqueConnection);
+		attachBubbleSignals(bubble);
 		return bubble;
 	}
 
@@ -853,14 +884,14 @@ LLMChatFrame* Frm_AIAssit::acquireBubble(QWidget* parent)
 				bubble->setParent(targetParent);
 			}
 			bubble->show();
-			connect(bubble, &LLMChatFrame::regenerateClicked, this, &Frm_AIAssit::AskQuestionAgain, Qt::UniqueConnection);
+			attachBubbleSignals(bubble);
 			return bubble;
 		}
 	}
 
 	LLMChatFrame* bubble = new LLMChatFrame(targetParent);
 	bubble->setAttribute(Qt::WA_DeleteOnClose, false);
-	connect(bubble, &LLMChatFrame::regenerateClicked, this, &Frm_AIAssit::AskQuestionAgain, Qt::UniqueConnection);
+	attachBubbleSignals(bubble);
 	return bubble;
 }
 
@@ -1121,7 +1152,9 @@ void Frm_AIAssit::finalizeLatestBubble(LLMChatFrame* bubble, QListWidgetItem* it
 		LLMChatFrame::User_Customer,
 		dialogName,
 		reasoningHtml,
-		bubble->getBubbleID());
+		bubble->getBubbleID(),
+		bubble->isImportant(),
+		bubble->userNote());
 	if (ChatSession* session = currentSession()) {
 		session->sMsg.append(singleMsg);
 		session->SaveTime = QDateTime::currentDateTime();
@@ -1192,6 +1225,46 @@ void Frm_AIAssit::UpAllFilesToHost(const QString& files)
 		return;
 	}
 	LLMClient->uploadFile(files);
+}
+
+void Frm_AIAssit::onBubbleNoteChanged(const QString& bubbleId, const QString& note)
+{
+	if (bubbleId.isEmpty())
+	{
+		return;
+	}
+	if (ChatSession* session = currentSession())
+	{
+		for (auto& msg : session->sMsg)
+		{
+			if (msg.m_BubbleID == bubbleId)
+			{
+				msg.m_Note = note;
+				session->SaveTime = QDateTime::currentDateTime();
+				break;
+			}
+		}
+	}
+}
+
+void Frm_AIAssit::onBubbleImportantToggled(const QString& bubbleId, bool isImportant)
+{
+	if (bubbleId.isEmpty())
+	{
+		return;
+	}
+	if (ChatSession* session = currentSession())
+	{
+		for (auto& msg : session->sMsg)
+		{
+			if (msg.m_BubbleID == bubbleId)
+			{
+				msg.m_IsImportant = isImportant;
+				session->SaveTime = QDateTime::currentDateTime();
+				break;
+			}
+		}
+	}
 }
 
 void Frm_AIAssit::onConnectionCheckFailed(const QString& errorMessage)

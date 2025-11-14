@@ -1,3 +1,0 @@
-E:/code/AIAssit/build/CMakeFiles/AIAssit.dir
-E:/code/AIAssit/build/CMakeFiles/ALL_BUILD.dir
-E:/code/AIAssit/build/CMakeFiles/ZERO_CHECK.dir

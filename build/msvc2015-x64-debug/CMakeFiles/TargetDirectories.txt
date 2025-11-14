@@ -1,3 +1,0 @@
-E:/code/AIAssit/build/msvc2015-x64-debug/CMakeFiles/AIAssit.dir
-E:/code/AIAssit/build/msvc2015-x64-debug/CMakeFiles/ALL_BUILD.dir
-E:/code/AIAssit/build/msvc2015-x64-debug/CMakeFiles/ZERO_CHECK.dir

@@ -32,8 +32,11 @@ class Frm_AIAssit : public QWidget
 {
 	Q_OBJECT
 public:
+	// 构造函数
 	Frm_AIAssit(QWidget *parent = Q_NULLPTR);
+	// 析构函数
 	~Frm_AIAssit();
+	// 设置LLM命令执行函数
 	void SetLLMCommandFunction(std::function<QString(QString)> function);
 	public slots:
 	// 显示服务器返回的答案 
@@ -43,6 +46,7 @@ public:
 	//获取最新的提问内容
 	void AskQuestionAgain(QString msg);
 protected:
+	// 窗口大小改变事件处理
 	void resizeEvent(QResizeEvent *event) override;
 	private slots:
 	// 发送消息按钮点击事件处理 
@@ -60,8 +64,11 @@ private:
 	void recalculateVisibleBubbles();
 	//UI初始化
 	void initUI();
+	// 应用响应式布局
 	void applyResponsiveLayout(int windowWidth);
+	// 设置侧边栏可见性
 	void setSidebarVisible(bool visible, bool animated = true, bool triggeredByResponsive = false);
+	// 更新侧边栏宽度
 	void updateSidebarWidth(int windowWidth);
 	//参数初始化
 	void initParams();
@@ -85,11 +92,14 @@ private:
 	void addChatBubble(const QString& text, bool bIsUser);
 	//重新计算所有对话气泡
 	void recalculateAllChatBubbles();
+	// 刷新气泡大小
 	void refreshBubbleSize(LLMChatFrame* bubble, QListWidgetItem* item, const QString& conversationId = QString());
+	// 完成最新气泡的最终化处理
 	void finalizeLatestBubble(LLMChatFrame* bubble, QListWidgetItem* item, const QString& dialogName,
 		const QString& answerHtml, const QString& reasoningHtml, bool markStreamCompleted);
-	//使用最新回答更新对话名
+	// 使用最新回答更新对话名
 	QString updateDialogName(const QString& dialogName);
+	// 连接气泡信号
 	void attachBubbleSignals(LLMChatFrame* bubble);
 	// 气泡对象池
 	LLMChatFrame* acquireBubble(QWidget* parent);
@@ -134,13 +144,21 @@ private:
 	QWidget* m_bubblePoolHost = nullptr;
 	static constexpr int kBubblePoolMaxSize = 64;
 	bool m_enableBubblePool = false;
+	// 获取当前会话（非const版本）
 	ChatSession* currentSession();
+	// 获取当前会话（const版本）
 	const ChatSession* currentSession() const;
+	// 获取会话映射（非const版本）
 	ChatSessionMap& sessionMap();
+	// 获取会话映射（const版本）
 	const ChatSessionMap& sessionMap() const;
+	// 附加到客户端
 	void attachToClient(MessageManager* client);
+	// 构建会话的Markdown格式内容
 	QString buildConversationMarkdown(const ChatSession& session) const;
+	// 构建会话的HTML格式内容
 	QString buildConversationHtml(const ChatSession& session) const;
+	// 构建会话的纯文本格式内容
 	QString buildConversationPlainText(const ChatSession& session) const;
 	using sSingleMsg = ChatMessageData;
 	using sMsgList = ChatSession;
@@ -154,15 +172,26 @@ signals:
 	//发出流式信号
 	void AnswerStream(const QString& word);
 	private slots:
+	// 连接检查失败处理
 	void onConnectionCheckFailed(const QString& errorMessage);
+	// 连接检查成功处理
 	void onConnectionCheckSucceeded();
+	// 模型获取失败处理
 	void onModelsFetchFailed(const QString& errorMessage);
+	// 客户端管理器错误处理
 	void onClientManagerError(const QString& context, const QString& errorMessage);
+	// 删除当前对话
 	void deleteCurrentConversation();
+	// 重命名当前对话
 	void renameCurrentConversation();
+	// 更改模型
 	void ChangeModel(int iModel);
+	// 气泡笔记改变处理
 	void onBubbleNoteChanged(const QString& bubbleId, const QString& note);
+	// 气泡重要性切换处理
 	void onBubbleImportantToggled(const QString& bubbleId, bool isImportant);
+	// 导出对话请求处理
 	void onExportConversationRequested(const QString& conversationId, const QString& format);
+	// 显示详情请求处理
 	void onShowDetailsRequested(const QString& conversationId);
 };

@@ -16,7 +16,9 @@ class ChatShowWidget : public QWidget
 {
 	Q_OBJECT
 public:
+	// 构造函数
 	explicit ChatShowWidget(QWidget *parent = nullptr);
+	// 析构函数
 	~ChatShowWidget();
 	// 获取组件的访问器
 	QLabel* getChatTitle() const { return chatTitle; }
@@ -27,30 +29,43 @@ public:
 	void setChatTitle(const QString& title);
 	// 设置切换按钮图标
 	void setToggleIcon(const QIcon& icon);
-	// 设置信号槽
+	// 设置信号槽连接
 	void connectSignals();
-	//空状态管理
+	// 空状态管理
+	// 更新空状态
 	void updateEmptyState();
+	// 显示空状态
 	void showEmptyState();
+	// 隐藏空状态
 	void hideEmptyState();
 
 signals:
+	// 切换按钮点击信号
 	void toggleButtonClicked();
+	// 参数设置按钮点击信号
 	void paramSetButtonClicked();
 
 protected:
+	// 大小改变事件
 	void resizeEvent(QResizeEvent* event) override;
 
-private slots:
+	private slots:
+	// 切换按钮点击处理
 	void onToggleButtonClicked();
+	// 参数设置按钮点击处理
 	void onParamSetButtonClicked();
+	// 向上按钮点击处理
 	void onUpButtonClicked();
+	// 向下按钮点击处理
 	void onDownButtonClicked();
+	// 滚动位置改变处理
 	void onScrollPositionChanged();
 
 private:
+	// 设置UI
 	void setupUI();
-	void setupEmptyStateWidget(); 
+	// 设置空状态组件
+	void setupEmptyStateWidget();
 	 // UI组件
 	QVBoxLayout* mainLayout;
 	QWidget* headerWidget;

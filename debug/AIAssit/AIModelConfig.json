@@ -7,7 +7,7 @@
     "maxToken": 4096,
     "model": 0,
     "netSearch": false,
-    "openThink": false,
+    "openThink": true,
     "platform": 1,
     "streamChat": true,
     "streamChatIP": "http://172.16.1.58:8080/api/chat/completions",

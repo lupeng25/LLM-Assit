@@ -4,6 +4,21 @@
 #include <QEasingCurve>
 #include <QSignalBlocker>
 #include <QTextDocument>
+#include <QFileDialog>
+#include <QTextStream>
+#include <QStandardPaths>
+#include <QDir>
+#include <QMessageBox>
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QPushButton>
+#include <QDateTime>
+#include <QFileInfo>
+#include <QApplication>
+#include <algorithm>
+#include "include\cmark\cmark.h"
 
 namespace
 {
@@ -99,6 +114,8 @@ void Frm_AIAssit::setupSignals()
 	connect(ui.ChatListWidget, &ChatList::conversationChanged, this, &Frm_AIAssit::onConversationSelected);
 	connect(ui.ChatListWidget, &ChatList::renameRequested, this, &Frm_AIAssit::renameCurrentConversation);
 	connect(ui.ChatListWidget, &ChatList::deleteRequested, this, &Frm_AIAssit::deleteCurrentConversation);
+	connect(ui.ChatListWidget, &ChatList::exportConversationRequested, this, &Frm_AIAssit::onExportConversationRequested);
+	connect(ui.ChatListWidget, &ChatList::showDetailsRequested, this, &Frm_AIAssit::onShowDetailsRequested);
 
 	// 连接LLMClient的信号（需要在LLMClient创建后调用setupLLMClientSignals()）
 	if (LLMClient) {
@@ -1319,6 +1336,376 @@ ChatSessionMap& Frm_AIAssit::sessionMap() {
 const ChatSessionMap& Frm_AIAssit::sessionMap() const {
 	static ChatSessionMap empty;
 	return m_chatSessionService ? m_chatSessionService->sessions() : empty;
+}
+
+void Frm_AIAssit::onExportConversationRequested(const QString& conversationId, const QString& format)
+{
+	if (conversationId.isEmpty() || !m_chatSessionService)
+	{
+		return;
+	}
+
+	const ChatSession* session = m_chatSessionService->session(conversationId);
+	if (!session || session->sMsg.isEmpty())
+	{
+		QMessageBox::information(this, tr("No Export Content"), tr("This conversation has no messages to export."));
+		return;
+	}
+
+	// 构建导出内容
+	QString content;
+	QString filter;
+	QString suffix;
+	QString dialogTitle;
+
+	if (format == QStringLiteral("markdown"))
+	{
+		content = buildConversationMarkdown(*session);
+		filter = tr("Markdown Files (*.md)");
+		suffix = QStringLiteral("md");
+		dialogTitle = tr("Export As Markdown");
+	}
+	else if (format == QStringLiteral("html"))
+	{
+		content = buildConversationHtml(*session);
+		filter = tr("HTML Files (*.html *.htm)");
+		suffix = QStringLiteral("html");
+		dialogTitle = tr("Export As HTML");
+	}
+	else // text
+	{
+		content = buildConversationPlainText(*session);
+		filter = tr("Text Files (*.txt)");
+		suffix = QStringLiteral("txt");
+		dialogTitle = tr("Export As Text");
+	}
+
+	if (content.isEmpty())
+	{
+		QMessageBox::information(this, tr("No Export Content"), tr("The conversation has no exportable content."));
+		return;
+	}
+
+	// 选择保存位置
+	QString defaultDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+	if (defaultDir.isEmpty())
+	{
+		defaultDir = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+	}
+	if (defaultDir.isEmpty())
+	{
+		defaultDir = QStringLiteral(".");
+	}
+
+	QString defaultName = QStringLiteral("conversation_%1.%2")
+		.arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd_hhmmss")), suffix);
+	QString defaultPath = QDir(defaultDir).filePath(defaultName);
+
+	QString filePath = QFileDialog::getSaveFileName(this, dialogTitle, defaultPath, filter);
+	if (filePath.isEmpty())
+	{
+		return;
+	}
+
+	QFileInfo info(filePath);
+	if (info.suffix().isEmpty() && !suffix.isEmpty())
+	{
+		filePath += QStringLiteral(".") + suffix;
+	}
+
+	QFile file(filePath);
+	if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		QMessageBox::warning(this, tr("Export Failed"), tr("Failed to save file: %1").arg(file.errorString()));
+		return;
+	}
+
+	QTextStream stream(&file);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+	stream.setEncoding(QStringConverter::Utf8);
+#else
+	stream.setCodec("UTF-8");
+#endif
+	stream << content;
+	file.close();
+
+	QMessageBox::information(this, tr("Export Success"), tr("Conversation exported successfully to:\n%1").arg(filePath));
+}
+
+void Frm_AIAssit::onShowDetailsRequested(const QString& conversationId)
+{
+	if (conversationId.isEmpty() || !m_chatSessionService)
+	{
+		return;
+	}
+
+	const ChatSession* session = m_chatSessionService->session(conversationId);
+	if (!session)
+	{
+		return;
+	}
+
+	QDialog dialog(this);
+	dialog.setWindowTitle(tr("Conversation Details"));
+	dialog.setModal(true);
+	dialog.setWindowFlags(Qt::Dialog | Qt::WindowTitleHint | Qt::WindowCloseButtonHint);
+	dialog.setAttribute(Qt::WA_DeleteOnClose, false);
+
+	// 应用与软件整体风格一致的样式
+	dialog.setStyleSheet(
+		"QDialog {"
+		"    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,"
+		"        stop:0 #eef2ff, stop:1 #e0f2fe);"
+		"    border-radius: 12px;"
+		"    font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;"
+		"}"
+		"QLabel {"
+		"    color: #1e293b;"
+		"    font-size: 14px;"
+		"    background: transparent;"
+		"}"
+		"QLabel[objectName='titleLabel'] {"
+		"    font-weight: 600;"
+		"    font-size: 16px;"
+		"    padding: 8px 0px;"
+		"}"
+		"QLabel[objectName='valueLabel'] {"
+		"    color: #475569;"
+		"    padding: 4px 0px;"
+		"}"
+		"QPushButton {"
+		"    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+		"        stop:0 #3b82f6, stop:1 #1d4ed8);"
+		"    border: none;"
+		"    color: white;"
+		"    padding: 10px 24px;"
+		"    border-radius: 8px;"
+		"    font-weight: 600;"
+		"    font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;"
+		"    font-size: 14px;"
+		"    min-width: 90px;"
+		"    min-height: 36px;"
+		"}"
+		"QPushButton:hover {"
+		"    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+		"        stop:0 #60a5fa, stop:1 #3b82f6);"
+		"}"
+		"QPushButton:pressed {"
+		"    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+		"        stop:0 #1d4ed8, stop:1 #1e40af);"
+		"}"
+	);
+
+	QVBoxLayout* mainLayout = new QVBoxLayout(&dialog);
+	mainLayout->setSpacing(16);
+	mainLayout->setContentsMargins(24, 24, 24, 24);
+	dialog.setLayout(mainLayout);
+
+	// 计算统计信息
+	int totalMessages = session->sMsg.size();
+	int userMessages = 0;
+	int aiMessages = 0;
+	qint64 totalChars = 0;
+	for (const auto& msg : session->sMsg)
+	{
+		QTextDocument doc;
+		doc.setHtml(msg.m_ChatMsg);
+		const int msgLength = doc.toPlainText().length();
+		totalChars += msgLength;
+		if (msg.userType == 1) // User_Customer
+		{
+			userMessages++;
+		}
+		else
+		{
+			aiMessages++;
+		}
+	}
+
+	// 创建详情标签
+	auto addDetailRow = [&mainLayout, &dialog](const QString& title, const QString& value) {
+		QLabel* titleLabel = new QLabel(title + QStringLiteral(":"), &dialog);
+		titleLabel->setObjectName(QStringLiteral("titleLabel"));
+		mainLayout->addWidget(titleLabel);
+
+		QLabel* valueLabel = new QLabel(value, &dialog);
+		valueLabel->setObjectName(QStringLiteral("valueLabel"));
+		valueLabel->setWordWrap(true);
+		mainLayout->addWidget(valueLabel);
+		mainLayout->addSpacing(8);
+	};
+
+	addDetailRow(tr("Conversation ID"), conversationId);
+	addDetailRow(tr("Created Time"), session->SaveTime.toString(QStringLiteral("yyyy-MM-dd hh:mm:ss")));
+	addDetailRow(tr("Last Modified"), session->SaveTime.toString(QStringLiteral("yyyy-MM-dd hh:mm:ss")));
+	addDetailRow(tr("Total Messages"), QString::number(totalMessages));
+	addDetailRow(tr("User Messages"), QString::number(userMessages));
+	addDetailRow(tr("AI Messages"), QString::number(aiMessages));
+	addDetailRow(tr("Total Characters"), QString::number(totalChars));
+
+	mainLayout->addStretch();
+
+	QHBoxLayout* buttonLayout = new QHBoxLayout();
+	buttonLayout->setSpacing(12);
+	buttonLayout->addStretch();
+
+	QPushButton* closeButton = new QPushButton(tr("Close"), &dialog);
+	closeButton->setDefault(true);
+	buttonLayout->addWidget(closeButton);
+	mainLayout->addLayout(buttonLayout);
+
+	QObject::connect(closeButton, &QPushButton::clicked, &dialog, &QDialog::accept);
+
+	// 调整大小并居中显示对话框
+	dialog.adjustSize();
+	dialog.resize(dialog.sizeHint().expandedTo(QSize(500, 400)));
+	
+	// 强制更新布局
+	mainLayout->activate();
+	dialog.updateGeometry();
+	
+	if (QWidget* parentWindow = window())
+	{
+		QPoint parentCenter = parentWindow->geometry().center();
+		QRect dialogRect = dialog.geometry();
+		dialog.move(parentCenter.x() - dialogRect.width() / 2, parentCenter.y() - dialogRect.height() / 2);
+	}
+
+	// 确保对话框在显示前完全布局
+	dialog.show();
+	QApplication::processEvents();
+	dialog.hide();
+	
+	dialog.exec();
+}
+
+QString Frm_AIAssit::buildConversationMarkdown(const ChatSession& session) const
+{
+	QStringList lines;
+	lines << QStringLiteral("# Conversation Export");
+	lines << QString();
+	lines << QStringLiteral("**Created:** ") + session.SaveTime.toString(QStringLiteral("yyyy-MM-dd hh:mm:ss"));
+	lines << QString();
+
+	for (const auto& msg : session.sMsg)
+	{
+		QTextDocument doc;
+		doc.setHtml(msg.m_ChatMsg);
+		QString plainText = doc.toPlainText().trimmed();
+
+		QTextDocument reasonDoc;
+		reasonDoc.setHtml(msg.m_ChatReasonMsg);
+		QString reasonPlain = reasonDoc.toPlainText().trimmed();
+
+		if (msg.userType == 1) // User_Customer
+		{
+			lines << QStringLiteral("## User");
+			if (!reasonPlain.isEmpty())
+			{
+				lines << QStringLiteral("### Thinking");
+				lines << reasonPlain;
+				lines << QString();
+			}
+			lines << plainText;
+		}
+		else
+		{
+			lines << QStringLiteral("## Assistant");
+			if (!reasonPlain.isEmpty())
+			{
+				lines << QStringLiteral("### Thinking");
+				lines << reasonPlain;
+				lines << QString();
+			}
+			lines << plainText;
+		}
+		lines << QString();
+		lines << QStringLiteral("---");
+		lines << QString();
+	}
+
+	return lines.join(QStringLiteral("\n"));
+}
+
+QString Frm_AIAssit::buildConversationHtml(const ChatSession& session) const
+{
+	QString html = QStringLiteral("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n");
+	html += QStringLiteral("<title>Conversation Export</title>\n");
+	html += QStringLiteral("<style>body{font-family:'Microsoft YaHei UI','Segoe UI',sans-serif;max-width:800px;margin:0 auto;padding:20px;line-height:1.6;}</style>\n");
+	html += QStringLiteral("</head>\n<body>\n");
+	html += QStringLiteral("<h1>Conversation Export</h1>\n");
+	html += QStringLiteral("<p><strong>Created:</strong> ") + session.SaveTime.toString(QStringLiteral("yyyy-MM-dd hh:mm:ss")) + QStringLiteral("</p>\n<hr>\n");
+
+	for (const auto& msg : session.sMsg)
+	{
+		html += QStringLiteral("<div style=\"margin:20px 0;\">\n");
+		if (msg.userType == 1) // User_Customer
+		{
+			html += QStringLiteral("<h2>User</h2>\n");
+		}
+		else
+		{
+			html += QStringLiteral("<h2>Assistant</h2>\n");
+		}
+
+		if (!msg.m_ChatReasonMsg.isEmpty())
+		{
+			html += QStringLiteral("<h3>Thinking</h3>\n");
+			html += msg.m_ChatReasonMsg;
+			html += QStringLiteral("\n");
+		}
+
+		html += msg.m_ChatMsg;
+		html += QStringLiteral("\n</div>\n<hr>\n");
+	}
+
+	html += QStringLiteral("</body>\n</html>");
+	return html;
+}
+
+QString Frm_AIAssit::buildConversationPlainText(const ChatSession& session) const
+{
+	QStringList lines;
+	lines << QStringLiteral("Conversation Export");
+	lines << QString();
+	lines << QStringLiteral("Created: ") + session.SaveTime.toString(QStringLiteral("yyyy-MM-dd hh:mm:ss"));
+	lines << QString();
+	lines << QString(50, QChar('='));
+	lines << QString();
+
+	for (const auto& msg : session.sMsg)
+	{
+		QTextDocument doc;
+		doc.setHtml(msg.m_ChatMsg);
+		QString plainText = doc.toPlainText().trimmed();
+
+		QTextDocument reasonDoc;
+		reasonDoc.setHtml(msg.m_ChatReasonMsg);
+		QString reasonPlain = reasonDoc.toPlainText().trimmed();
+
+		if (msg.userType == 1) // User_Customer
+		{
+			lines << QStringLiteral("User:");
+			if (!reasonPlain.isEmpty())
+			{
+				lines << QStringLiteral("Thinking:") + reasonPlain;
+			}
+		}
+		else
+		{
+			lines << QStringLiteral("Assistant:");
+			if (!reasonPlain.isEmpty())
+			{
+				lines << QStringLiteral("Thinking:") + reasonPlain;
+			}
+		}
+		lines << plainText;
+		lines << QString();
+		lines << QString(50, QChar('-'));
+		lines << QString();
+	}
+
+	return lines.join(QStringLiteral("\n"));
 }
 
 void Frm_AIAssit::attachToClient(MessageManager* client) {

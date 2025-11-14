@@ -50,6 +50,8 @@ signals:
 	void contextMenuRequested(const QPoint& pos);
 	void renameRequested();
 	void deleteRequested();
+	void exportConversationRequested(const QString& conversationId, const QString& format);
+	void showDetailsRequested(const QString& conversationId);
 
 	private slots:
 	void onNewConversationClicked();

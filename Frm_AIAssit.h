@@ -139,6 +139,9 @@ private:
 	ChatSessionMap& sessionMap();
 	const ChatSessionMap& sessionMap() const;
 	void attachToClient(MessageManager* client);
+	QString buildConversationMarkdown(const ChatSession& session) const;
+	QString buildConversationHtml(const ChatSession& session) const;
+	QString buildConversationPlainText(const ChatSession& session) const;
 	using sSingleMsg = ChatMessageData;
 	using sMsgList = ChatSession;
 signals:
@@ -158,7 +161,8 @@ signals:
 	void deleteCurrentConversation();
 	void renameCurrentConversation();
 	void ChangeModel(int iModel);
-    //void onStopGenerationRequested();
 	void onBubbleNoteChanged(const QString& bubbleId, const QString& note);
 	void onBubbleImportantToggled(const QString& bubbleId, bool isImportant);
+	void onExportConversationRequested(const QString& conversationId, const QString& format);
+	void onShowDetailsRequested(const QString& conversationId);
 };

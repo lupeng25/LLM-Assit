@@ -6,6 +6,11 @@
 #include <QPainterPath>
 #include <QApplication>
 #include <QStyleOptionViewItem>
+#include <QFileDialog>
+#include <QTextStream>
+#include <QStandardPaths>
+#include <QDir>
+#include <QMessageBox>
 
 namespace
 {
@@ -344,32 +349,82 @@ void ChatList::showContextMenu(const QPoint& pos)
 	QListWidgetItem* item = m_conversationList->itemAt(pos);
 	if (!item) return;
 
+	const QString conversationId = item->data(IdRole).toString();
+
 	QMenu contextMenu(this);
+	// 美化右键菜单，与整体 UI 风格一致
 	contextMenu.setStyleSheet(R"(
         QMenu {
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid rgba(102, 126, 234, 0.3);
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(203, 213, 225, 0.8);
             border-radius: 8px;
-            padding: 4px;
+            padding: 6px;
+            font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+            font-size: 14px;
         }
         QMenu::item {
-            padding: 8px 16px;
-            border-radius: 4px;
-            color: #555;
+            padding: 10px 20px;
+            border-radius: 6px;
+            color: #1e293b;
+            min-width: 160px;
         }
         QMenu::item:selected {
-            background: rgba(102, 126, 234, 0.15);
-            color: #667eea;
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+        }
+        QMenu::item:disabled {
+            color: #94a3b8;
+        }
+        QMenu::separator {
+            height: 1px;
+            background: rgba(226, 232, 240, 0.8);
+            margin: 4px 8px;
         }
     )");
 
 	QAction* renameAction = contextMenu.addAction(tr("Rename"));
+	contextMenu.addSeparator();
+	
+	QMenu* exportMenu = contextMenu.addMenu(tr("Export Conversation"));
+	QAction* exportMarkdownAction = exportMenu->addAction(tr("Export As Markdown..."));
+	QAction* exportHtmlAction = exportMenu->addAction(tr("Export As HTML..."));
+	QAction* exportTextAction = exportMenu->addAction(tr("Export As Text..."));
+	
+	contextMenu.addSeparator();
+	QAction* showDetailsAction = contextMenu.addAction(tr("Show Details"));
+	contextMenu.addSeparator();
 	QAction* deleteAction = contextMenu.addAction(tr("Delete Chat"));
 
-	connect(renameAction, &QAction::triggered, this, &ChatList::renameRequested);
-	connect(deleteAction, &QAction::triggered, this, &ChatList::deleteRequested);
+	QAction* selectedAction = contextMenu.exec(m_conversationList->mapToGlobal(pos));
+	if (!selectedAction)
+	{
+		return;
+	}
 
-	contextMenu.exec(m_conversationList->mapToGlobal(pos));
+	if (selectedAction == renameAction)
+	{
+		emit renameRequested();
+	}
+	else if (selectedAction == exportMarkdownAction)
+	{
+		emit exportConversationRequested(conversationId, QStringLiteral("markdown"));
+	}
+	else if (selectedAction == exportHtmlAction)
+	{
+		emit exportConversationRequested(conversationId, QStringLiteral("html"));
+	}
+	else if (selectedAction == exportTextAction)
+	{
+		emit exportConversationRequested(conversationId, QStringLiteral("text"));
+	}
+	else if (selectedAction == showDetailsAction)
+	{
+		emit showDetailsRequested(conversationId);
+	}
+	else if (selectedAction == deleteAction)
+	{
+		emit deleteRequested();
+	}
 
 	emit contextMenuRequested(pos);
 }

@@ -25,6 +25,8 @@
 #include <QImageReader>
 #include <QDragEnterEvent>
 #include <QGraphicsDropShadowEffect>
+#include "PromptLibrary.h"
+#include "PromptLibraryDialog.h"
 
 //输入信息:文本，图片，文件
 struct ChatSendMessage
@@ -56,6 +58,8 @@ public:
 	void onSelectKnowledgeBaseClicked(std::map<QString, std::pair<QString, QString>> knowBase);
 	// 更新知识库菜单
 	void updateKnowledgeBaseMenu();
+	// 设置提示词库
+	void setPromptLibrary(PromptLibrary* library);
 
 signals:
 	// 发送信息信号
@@ -80,6 +84,10 @@ private slots:
 	void onAddFileClicked();
 	// 知识库子项点击处理
 	void onKnowledgeBaseItemClicked();
+	// 提示词库按钮点击处理
+	void onPromptLibraryClicked();
+	// 提示词已选择处理
+	void onPromptSelected(const QString& content);
 
 private:
 	//文件类型
@@ -134,6 +142,8 @@ private:
 	QMenu *attachMenu;//附件菜单
 	QAction *addFileAction;//添加文件动作
 	QAction *selectKnowledgeBaseAction;//选择知识库动作
+	QAction *promptLibraryAction;//提示词库动作
+	QPushButton *promptLibraryButton;//提示词库按钮
     //布局
 	QGridLayout *mainGridLayout;
 	QHBoxLayout *bottomGridLayout;
@@ -153,6 +163,9 @@ private:
 	QMenu *knowledgeBaseMenu;           // 知识库子菜单
 	QList<QAction*> knowledgeBaseActions; // 知识库动作列表
 	std::map<QString, std::pair<QString,QString>>  knowledgeBaseList;      // 知识库名称列表
+
+	PromptLibrary* m_promptLibrary;     // 提示词库对象
+	PromptLibraryDialog* m_promptDialog;// 提示词库对话框
 
 signals:
 	// 文件初始化完成信号

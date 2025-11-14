@@ -8,7 +8,9 @@ SOURCES += \
     $$files($$PWD/*.cpp, true)
 
 HEADERS += \
-    $$files($$PWD/*.h, true)
+    $$files($$PWD/*.h, true) \
+    PromptLibrary.h \
+    PromptLibraryDialog.h
 
 FORMS += \
     $$files($$PWD/*.ui, true)

@@ -1,6 +1,7 @@
 ﻿#include "ChatInputWidget.h"
 #include <QApplication>
 #include <QDebug>
+#include <QIcon>
 
 ChatInputWidget::ChatInputWidget(QWidget *parent)
 	: QWidget(parent)
@@ -19,7 +20,11 @@ ChatInputWidget::ChatInputWidget(QWidget *parent)
 	, attachMenu(nullptr)
 	, addFileAction(nullptr)
 	, selectKnowledgeBaseAction(nullptr)
+	, promptLibraryAction(nullptr)
+	, promptLibraryButton(nullptr)
 	, knowledgeBaseMenu(nullptr)
+	, m_promptLibrary(nullptr)
+	, m_promptDialog(nullptr)
 {
 	setupUI();
 	setupStyles();
@@ -77,6 +82,16 @@ void ChatInputWidget::setupUI()
 	selectKnowledgeBaseAction->setMenu(knowledgeBaseMenu);
 	attachMenu->addAction(addFileAction);
 	attachMenu->addAction(selectKnowledgeBaseAction);
+	attachMenu->addSeparator();
+	promptLibraryAction = new QAction(tr("Prompt Library"), this);
+	attachMenu->addAction(promptLibraryAction);
+
+	// 创建提示词库按钮
+	promptLibraryButton = new QPushButton(tr("📝"), bottomWidget);
+	promptLibraryButton->setObjectName("promptLibraryButton");
+	promptLibraryButton->setToolTip(tr("Prompt Library"));
+	promptLibraryButton->setFixedSize(40, 40);
+	promptLibraryButton->setCursor(Qt::PointingHandCursor);
 
 	optionsComboBox = new QComboBox(bottomWidget);
 	optionsComboBox->setToolTip(tr("Select AI Model"));
@@ -130,6 +145,7 @@ void ChatInputWidget::setupUI()
 	bottomGridLayout->setContentsMargins(0, 0, 0, 0);
 
 	bottomGridLayout->addWidget(attachButton);
+	bottomGridLayout->addWidget(promptLibraryButton);
 	bottomGridLayout->addWidget(optionsComboBox);
 	bottomGridLayout->addItem(horizontalSpacer);
 	bottomGridLayout->addWidget(imageScrollArea);
@@ -143,6 +159,8 @@ void ChatInputWidget::setConnect()
 	connect(sendButton, &QPushButton::clicked, this, &ChatInputWidget::onSendButtonClicked);
 	connect(optionsComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ChatInputWidget::onOptionChanged);
 	connect(addFileAction, &QAction::triggered, this, &ChatInputWidget::onAddFileClicked);
+	connect(promptLibraryAction, &QAction::triggered, this, &ChatInputWidget::onPromptLibraryClicked);
+	connect(promptLibraryButton, &QPushButton::clicked, this, &ChatInputWidget::onPromptLibraryClicked);
 }
 
 void ChatInputWidget::onSendButtonClicked()
@@ -630,6 +648,21 @@ void ChatInputWidget::setupStyles()
 		"background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
 		"stop:0 #a9b9ba, stop:1 #95a5a6);"
 		"}"
+		"QPushButton#promptLibraryButton {"
+		"background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+		"stop:0 #9b59b6, stop:1 #8e44ad);"
+		"color: white;"
+		"font-size: 16px;"
+		"border-radius: 6px;"
+		"}"
+		"QPushButton#promptLibraryButton:hover {"
+		"background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+		"stop:0 #af7ac5, stop:1 #9b59b6);"
+		"}"
+		"QPushButton#promptLibraryButton:pressed {"
+		"background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+		"stop:0 #8e44ad, stop:1 #7d3c98);"
+		"}"
 
 		"QComboBox {"
 		"background-color: #ffffff;"
@@ -753,6 +786,52 @@ void ChatInputWidget::onKnowledgeBaseItemClicked()
 		QString knowledgeID = senderAction->toolTip();
 		emit KnowledgeBaseSelect(knowledgeID);
 	}
+}
+
+void ChatInputWidget::setPromptLibrary(PromptLibrary* library)
+{
+	m_promptLibrary = library;
+}
+
+void ChatInputWidget::onPromptLibraryClicked()
+{
+	if (!m_promptLibrary)
+	{
+		// 如果没有设置提示词库，创建一个
+		m_promptLibrary = new PromptLibrary(this);
+	}
+
+	if (!m_promptDialog)
+	{
+		m_promptDialog = new PromptLibraryDialog(m_promptLibrary, this);
+		connect(m_promptDialog, &PromptLibraryDialog::promptSelected,
+			this, &ChatInputWidget::onPromptSelected);
+	}
+
+	m_promptDialog->exec();
+}
+
+void ChatInputWidget::onPromptSelected(const QString& content)
+{
+	if (content.isEmpty() || !textEdit)
+	{
+		return;
+	}
+
+	// 获取当前光标位置
+	QTextCursor cursor = textEdit->textCursor();
+	QString currentText = textEdit->toPlainText();
+	
+	// 如果当前有选中文本，替换它；否则在光标位置插入
+	if (cursor.hasSelection())
+	{
+		cursor.removeSelectedText();
+	}
+	
+	// 插入提示词内容
+	cursor.insertText(content);
+	textEdit->setTextCursor(cursor);
+	textEdit->setFocus();
 }
 
 void ChatInputWidget::onSelectKnowledgeBaseClicked(std::map<QString, std::pair<QString, QString>> knowBase)

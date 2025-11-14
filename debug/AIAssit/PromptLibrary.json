@@ -1,0 +1,51 @@
+{
+    "lastUpdated": "2025-11-14T13:46:33",
+    "prompts": [
+        {
+            "category": "Development",
+            "content": "Please review the following code and point out potential issues, performance optimization suggestions, and best practices:\n\n```\n{code}\n```",
+            "createdAt": "2025-11-14T09:56:23",
+            "description": "Template for code review prompts",
+            "id": "f17a60c8-9b69-4801-9a2d-a80fbb10811a",
+            "title": "Code Review",
+            "updatedAt": "2025-11-14T09:56:23"
+        },
+        {
+            "category": "Development",
+            "content": "Please explain in detail the functionality, logic, and implementation principles of the following code:\n\n```\n{code}\n```",
+            "createdAt": "2025-11-14T09:56:23",
+            "description": "Template for code explanation prompts",
+            "id": "aea1f233-b342-432f-95c2-f5cd51ff3b05",
+            "title": "Code Explanation",
+            "updatedAt": "2025-11-14T09:56:23"
+        },
+        {
+            "category": "General",
+            "content": "Please translate the following text into {target language}, maintaining the original meaning and tone:\n\n{text}",
+            "createdAt": "2025-11-14T09:56:23",
+            "description": "Template for text translation prompts",
+            "id": "05bbf5a6-b019-403f-8029-fe5048c78b2f",
+            "title": "Translation",
+            "updatedAt": "2025-11-14T09:56:23"
+        },
+        {
+            "category": "General",
+            "content": "Please summarize the following content and extract key information:\n\n{content}",
+            "createdAt": "2025-11-14T09:56:23",
+            "description": "Template for content summarization prompts",
+            "id": "8ea3d2d1-64af-41d3-b235-a7159c74f510",
+            "title": "Summary",
+            "updatedAt": "2025-11-14T09:56:23"
+        },
+        {
+            "category": "Writing",
+            "content": "Please help me {writing type} with the following requirements: {requirements}",
+            "createdAt": "2025-11-14T09:56:23",
+            "description": "Template for writing assistance prompts",
+            "id": "1fc5374a-d52e-4bac-9844-feffa3298553",
+            "title": "Writing Assistant",
+            "updatedAt": "2025-11-14T09:56:23"
+        }
+    ],
+    "version": "1.0"
+}

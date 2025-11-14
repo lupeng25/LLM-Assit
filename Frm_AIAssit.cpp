@@ -116,6 +116,17 @@ void Frm_AIAssit::setupSignals()
 	connect(ui.ChatListWidget, &ChatList::deleteRequested, this, &Frm_AIAssit::deleteCurrentConversation);
 	connect(ui.ChatListWidget, &ChatList::exportConversationRequested, this, &Frm_AIAssit::onExportConversationRequested);
 	connect(ui.ChatListWidget, &ChatList::showDetailsRequested, this, &Frm_AIAssit::onShowDetailsRequested);
+	
+	// 设置搜索回调函数
+	ui.ChatListWidget->setSearchCallback([this](const QString& conversationId) -> QString {
+		if (m_chatSessionService) {
+			const ChatSession* session = m_chatSessionService->session(conversationId);
+			if (session) {
+				return buildConversationPlainText(*session);
+			}
+		}
+		return QString();
+	});
 
 	// 连接LLMClient的信号（需要在LLMClient创建后调用setupLLMClientSignals()）
 	if (LLMClient) {
@@ -185,6 +196,7 @@ void Frm_AIAssit::initUI()
 {
 	this->setWindowTitle(tr("GKG AI Assit"));
 	setWindowFlags(Qt::Window | Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint);
+	
 	ChangeCurModel(ui.AIParams->GetAIParamModel());
 	ShowAIParam();
 	bool loadJson = loadChatMapFromJson();

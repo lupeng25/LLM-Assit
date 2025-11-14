@@ -9,6 +9,9 @@
 #include <QAction>
 #include <QString>
 #include <QPoint>
+#include <QLineEdit>
+#include <QTimer>
+#include <functional>
 
 class ChatList : public QWidget
 {
@@ -47,11 +50,14 @@ public:
     int count() const { return m_conversationList->count(); }
     // 设置当前行
     void setCurrentRow(int row) { m_conversationList->setCurrentRow(row); }
+    // 设置搜索回调函数，用于搜索对话内容
+    void setSearchCallback(std::function<QString(const QString& conversationId)> callback);
     // 对话项数据角色枚举
     enum ConversationRole
     {
         IdRole = Qt::UserRole,        // ID角色
-        TimestampRole = Qt::UserRole + 1  // 时间戳角色
+        TimestampRole = Qt::UserRole + 1,  // 时间戳角色
+        SearchMatchRole = Qt::UserRole + 2  // 搜索匹配角色
     };
 
 signals:
@@ -79,6 +85,10 @@ signals:
     void onConversationSelectionChanged(QListWidgetItem* current, QListWidgetItem* previous);
     // 显示上下文菜单
     void showContextMenu(const QPoint& pos);
+    // 搜索文本改变处理
+    void onSearchTextChanged(const QString& text);
+    // 执行搜索
+    void performSearch();
 
 private:
     // 设置UI
@@ -87,10 +97,19 @@ private:
     void connectSignals();
     // 根据ID查找列表项
     QListWidgetItem* findItemById(const QString& id) const;
+    // 搜索对话内容
+    bool searchInConversation(const QString& conversationId, const QString& searchText) const;
+    // 显示/隐藏对话项
+    void setItemVisible(QListWidgetItem* item, bool visible);
     // UI组件
     QVBoxLayout* mainLayout;
     QPushButton* btnNewConversation;
+    QLineEdit* searchEdit;  // 搜索输入框
     QListWidget* m_conversationList;
+    // 搜索相关
+    QTimer* searchTimer;  // 搜索防抖定时器
+    std::function<QString(const QString&)> searchCallback;  // 搜索回调函数
+    QStringList allConversationIds;  // 保存所有对话ID，用于搜索
 
 
 };

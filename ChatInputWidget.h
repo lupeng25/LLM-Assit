@@ -143,7 +143,6 @@ private:
 	QAction *addFileAction;//添加文件动作
 	QAction *selectKnowledgeBaseAction;//选择知识库动作
 	QAction *promptLibraryAction;//提示词库动作
-	QPushButton *promptLibraryButton;//提示词库按钮
     //布局
 	QGridLayout *mainGridLayout;
 	QHBoxLayout *bottomGridLayout;

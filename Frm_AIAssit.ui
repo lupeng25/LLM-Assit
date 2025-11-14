@@ -338,7 +338,6 @@ QFrame#frame {
 
 
 
-
 QWidget#emptyStateWidget,
 QLabel#emptyIconLabel {
     background: transparent;

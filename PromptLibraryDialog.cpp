@@ -67,7 +67,7 @@ void PromptLibraryDialog::setupUI()
 	QHBoxLayout* categoryLayout = new QHBoxLayout();
 	categoryLayout->setSpacing(10);
 	QLabel* categoryLabel = new QLabel(tr("Category:"), m_leftPanel);
-	categoryLabel->setStyleSheet("font-weight: 600; color: #475569;");
+	categoryLabel->setStyleSheet("font-weight: 600; color: #1e293b; background: transparent;");
 	m_categoryCombo = new QComboBox(m_leftPanel);
 	m_categoryCombo->addItem(tr("All"), QString());
 	m_categoryCombo->setMinimumHeight(36);
@@ -103,6 +103,10 @@ void PromptLibraryDialog::setupUI()
 			background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
 				stop:0 #059669, stop:1 #047857);
 		}
+		QPushButton:disabled {
+			background: #cbd5e1;
+			color: #94a3b8;
+		}
 	)");
 	m_editButton = new QPushButton(tr("Edit"), m_leftPanel);
 	m_deleteButton = new QPushButton(tr("Delete"), m_leftPanel);
@@ -118,6 +122,10 @@ void PromptLibraryDialog::setupUI()
 		QPushButton:pressed {
 			background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
 				stop:0 #dc2626, stop:1 #b91c1c);
+		}
+		QPushButton:disabled {
+			background: #cbd5e1;
+			color: #94a3b8;
 		}
 	)");
 	m_editButton->setEnabled(false);
@@ -145,14 +153,14 @@ void PromptLibraryDialog::setupUI()
 
 	// 标题
 	QLabel* titleLabel = new QLabel(tr("Title:"), m_rightPanel);
-	titleLabel->setStyleSheet("font-weight: 600; color: #475569;");
+	titleLabel->setStyleSheet("font-weight: 600; color: #1e293b; background: transparent;");
 	m_titleEdit = new QLineEdit(m_rightPanel);
 	m_titleEdit->setMinimumHeight(40);
 	formLayout->addRow(titleLabel, m_titleEdit);
 
 	// 分类
 	QLabel* categoryLabel2 = new QLabel(tr("Category:"), m_rightPanel);
-	categoryLabel2->setStyleSheet("font-weight: 600; color: #475569;");
+	categoryLabel2->setStyleSheet("font-weight: 600; color: #1e293b; background: transparent;");
 	m_categoryEdit = new QComboBox(m_rightPanel);
 	m_categoryEdit->setEditable(true);
 	m_categoryEdit->setMinimumHeight(40);
@@ -160,14 +168,14 @@ void PromptLibraryDialog::setupUI()
 
 	// 内容
 	QLabel* contentLabel = new QLabel(tr("Content:"), m_rightPanel);
-	contentLabel->setStyleSheet("font-weight: 600; color: #475569;");
+	contentLabel->setStyleSheet("font-weight: 600; color: #1e293b; background: transparent;");
 	m_contentEdit = new QTextEdit(m_rightPanel);
 	m_contentEdit->setMinimumHeight(250);
 	formLayout->addRow(contentLabel, m_contentEdit);
 
 	// 描述
 	QLabel* descLabel = new QLabel(tr("Description:"), m_rightPanel);
-	descLabel->setStyleSheet("font-weight: 600; color: #475569;");
+	descLabel->setStyleSheet("font-weight: 600; color: #1e293b; background: transparent;");
 	m_descriptionEdit = new QTextEdit(m_rightPanel);
 	m_descriptionEdit->setMaximumHeight(100);
 	formLayout->addRow(descLabel, m_descriptionEdit);
@@ -191,6 +199,10 @@ void PromptLibraryDialog::setupUI()
 			background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
 				stop:0 #7c3aed, stop:1 #6d28d9);
 		}
+		QPushButton:disabled {
+			background: #cbd5e1;
+			color: #94a3b8;
+		}
 	)");
 	m_useButton->setEnabled(false);
 	m_saveButton = new QPushButton(tr("Save"), m_rightPanel);
@@ -198,16 +210,20 @@ void PromptLibraryDialog::setupUI()
 	m_cancelButton = new QPushButton(tr("Cancel"), m_rightPanel);
 	m_cancelButton->setStyleSheet(R"(
 		QPushButton {
-			background: #f1f5f9;
+			background: rgba(241, 245, 249, 0.9);
 			color: #475569;
-			border: 2px solid #e2e8f0;
+			border: 1px solid rgba(203, 213, 225, 0.8);
 		}
 		QPushButton:hover {
-			background: #e2e8f0;
-			border: 2px solid #cbd5e1;
+			background: rgba(226, 232, 240, 0.9);
+			border: 1px solid rgba(148, 163, 184, 0.8);
 		}
 		QPushButton:pressed {
+			background: rgba(203, 213, 225, 0.9);
+		}
+		QPushButton:disabled {
 			background: #cbd5e1;
+			color: #94a3b8;
 		}
 	)");
 	m_cancelButton->setEnabled(false);
@@ -227,16 +243,16 @@ void PromptLibraryDialog::setupUI()
 	// 添加面板样式
 	m_leftPanel->setStyleSheet(R"(
 		QWidget#leftPanel {
-			background: white;
-			border-radius: 12px;
-			border: 2px solid #e2e8f0;
+			background: rgba(255, 255, 255, 0.92);
+			border-radius: 14px;
+			border: 1px solid rgba(203, 213, 225, 0.6);
 		}
 	)");
 	m_rightPanel->setStyleSheet(R"(
 		QWidget#rightPanel {
-			background: white;
-			border-radius: 12px;
-			border: 2px solid #e2e8f0;
+			background: rgba(255, 255, 255, 0.92);
+			border-radius: 14px;
+			border: 1px solid rgba(203, 213, 225, 0.6);
 		}
 	)");
 
@@ -252,59 +268,78 @@ void PromptLibraryDialog::setupStyles()
 	setStyleSheet(R"(
 		QDialog {
 			background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-				stop:0 #f0f4f8, stop:1 #e2e8f0);
+				stop:0 #eef2ff, stop:1 #e0f2fe);
+			border-radius: 18px;
 			font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+			font-size: 14px;
+			color: #0f172a;
 		}
 		QLabel {
 			color: #1e293b;
 			font-size: 14px;
 			font-weight: 500;
+			background: transparent;
 		}
 		QLineEdit {
-			background: white;
-			border: 2px solid #e2e8f0;
+			border: 1px solid rgba(203, 213, 225, 0.8);
 			border-radius: 8px;
-			padding: 10px 14px;
-			font-size: 14px;
-			color: #1e293b;
+			padding: 8px 12px;
+			background: rgba(248, 250, 252, 0.8);
 			selection-background-color: #3b82f6;
 			selection-color: white;
+			font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+			font-size: 14px;
+			color: #1e293b;
 		}
 		QLineEdit:focus {
-			border: 2px solid #3b82f6;
-			background: #fafbfc;
+			border-color: #3b82f6;
+			background: rgba(255, 255, 255, 0.95);
+		}
+		QLineEdit:hover {
+			border-color: rgba(148, 163, 184, 0.8);
+			background: rgba(241, 245, 249, 0.9);
 		}
 		QLineEdit::placeholder {
 			color: #94a3b8;
 		}
 		QTextEdit {
-			background: white;
-			border: 2px solid #e2e8f0;
+			border: 1px solid rgba(203, 213, 225, 0.8);
 			border-radius: 8px;
 			padding: 12px;
-			font-size: 14px;
-			color: #1e293b;
+			background: rgba(248, 250, 252, 0.8);
 			selection-background-color: #3b82f6;
 			selection-color: white;
+			font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+			font-size: 14px;
+			color: #1e293b;
 		}
 		QTextEdit:focus {
-			border: 2px solid #3b82f6;
-			background: #fafbfc;
+			border-color: #3b82f6;
+			background: rgba(255, 255, 255, 0.95);
+		}
+		QTextEdit:hover {
+			border-color: rgba(148, 163, 184, 0.8);
+			background: rgba(241, 245, 249, 0.9);
 		}
 		QComboBox {
-			background: white;
-			border: 2px solid #e2e8f0;
+			border: 1px solid rgba(203, 213, 225, 0.8);
 			border-radius: 8px;
 			padding: 8px 12px;
+			background: rgba(248, 250, 252, 0.8);
+			selection-background-color: #3b82f6;
+			selection-color: white;
+			font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
 			font-size: 14px;
 			color: #1e293b;
 			min-height: 20px;
 		}
 		QComboBox:hover {
-			border: 2px solid #cbd5e1;
+			border-color: rgba(148, 163, 184, 0.8);
+			background: rgba(241, 245, 249, 0.9);
 		}
 		QComboBox:focus {
-			border: 2px solid #3b82f6;
+			border-color: #3b82f6;
+			background: rgba(255, 255, 255, 0.95);
 		}
 		QComboBox::drop-down {
 			border: none;
@@ -319,46 +354,46 @@ void PromptLibraryDialog::setupStyles()
 			height: 0;
 		}
 		QComboBox QAbstractItemView {
-			background: white;
-			border: 2px solid #e2e8f0;
+			background: rgba(255, 255, 255, 0.98);
+			border: 1px solid rgba(203, 213, 225, 0.8);
 			border-radius: 8px;
 			selection-background-color: #3b82f6;
 			selection-color: white;
 			padding: 4px;
 		}
 		QListWidget {
-			background: white;
-			border: 2px solid #e2e8f0;
-			border-radius: 10px;
+			background: rgba(255, 255, 255, 0.6);
+			border: 1px solid rgba(203, 213, 225, 0.6);
+			border-radius: 12px;
 			padding: 6px;
 			outline: none;
 		}
 		QListWidget::item {
-			padding: 14px 16px;
+			padding: 12px 16px;
 			border-radius: 8px;
 			margin: 3px;
 			border: 1px solid transparent;
 		}
 		QListWidget::item:hover {
-			background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-				stop:0 rgba(59, 130, 246, 0.08), stop:1 rgba(59, 130, 246, 0.12));
-			border: 1px solid rgba(59, 130, 246, 0.2);
+			background: rgba(59, 130, 246, 0.12);
+			border: 1px solid rgba(59, 130, 246, 0.25);
 		}
 		QListWidget::item:selected {
-			background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-				stop:0 #3b82f6, stop:1 #2563eb);
+			background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+				stop:0 #3b82f6, stop:1 #1d4ed8);
 			color: white;
-			border: 1px solid #1d4ed8;
+			border: 1px solid rgba(29, 78, 216, 0.5);
 			font-weight: 500;
 		}
 		QPushButton {
 			background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-				stop:0 #3b82f6, stop:1 #2563eb);
+				stop:0 #3b82f6, stop:1 #1d4ed8);
 			border: none;
 			color: white;
 			padding: 10px 20px;
 			border-radius: 8px;
 			font-weight: 600;
+			font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
 			font-size: 14px;
 			min-width: 90px;
 			min-height: 36px;
@@ -369,18 +404,59 @@ void PromptLibraryDialog::setupStyles()
 		}
 		QPushButton:pressed {
 			background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-				stop:0 #2563eb, stop:1 #1d4ed8);
+				stop:0 #1d4ed8, stop:1 #1e40af);
 		}
 		QPushButton:disabled {
-			background: #e2e8f0;
+			background: #cbd5e1;
 			color: #94a3b8;
 		}
 		QSplitter::handle {
-			background: #e2e8f0;
+			background: rgba(203, 213, 225, 0.4);
 			width: 2px;
 		}
 		QSplitter::handle:hover {
-			background: #cbd5e1;
+			background: rgba(148, 163, 184, 0.6);
+		}
+		/* 滚动条样式 */
+		QScrollBar:vertical {
+			background: transparent;
+			width: 12px;
+			margin: 4px;
+		}
+		QScrollBar::handle:vertical {
+			background: rgba(100, 116, 139, 0.35);
+			border-radius: 6px;
+			min-height: 40px;
+		}
+		QScrollBar::handle:vertical:hover {
+			background: rgba(59, 130, 246, 0.55);
+		}
+		QScrollBar::add-line:vertical,
+		QScrollBar::sub-line:vertical,
+		QScrollBar::add-page:vertical,
+		QScrollBar::sub-page:vertical {
+			height: 0;
+			width: 0;
+		}
+		QScrollBar:horizontal {
+			background: transparent;
+			height: 10px;
+			margin: 4px;
+		}
+		QScrollBar::handle:horizontal {
+			background: rgba(100, 116, 139, 0.35);
+			border-radius: 6px;
+			min-width: 40px;
+		}
+		QScrollBar::handle:horizontal:hover {
+			background: rgba(59, 130, 246, 0.55);
+		}
+		QScrollBar::add-line:horizontal,
+		QScrollBar::sub-line:horizontal,
+		QScrollBar::add-page:horizontal,
+		QScrollBar::sub-page:horizontal {
+			height: 0;
+			width: 0;
 		}
 	)");
 }

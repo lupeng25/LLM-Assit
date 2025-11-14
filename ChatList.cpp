@@ -11,6 +11,10 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QMessageBox>
+#include <QLineEdit>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QTextDocument>
 
 namespace
 {
@@ -85,7 +89,7 @@ namespace
             painter->setBrush(Qt::NoBrush);
             painter->drawPath(cardPath);
 
-            // æ–‡æœ¬å†…å®¹
+            // æ–‡æœ¬å†…å??
             const QString title = index.data(Qt::DisplayRole).toString();
             const QString timestamp = index.data(ChatList::TimestampRole).toString();
             const bool hasTimestamp = !timestamp.trimmed().isEmpty();
@@ -131,7 +135,10 @@ ChatList::ChatList(QWidget *parent)
     : QWidget(parent)
     , mainLayout(nullptr)
     , btnNewConversation(nullptr)
+    , searchEdit(nullptr)
     , m_conversationList(nullptr)
+    , searchTimer(nullptr)
+    , searchCallback(nullptr)
 {
     setupUI();
     connectSignals();
@@ -150,7 +157,7 @@ void ChatList::setupUI()
     setMinimumWidth(220);
     setMaximumWidth(320);
 
-    // åˆ›å»ºä¸»å¸ƒå±€ï¼ˆè‹¥å·²æœ‰å¸ƒå±€åˆ™å¤ç”¨ï¼‰
+    // åˆ›å»ºä¸»å¸ƒå±€ï¼ˆè‹¥å·²æœ‰å¸ƒå±€åˆ™å?ç”¨ï¼?
     if (QLayout* existingLayout = layout())
     {
         if (auto* existing = qobject_cast<QVBoxLayout*>(existingLayout))
@@ -172,7 +179,7 @@ void ChatList::setupUI()
     mainLayout->setSpacing(12);
     mainLayout->setContentsMargins(16, 16, 16, 16);
 
-    // åˆ›å»ºæ–°å¯¹è¯æŒ‰é’®
+    // åˆ›å»ºæ–°å?¹è¯æŒ‰é’®
     btnNewConversation = new QPushButton(this);
     btnNewConversation->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     btnNewConversation->setMinimumHeight(64);
@@ -225,14 +232,50 @@ void ChatList::setupUI()
     )");
     m_conversationList->setItemDelegate(new ChatListDelegate(m_conversationList));
 
-    // æ·»åŠ åˆ°å¸ƒå±€
+    // ´´½¨ËÑË÷¿ò
+    QWidget* searchWidget = new QWidget(this);
+    QHBoxLayout* searchLayout = new QHBoxLayout(searchWidget);
+    searchLayout->setContentsMargins(0, 0, 0, 0);
+    searchLayout->setSpacing(8);
+    
+    searchEdit = new QLineEdit(this);
+    searchEdit->setPlaceholderText(tr("Search conversations..."));
+    searchEdit->setObjectName("searchEdit");
+    searchEdit->setStyleSheet(R"(
+        QLineEdit {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(203, 213, 225, 0.8);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 13px;
+            color: #1e293b;
+        }
+        QLineEdit:focus {
+            border-color: #3b82f6;
+            background: rgba(255, 255, 255, 1.0);
+        }
+        QLineEdit::placeholder {
+            color: #94a3b8;
+        }
+    )");
+    
+    searchLayout->addWidget(searchEdit);
+    searchWidget->setLayout(searchLayout);
+
+    // ´´½¨ËÑË÷·À¶¶¶¨Ê±Æ÷
+    searchTimer = new QTimer(this);
+    searchTimer->setSingleShot(true);
+    searchTimer->setInterval(300);  // 300ms ·À¶¶
+
+    // Ìí¼Óµ½²¼¾Ö
     mainLayout->addWidget(btnNewConversation);
+    mainLayout->addWidget(searchWidget);
     mainLayout->addWidget(m_conversationList);
 }
 
 void ChatList::connectSignals()
 {
-    // è¿æ¥æ–°å¯¹è¯æŒ‰é’®ç‚¹å‡»ä¿¡å·
+    // è¿æ¥æ–°å?¹è¯æŒ‰é’®ç‚¹å‡»ä¿¡å·
     connect(btnNewConversation, &QPushButton::clicked,
         this, &ChatList::onNewConversationClicked);
 
@@ -243,6 +286,14 @@ void ChatList::connectSignals()
     // è¿æ¥å³é”®èœå•ä¿¡å·
     connect(m_conversationList, &QListWidget::customContextMenuRequested,
         this, &ChatList::showContextMenu);
+    
+    // Á¬½ÓËÑË÷¿òĞÅºÅ
+    if (searchEdit && searchTimer) {
+        connect(searchEdit, &QLineEdit::textChanged,
+            this, &ChatList::onSearchTextChanged);
+        connect(searchTimer, &QTimer::timeout,
+            this, &ChatList::performSearch);
+    }
 }
 
 void ChatList::addConversationItem(const QString& text, const QString& id)
@@ -251,7 +302,14 @@ void ChatList::addConversationItem(const QString& text, const QString& id)
     item->setText(text);
     item->setData(IdRole, id);
     item->setFlags(item->flags() | Qt::ItemIsSelectable);
+    item->setData(SearchMatchRole, true);  // Ä¬ÈÏÏÔÊ¾
     m_conversationList->addItem(item);
+    
+    // ±£´æ¶Ô»°ID
+    if (!allConversationIds.contains(id))
+    {
+        allConversationIds.append(id);
+    }
 }
 
 void ChatList::insertConversationItem(int index, const QString& text, const QString& id)
@@ -260,7 +318,14 @@ void ChatList::insertConversationItem(int index, const QString& text, const QStr
     item->setText(text);
     item->setData(IdRole, id);
     item->setFlags(item->flags() | Qt::ItemIsSelectable);
+    item->setData(SearchMatchRole, true);  // Ä¬ÈÏÏÔÊ¾
     m_conversationList->insertItem(index, item);
+    
+    // ±£´æ¶Ô»°ID
+    if (!allConversationIds.contains(id))
+    {
+        allConversationIds.append(id);
+    }
 
     // æ·»åŠ åˆ›å»ºåŠ¨ç”»æ•ˆæœ
     QTimer::singleShot(10, [this, item]() {
@@ -289,6 +354,7 @@ void ChatList::removeConversationItem(const QString& id)
 void ChatList::clearConversations()
 {
     m_conversationList->clear();
+    allConversationIds.clear();
 }
 
 void ChatList::setCurrentConversation(const QString& id)
@@ -352,7 +418,7 @@ void ChatList::showContextMenu(const QPoint& pos)
     const QString conversationId = item->data(IdRole).toString();
 
     QMenu contextMenu(this);
-    // ç¾åŒ–å³é”®èœå•ï¼Œä¸æ•´ä½“ UI é£æ ¼ä¸€è‡´
+    // ç¾åŒ–å³é”®èœå•ï¼Œä¸æ•´ä½“ UI é£æ ¼ä¸€è‡?
     contextMenu.setStyleSheet(R"(
         QMenu {
             background: rgba(255, 255, 255, 0.98);
@@ -440,6 +506,113 @@ QListWidgetItem* ChatList::findItemById(const QString& id) const
         }
     }
     return nullptr;
+}
+
+void ChatList::setSearchCallback(std::function<QString(const QString&)> callback)
+{
+    searchCallback = callback;
+}
+
+void ChatList::onSearchTextChanged(const QString& text)
+{
+    // ÖØÖÃ¶¨Ê±Æ÷£¬ÊµÏÖ·À¶¶
+    searchTimer->stop();
+    if (!text.isEmpty())
+    {
+        searchTimer->start();
+    }
+    else
+    {
+        // Èç¹ûËÑË÷¿òÎª¿Õ£¬ÏÔÊ¾ËùÓĞ¶Ô»°
+        performSearch();
+    }
+}
+
+void ChatList::performSearch()
+{
+    QString searchText = searchEdit->text().trimmed();
+    
+    if (searchText.isEmpty())
+    {
+        // ÏÔÊ¾ËùÓĞ¶Ô»°
+        for (int i = 0; i < m_conversationList->count(); ++i)
+        {
+            QListWidgetItem* item = m_conversationList->item(i);
+            if (item)
+            {
+                setItemVisible(item, true);
+            }
+        }
+        return;
+    }
+    
+    // Ö´ĞĞËÑË÷
+    searchText = searchText.toLower();
+    int matchCount = 0;
+    
+    for (int i = 0; i < m_conversationList->count(); ++i)
+    {
+        QListWidgetItem* item = m_conversationList->item(i);
+        if (!item)
+        {
+            continue;
+        }
+        
+        QString conversationId = item->data(IdRole).toString();
+        QString title = item->text().toLower();
+        
+        // ËÑË÷±êÌâ
+        bool titleMatch = title.contains(searchText);
+        
+        // ËÑË÷¶Ô»°ÄÚÈİ
+        bool contentMatch = false;
+        if (searchCallback && !titleMatch)
+        {
+            contentMatch = searchInConversation(conversationId, searchText);
+        }
+        
+        bool match = titleMatch || contentMatch;
+        setItemVisible(item, match);
+        
+        if (match)
+        {
+            matchCount++;
+        }
+    }
+}
+
+bool ChatList::searchInConversation(const QString& conversationId, const QString& searchText) const
+{
+    if (!searchCallback)
+    {
+        return false;
+    }
+    
+    // »ñÈ¡¶Ô»°ÄÚÈİ
+    QString content = searchCallback(conversationId);
+    if (content.isEmpty())
+    {
+        return false;
+    }
+    
+    // ÒÆ³ı HTML ±êÇ©£¬Ö»ËÑË÷´¿ÎÄ±¾
+    QTextDocument doc;
+    doc.setHtml(content);
+    QString plainText = doc.toPlainText().toLower();
+    
+    // ËÑË÷ÎÄ±¾
+    return plainText.contains(searchText);
+}
+
+void ChatList::setItemVisible(QListWidgetItem* item, bool visible)
+{
+    if (!item)
+    {
+        return;
+    }
+    
+    item->setData(SearchMatchRole, visible);
+    item->setHidden(!visible);
 }
 
 void ChatList::setConversationTimestamp(const QString& id, const QString& timestamp)

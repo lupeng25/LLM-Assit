@@ -40,8 +40,8 @@ void ChatShowWidget::resizeEvent(QResizeEvent* event)
 		// 计算按钮位置 - 右下角
 		int frameWidth = chatFrame->width();
 		int frameHeight = chatFrame->height();
-		int buttonWidth = 30;
-		int buttonHeight = 30;
+		int buttonWidth = 10;
+		int buttonHeight = 10;
 		int margin = 15; // 距离边缘的距离
 		 // Up按钮位置
 		UpButton->move(frameWidth - buttonWidth - margin,
@@ -142,16 +142,16 @@ void ChatShowWidget::setupUI()
 	// 创建Up/Down按钮 - 作为chatFrame的子组件，使用绝对定位
 	UpButton = new QPushButton(chatFrame);
 	UpButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	UpButton->setMinimumSize(30, 30);
-	UpButton->setMaximumSize(30, 30);
+	UpButton->setMinimumSize(10, 10);
+	UpButton->setMaximumSize(10, 10);
 	UpButton->setToolTip("Up");
 	UpButton->setObjectName("UpButton");
 	UpButton->setIcon(QIcon(":/QtWidgetsApp/ICONs/icon_up.png"));
 
 	DownButton = new QPushButton(chatFrame);
 	DownButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	DownButton->setMinimumSize(30, 30);
-	DownButton->setMaximumSize(30, 30);
+	DownButton->setMinimumSize(10, 10);
+	DownButton->setMaximumSize(10, 10);
 	DownButton->setToolTip("Down");
 	DownButton->setObjectName("DownButton");
 	DownButton->setIcon(QIcon(":/QtWidgetsApp/ICONs/icon_down.png"));

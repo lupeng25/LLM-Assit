@@ -21,7 +21,6 @@ ChatInputWidget::ChatInputWidget(QWidget *parent)
 	, addFileAction(nullptr)
 	, selectKnowledgeBaseAction(nullptr)
 	, promptLibraryAction(nullptr)
-	, promptLibraryButton(nullptr)
 	, knowledgeBaseMenu(nullptr)
 	, m_promptLibrary(nullptr)
 	, m_promptDialog(nullptr)
@@ -68,7 +67,7 @@ void ChatInputWidget::setupUI()
 	attachButton = new QPushButton(QStringLiteral("+"), bottomWidget);
 	attachButton->setObjectName("attachButton");
 	attachButton->setToolTip(tr("Add Data"));
-	attachButton->setFixedSize(20, 20);
+	attachButton->setFixedSize(15, 15);
 	attachButton->setCursor(Qt::PointingHandCursor);
 
 	// 创建知识库子菜单
@@ -85,13 +84,6 @@ void ChatInputWidget::setupUI()
 	attachMenu->addSeparator();
 	promptLibraryAction = new QAction(tr("Prompt Library"), this);
 	attachMenu->addAction(promptLibraryAction);
-
-	// 创建提示词库按钮
-	promptLibraryButton = new QPushButton(tr("📝"), bottomWidget);
-	promptLibraryButton->setObjectName("promptLibraryButton");
-	promptLibraryButton->setToolTip(tr("Prompt Library"));
-	promptLibraryButton->setFixedSize(40, 40);
-	promptLibraryButton->setCursor(Qt::PointingHandCursor);
 
 	optionsComboBox = new QComboBox(bottomWidget);
 	optionsComboBox->setToolTip(tr("Select AI Model"));
@@ -145,7 +137,6 @@ void ChatInputWidget::setupUI()
 	bottomGridLayout->setContentsMargins(0, 0, 0, 0);
 
 	bottomGridLayout->addWidget(attachButton);
-	bottomGridLayout->addWidget(promptLibraryButton);
 	bottomGridLayout->addWidget(optionsComboBox);
 	bottomGridLayout->addItem(horizontalSpacer);
 	bottomGridLayout->addWidget(imageScrollArea);
@@ -160,7 +151,6 @@ void ChatInputWidget::setConnect()
 	connect(optionsComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ChatInputWidget::onOptionChanged);
 	connect(addFileAction, &QAction::triggered, this, &ChatInputWidget::onAddFileClicked);
 	connect(promptLibraryAction, &QAction::triggered, this, &ChatInputWidget::onPromptLibraryClicked);
-	connect(promptLibraryButton, &QPushButton::clicked, this, &ChatInputWidget::onPromptLibraryClicked);
 }
 
 void ChatInputWidget::onSendButtonClicked()
@@ -531,7 +521,8 @@ void ChatInputWidget::dragEnterEvent(QDragEnterEvent *event)
 			if (url.isLocalFile())
 			{
 				QString filePath = url.toLocalFile();
-				if (validateImageFile(filePath, QString{}))
+				QString tempErrorMsg;
+				if (validateImageFile(filePath, tempErrorMsg))
 				{
 					hasValidFiles = true;
 					break;
@@ -559,7 +550,8 @@ void ChatInputWidget::dropEvent(QDropEvent *event)
 				QString filePath = url.toLocalFile();
 				FileType type = getFileType(filePath);
 
-				if (validateImageFile(filePath, QString{}))
+                QString tempErrorMsg;
+				if (validateImageFile(filePath, tempErrorMsg))
 				{
 					addFile(filePath, type);
 				}
@@ -641,29 +633,14 @@ void ChatInputWidget::setupStyles()
 		"background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
 		"stop:0 #95a5a6, stop:1 #7f8c8d);"
 		"color: white;"
-		"font-size: 16px;"
+		"font-size: 13px;"
+		"font-weight: bold;"
 		"}"
 
 		"QPushButton#attachButton:hover {"
 		"background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
 		"stop:0 #a9b9ba, stop:1 #95a5a6);"
 		"}"
-		"QPushButton#promptLibraryButton {"
-		"background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-		"stop:0 #9b59b6, stop:1 #8e44ad);"
-		"color: white;"
-		"font-size: 16px;"
-		"border-radius: 6px;"
-		"}"
-		"QPushButton#promptLibraryButton:hover {"
-		"background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-		"stop:0 #af7ac5, stop:1 #9b59b6);"
-		"}"
-		"QPushButton#promptLibraryButton:pressed {"
-		"background: qlineargradient(x1:0, y1:0, x2:0, y2:1, "
-		"stop:0 #8e44ad, stop:1 #7d3c98);"
-		"}"
-
 		"QComboBox {"
 		"background-color: #ffffff;"
 		"border: 2px solid #e1e8ed;"

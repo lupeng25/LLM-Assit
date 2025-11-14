@@ -8,88 +8,88 @@
 class SyntaxHighlighter
 {
 public:
-	// ÅäÉ«Ö÷Ìâ½á¹¹
-	struct Theme 
-	{
-		QString keyword = "#569cd6";      // ¹Ø¼ü×Ö - À¶É«
-		QString string = "#ce9178";       // ×Ö·û´® - ³ÈÉ«  
-		QString comment = "#6a9955";      // ×¢ÊÍ - ÂÌÉ«
-		QString number = "#b5cea8";       // Êı×Ö - µ­ÂÌÉ«
-		QString function = "#dcdcaa";     // º¯Êı - »ÆÉ«
-		QString type = "#4ec9b0";         // ÀàĞÍ - ÇàÉ«
-		QString operator_ = "#d4d4d4";    // ²Ù×÷·û - °×É«
-		QString background = "#1e1e1e";   // ±³¾° - ÉîÉ«
-		QString text = "#d4d4d4";         // ÆÕÍ¨ÎÄ±¾ - µ­»ÒÉ«
-		QString preprocessor = "#c586c0"; // Ô¤´¦ÀíÖ¸Áî - ×ÏÉ«
-		QString punctuation = "#d4d4d4";  // ±êµã·ûºÅ - µ­»ÒÉ«
-		QString toolbar = "#2d2d30";      // ¹¤¾ßÀ¸±³¾° - Éî»ÒÉ«
-		QString toolbarText = "#00A9D0";  // ¹¤¾ßÀ¸ÎÄ±¾ - Ç³»ÒÉ«
-		QString button = "#3c3c3c";       // °´Å¥±³¾° - ÖĞ»ÒÉ«
-		QString buttonHover = "#464647";  // °´Å¥ĞüÍ£ - ÉÔÁÁ»ÒÉ«
-	};
+    // é…è‰²ä¸»é¢˜ç»“æ„
+    struct Theme
+    {
+        QString keyword = "#569cd6";      // å…³é”®å­— - è“è‰²
+        QString string = "#ce9178";       // å­—ç¬¦ä¸² - æ©™è‰²
+        QString comment = "#6a9955";      // æ³¨é‡Š - ç»¿è‰²
+        QString number = "#b5cea8";       // æ•°å­— - æ·¡ç»¿è‰²
+        QString function = "#dcdcaa";     // å‡½æ•° - é»„è‰²
+        QString type = "#4ec9b0";         // ç±»å‹ - é’è‰²
+        QString operator_ = "#d4d4d4";    // æ“ä½œç¬¦ - ç™½è‰²
+        QString background = "#1e1e1e";   // èƒŒæ™¯ - æ·±è‰²
+        QString text = "#d4d4d4";         // æ™®é€šæ–‡æœ¬ - æ·¡ç°è‰²
+        QString preprocessor = "#c586c0"; // é¢„å¤„ç†æŒ‡ä»¤ - ç´«è‰²
+        QString punctuation = "#d4d4d4";  // æ ‡ç‚¹ç¬¦å· - æ·¡ç°è‰²
+        QString toolbar = "#2d2d30";      // å·¥å…·æ èƒŒæ™¯ - æ·±ç°è‰²
+        QString toolbarText = "#00A9D0";  // å·¥å…·æ æ–‡æœ¬ - æµ…ç°è‰²
+        QString button = "#3c3c3c";       // æŒ‰é’®èƒŒæ™¯ - ä¸­ç°è‰²
+        QString buttonHover = "#464647";  // æŒ‰é’®æ‚¬åœ - ç¨äº®ç°è‰²
+    };
 
-	// Ö§³ÖµÄÓïÑÔÃ¶¾Ù
-	enum Language 
-	{
-		Unknown,
-		Json,
-		Cpp,
-		Python,
-		JavaScript,
-		Html,
-		Css,
-		Sql,
-		Generic
-	};
+    // æ”¯æŒçš„è¯­è¨€æšä¸¾
+    enum Language
+    {
+        Unknown,
+        Json,
+        Cpp,
+        Python,
+        JavaScript,
+        Html,
+        Css,
+        Sql,
+        Generic
+    };
 
 public:
-	explicit SyntaxHighlighter();
-	~SyntaxHighlighter() = default;
+    explicit SyntaxHighlighter();
+    ~SyntaxHighlighter() = default;
 
-	// Ö÷Òª½Ó¿Ú
-	QString highlightCode(const QString& code, const QString& language);
-	QString highlightCodeBlock(const QString& code, const QString& language);
-	QString highlightInlineCode(const QString& code);
+    // ä¸»è¦æ¥å£
+    QString highlightCode(const QString& code, const QString& language);
+    QString highlightCodeBlock(const QString& code, const QString& language);
+    QString highlightInlineCode(const QString& code);
 
-	// Ö÷Ìâ¹ÜÀí
-	void setTheme(const Theme& theme);
-	Theme getTheme() const;
+    // ä¸»é¢˜ç®¡ç†
+    void setTheme(const Theme& theme);
+    Theme getTheme() const;
 
-	// Ô¤ÉèÖ÷Ìâ
-	static Theme darkTheme();
-	static Theme lightTheme();
+    // é¢„è®¾ä¸»é¢˜
+    static Theme darkTheme();
+    static Theme lightTheme();
 
-	// ÓïÑÔ¼ì²â
-	Language stringToLanguage(const QString& langStr);
+    // è¯­è¨€æ£€æµ‹
+    Language stringToLanguage(const QString& langStr);
 
-	// »ñÈ¡´¿´úÂëÄÚÈİ£¨È¥³ıHTML±êÇ©£©
-	QString extractPlainCode(const QString& htmlCode);
-
-private:
-	// ÓïÑÔÌØ¶¨µÄ¸ßÁÁº¯Êı
-	QString highlightJson(const QString& code);
-	QString highlightCpp(const QString& code);
-	QString highlightPython(const QString& code);
-	QString highlightJavaScript(const QString& code);
-	QString highlightGeneric(const QString& code);
-
-	// ¸¨Öúº¯Êı
-	QString escapeHtml(const QString& text);
-	QString wrapWithSpan(const QString& text, const QString& color, bool bold = false, bool italic = false);
-	QString applyPatternHighlight(const QString& code, const QRegularExpression& pattern, const QString& color, bool bold = false, bool italic = false);
-
-	// ´´½¨¹¤¾ßÀ¸HTML
-	QString createToolbar(const QString& language, const QString& code);
-	QString generateUniqueId();
-
-	// »ñÈ¡ÓïÑÔ¹Ø¼ü×Ö
-	QStringList getCppKeywords();
-	QStringList getPythonKeywords();
-	QStringList getJavaScriptKeywords();
+    // è·å–çº¯ä»£ç å†…å®¹ï¼ˆå»é™¤HTMLæ ‡ç­¾ï¼‰
+    QString extractPlainCode(const QString& htmlCode);
 
 private:
-	Theme m_theme;
-	QMap<QString, Language> m_languageMap;
-	static int s_codeBlockCounter; // ÓÃÓÚÉú³ÉÎ¨Ò»ID
-	void initLanguageMap();
+    // è¯­è¨€ç‰¹å®šçš„é«˜äº®å‡½æ•°
+    QString highlightJson(const QString& code);
+    QString highlightCpp(const QString& code);
+    QString highlightPython(const QString& code);
+    QString highlightJavaScript(const QString& code);
+    QString highlightGeneric(const QString& code);
+
+    // è¾…åŠ©å‡½æ•°
+    QString escapeHtml(const QString& text);
+    QString wrapWithSpan(const QString& text, const QString& color, bool bold = false, bool italic = false);
+    QString applyPatternHighlight(const QString& code, const QRegularExpression& pattern, const QString& color, bool bold = false, bool italic = false);
+
+    // åˆ›å»ºå·¥å…·æ HTML
+    QString createToolbar(const QString& language, const QString& code);
+    QString generateUniqueId();
+
+    // è·å–è¯­è¨€å…³é”®å­—
+    QStringList getCppKeywords();
+    QStringList getPythonKeywords();
+    QStringList getJavaScriptKeywords();
+
+private:
+    Theme m_theme;
+    QMap<QString, Language> m_languageMap;
+    static int s_codeBlockCounter; // ç”¨äºç”Ÿæˆå”¯ä¸€ID
+    void initLanguageMap();
 };

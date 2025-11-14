@@ -5,87 +5,87 @@
 #include <QJsonArray>
 #include <set>
 class OllamaClient :
-	public MessageManager
+    public MessageManager
 {
-	Q_OBJECT
+    Q_OBJECT
 public:
-	explicit OllamaClient(QObject *parent = nullptr);
-	~OllamaClient();
+    explicit OllamaClient(QObject *parent = nullptr);
+    ~OllamaClient();
 
-	// ÊµÏÖ»ùÀàµÄ´¿Ğéº¯Êı
-	AIProvider getProvider() const override;
-	QString getProviderName() const override;
-	QString getVersion() const override;
-	// ¹¹½¨ÏûÏ¢Ìå
-	QByteArray buildMessageBody(const ChatSendMessage& msg) override;
-	// ·¢ËÍÇ°Ô¤´¦Àí
-	void SendPreProcess(const ChatSendMessage& msg) override;
-	// ½âÎöJSON»Ø¸´ÎªÏûÏ¢
-	QJsonObject parseJsonReplyToMsg(const QByteArray &data) override;
-	// ·¢ËÍÏûÏ¢£¨×èÈûÊ½£©
-	int send(const ChatSendMessage& msg) override;
-	// ·¢ËÍÏûÏ¢£¨Á÷Ê½´«Êä£©
-	int StreamSend(const ChatSendMessage& msg) override;
-	// »ñÈ¡´íÎóĞÅÏ¢
-	QString GetError(const QString& errorLevel, const QString& errorContext) override;
-	// Á÷Ê½´«Êä½áÊø´¦Àí
-	void processStreamEnded() override;
-	// ´´½¨APIÇëÇó
-	QNetworkRequest createApiRequest(const QUrl& url) override;
-	// ·¢ËÍAPIÇëÇó
-	void sendApiRequest(const QNetworkRequest& request, QTimer* timeoutTimer, int timeoutMs) override;
-	// ¼ì²é·şÎñÆ÷Á¬½Ó£¨Òì²½£©
-	void checkServerConnectionAsync(int timeoutMs) override;
-	// ½âÎöÄ£ĞÍIDÁĞ±í
-	QStringList parseModelIds(const QByteArray &jsonData) override;
-	// »ñÈ¡Ä£ĞÍÁĞ±í£¨Òì²½£©
-	void fetchModelsAsync(int timeoutMs = 5000) override;
-	// »ñÈ¡ºóĞø½¨Òé
-	QStringList GetFollowUpSuggestions() override;
-	// »ñÈ¡ÖªÊ¶¿âĞÅÏ¢
-	void getKnowledgeBase() override;
-	// ÉÏ´«ÎÄ¼ş
-	void uploadFile(const QString& filePath) override;
-	// É¾³ıÎÄ¼ş
-	void DeleteFile(const QString& fileID) override;
-	// ·ÖÎö×èÈûÊ½ÏìÓ¦
-	void AnalysisBlockResponse(QJsonObject& response_obj) override;
-	// ·ÖÎöÁ÷Ê½ÏìÓ¦
-	void AnalysisStreamResponse(QJsonObject& response_obj) override;
-	// ¸ü¸ÄÖªÊ¶Í¼Æ×
-	void ChangeKnowledgeGraph(const QString& kownledgeID) override;
-	// È¡ÏûÎÄ¼şÉÏ´«
-	void CancelUpdateFile(const QString& file) override;
-	// È¡ÏûËùÓĞÎÄ¼şÉÏ´«
-	void CancelAllUpdateFiles(const QStringList& fileList)override;
+    // å®ç°åŸºç±»çš„çº¯è™šå‡½æ•°
+    AIProvider getProvider() const override;
+    QString getProviderName() const override;
+    QString getVersion() const override;
+    // æ„å»ºæ¶ˆæ¯ä½“
+    QByteArray buildMessageBody(const ChatSendMessage& msg) override;
+    // å‘é€å‰é¢„å¤„ç†
+    void SendPreProcess(const ChatSendMessage& msg) override;
+    // è§£æJSONå›å¤ä¸ºæ¶ˆæ¯
+    QJsonObject parseJsonReplyToMsg(const QByteArray &data) override;
+    // å‘é€æ¶ˆæ¯ï¼ˆé˜»å¡å¼ï¼‰
+    int send(const ChatSendMessage& msg) override;
+    // å‘é€æ¶ˆæ¯ï¼ˆæµå¼ä¼ è¾“ï¼‰
+    int StreamSend(const ChatSendMessage& msg) override;
+    // è·å–é”™è¯¯ä¿¡æ¯
+    QString GetError(const QString& errorLevel, const QString& errorContext) override;
+    // æµå¼ä¼ è¾“ç»“æŸå¤„ç†
+    void processStreamEnded() override;
+    // åˆ›å»ºAPIè¯·æ±‚
+    QNetworkRequest createApiRequest(const QUrl& url) override;
+    // å‘é€APIè¯·æ±‚
+    void sendApiRequest(const QNetworkRequest& request, QTimer* timeoutTimer, int timeoutMs) override;
+    // æ£€æŸ¥æœåŠ¡å™¨è¿æ¥ï¼ˆå¼‚æ­¥ï¼‰
+    void checkServerConnectionAsync(int timeoutMs) override;
+    // è§£ææ¨¡å‹IDåˆ—è¡¨
+    QStringList parseModelIds(const QByteArray &jsonData) override;
+    // è·å–æ¨¡å‹åˆ—è¡¨ï¼ˆå¼‚æ­¥ï¼‰
+    void fetchModelsAsync(int timeoutMs = 5000) override;
+    // è·å–åç»­å»ºè®®
+    QStringList GetFollowUpSuggestions() override;
+    // è·å–çŸ¥è¯†åº“ä¿¡æ¯
+    void getKnowledgeBase() override;
+    // ä¸Šä¼ æ–‡ä»¶
+    void uploadFile(const QString& filePath) override;
+    // åˆ é™¤æ–‡ä»¶
+    void DeleteFile(const QString& fileID) override;
+    // åˆ†æé˜»å¡å¼å“åº”
+    void AnalysisBlockResponse(QJsonObject& response_obj) override;
+    // åˆ†ææµå¼å“åº”
+    void AnalysisStreamResponse(QJsonObject& response_obj) override;
+    // æ›´æ”¹çŸ¥è¯†å›¾è°±
+    void ChangeKnowledgeGraph(const QString& kownledgeID) override;
+    // å–æ¶ˆæ–‡ä»¶ä¸Šä¼ 
+    void CancelUpdateFile(const QString& file) override;
+    // å–æ¶ˆæ‰€æœ‰æ–‡ä»¶ä¸Šä¼ 
+    void CancelAllUpdateFiles(const QStringList& fileList)override;
 
-	// ÒÑÌí¼ÓµÄÖªÊ¶¿â¼¯ºÏ
-	std::set<QString> addKnowledge;
+    // å·²æ·»åŠ çš„çŸ¥è¯†åº“é›†åˆ
+    std::set<QString> addKnowledge;
 private:
-	// ÊÇ·ñÕıÔÚÁ÷Ê½´«ÊäÍÆÀíÄÚÈİ
-	bool m_isStreamingReasoning = false;
+    // æ˜¯å¦æ­£åœ¨æµå¼ä¼ è¾“æ¨ç†å†…å®¹
+    bool m_isStreamingReasoning = false;
 
-	public slots:
-	// »ñÈ¡Ä£ĞÍÁĞ±íÍê³É´¦Àí
-	void onFetchModelsFinished() override;
-	// »ñÈ¡Ä£ĞÍÁĞ±í³¬Ê±´¦Àí
-	void onFetchModelsTimeout() override;
-	// Á¬½Ó¼ì²éÍê³É´¦Àí
-	void onCheckConnectionFinished() override;
-	// Á¬½Ó¼ì²é³¬Ê±´¦Àí
-	void onCheckConnectionTimeout()override;
-	// »ñÈ¡ÖªÊ¶¿âÍê³É´¦Àí
-	void onGetKnowledgeBaseFinished() override;
-	// ÎÄ¼şÉÏ´«Íê³É´¦Àí
-	void onFileUploadFinished() override;
-	// ÎÄ¼şÉ¾³ıÍê³É´¦Àí
-	void onDeleteFileFinished() override;
+    public slots:
+    // è·å–æ¨¡å‹åˆ—è¡¨å®Œæˆå¤„ç†
+    void onFetchModelsFinished() override;
+    // è·å–æ¨¡å‹åˆ—è¡¨è¶…æ—¶å¤„ç†
+    void onFetchModelsTimeout() override;
+    // è¿æ¥æ£€æŸ¥å®Œæˆå¤„ç†
+    void onCheckConnectionFinished() override;
+    // è¿æ¥æ£€æŸ¥è¶…æ—¶å¤„ç†
+    void onCheckConnectionTimeout()override;
+    // è·å–çŸ¥è¯†åº“å®Œæˆå¤„ç†
+    void onGetKnowledgeBaseFinished() override;
+    // æ–‡ä»¶ä¸Šä¼ å®Œæˆå¤„ç†
+    void onFileUploadFinished() override;
+    // æ–‡ä»¶åˆ é™¤å®Œæˆå¤„ç†
+    void onDeleteFileFinished() override;
 
-	private slots:
-	// ´¦Àí×èÈûÊ½»Ø´ğ
-	void getAnswer() override;
-	// ´¦ÀíÁ÷Ê½»Ø´ğ
-	void getStreamAnswer() override;
+    private slots:
+    // å¤„ç†é˜»å¡å¼å›ç­”
+    void getAnswer() override;
+    // å¤„ç†æµå¼å›ç­”
+    void getStreamAnswer() override;
 
 };
 

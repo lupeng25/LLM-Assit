@@ -8,85 +8,85 @@
 #include <QDebug>
 
 MessageManager::MessageManager(QObject *parent)
-	: QObject(parent)
+    : QObject(parent)
 {
 }
 
 void MessageManager::setLLMParams(LLMParams* params)
 {
-	// Èç¹ûÖ®Ç°ÓĞ´´½¨×Ô¼ºµÄ m_LLMParams£¬ÇÒ²»ÊÇ´«ÈëµÄ²ÎÊı£¬ĞèÒªÏÈÉ¾³ı£¨±ÜÃâÄÚ´æĞ¹Â©£©
-	if (m_LLMParams != nullptr && m_LLMParams != params)
-	{
-		// ¼ì²éÊÇ·ñÊÇ¹¹Ôìº¯ÊıÖĞ´´½¨µÄ£¨Í¨¹ı¼ì²éÊÇ·ñÊÇÄ¬ÈÏ¹¹ÔìµÄ£©
-		// ÕâÀï¼òµ¥´¦Àí£ºÈç¹û m_LLMParams ´æÔÚÇÒ²»ÊÇ´«ÈëµÄ²ÎÊı£¬¾ÍÉ¾³ı
-		// ×¢Òâ£ºÕâ¼ÙÉè¹¹Ôìº¯ÊıÖĞ´´½¨µÄ m_LLMParams »áÔÚ setLLMParams Ö®Ç°Ò»Ö±´æÔÚ
-		delete m_LLMParams;
-		m_LLMParams = nullptr;
-	}
-	this->m_LLMParams = params;
+    // å¦‚æœä¹‹å‰æœ‰åˆ›å»ºè‡ªå·±çš„ m_LLMParamsï¼Œä¸”ä¸æ˜¯ä¼ å…¥çš„å‚æ•°ï¼Œéœ€è¦å…ˆåˆ é™¤ï¼ˆé¿å…å†…å­˜æ³„æ¼ï¼‰
+    if (m_LLMParams != nullptr && m_LLMParams != params)
+    {
+        // æ£€æŸ¥æ˜¯å¦æ˜¯æ„é€ å‡½æ•°ä¸­åˆ›å»ºçš„ï¼ˆé€šè¿‡æ£€æŸ¥æ˜¯å¦æ˜¯é»˜è®¤æ„é€ çš„ï¼‰
+        // è¿™é‡Œç®€å•å¤„ç†ï¼šå¦‚æœ m_LLMParams å­˜åœ¨ä¸”ä¸æ˜¯ä¼ å…¥çš„å‚æ•°ï¼Œå°±åˆ é™¤
+        // æ³¨æ„ï¼šè¿™å‡è®¾æ„é€ å‡½æ•°ä¸­åˆ›å»ºçš„ m_LLMParams ä¼šåœ¨ setLLMParams ä¹‹å‰ä¸€ç›´å­˜åœ¨
+        delete m_LLMParams;
+        m_LLMParams = nullptr;
+    }
+    this->m_LLMParams = params;
 }
 
 void MessageManager::buildRequest()
 {
-	m_NetWorkParams->clientRequest.setRawHeader("accept", "text/event-stream");
-	m_NetWorkParams->clientRequest.setUrl(QUrl(m_LLMParams->getBaseUrl()));
-	m_NetWorkParams->clientRequest.setRawHeader("Authorization", ("Bearer " + m_LLMParams->getApiKey()).toUtf8());
-	m_NetWorkParams->clientRequest.setRawHeader("Content-Type", "application/json");
+    m_NetWorkParams->clientRequest.setRawHeader("accept", "text/event-stream");
+    m_NetWorkParams->clientRequest.setUrl(QUrl(m_LLMParams->getBaseUrl()));
+    m_NetWorkParams->clientRequest.setRawHeader("Authorization", ("Bearer " + m_LLMParams->getApiKey()).toUtf8());
+    m_NetWorkParams->clientRequest.setRawHeader("Content-Type", "application/json");
 }
 
-// È¡Ïûµ±Ç°ÇëÇóµÄ¹«¹²º¯Êı
+// å–æ¶ˆå½“å‰è¯·æ±‚çš„å…¬å…±å‡½æ•°
 void MessageManager::cancelCurrentRequest()
 {
-	if (m_NetWorkParams && m_NetWorkParams->clientNetWorkReply)
-	{
-		auto reply = std::move(m_NetWorkParams->clientNetWorkReply);
-		reply->abort();
-		reply->disconnect();
-	}
+    if (m_NetWorkParams && m_NetWorkParams->clientNetWorkReply)
+    {
+        auto reply = std::move(m_NetWorkParams->clientNetWorkReply);
+        reply->abort();
+        reply->disconnect();
+    }
 }
 
-// ÑéÖ¤·şÎñÆ÷URL
+// éªŒè¯æœåŠ¡å™¨URL
 bool MessageManager::validateServerUrl()
 {
-	QUrl originalUrl = m_NetWorkParams->clientRequest.url();
-	return !originalUrl.isEmpty();
+    QUrl originalUrl = m_NetWorkParams->clientRequest.url();
+    return !originalUrl.isEmpty();
 }
 
-// ¹¹½¨API URLµÄ¹«¹²º¯Êı
+// æ„å»ºAPI URLçš„å…¬å…±å‡½æ•°
 QUrl MessageManager::buildApiUrl(const QString& apiPath)
 {
-	QUrl originalUrl = m_NetWorkParams->clientRequest.url();
+    QUrl originalUrl = m_NetWorkParams->clientRequest.url();
 
-	QUrl apiUrl;
-	apiUrl.setScheme(originalUrl.scheme());
-	apiUrl.setHost(originalUrl.host());
-	apiUrl.setPort(originalUrl.port());
-	apiUrl.setPath(apiPath);
+    QUrl apiUrl;
+    apiUrl.setScheme(originalUrl.scheme());
+    apiUrl.setHost(originalUrl.host());
+    apiUrl.setPort(originalUrl.port());
+    apiUrl.setPath(apiPath);
 
-	return apiUrl;
+    return apiUrl;
 }
 
-// »ñÈ¡µ±Ç°¿ÉÓÃµÄÄ£ĞÍÁĞ±í
+// è·å–å½“å‰å¯ç”¨çš„æ¨¡å‹åˆ—è¡¨
 QStringList MessageManager::getAvailableModels()
 {
-	return m_availableModelIds;
+    return m_availableModelIds;
 }
 
-// ÌáÈ¡ HTTP ´íÎó¶ÌÓï£¨Èç "Bad Request"¡¢"Unauthorized" µÈ£©
+// æå– HTTP é”™è¯¯çŸ­è¯­ï¼ˆå¦‚ "Bad Request"ã€"Unauthorized" ç­‰ï¼‰
 QString MessageManager::extractHttpErrorCode(const QString& errorLevel)
 {
-	static const QRegularExpression regex(R"(server replied:\s*(\w+(?:\s\w+)*))");
-	QRegularExpressionMatch match = regex.match(errorLevel);
-	return match.hasMatch() ? match.captured(1) : QString();
+    static const QRegularExpression regex(R"(server replied:\s*(\w+(?:\s\w+)*))");
+    QRegularExpressionMatch match = regex.match(errorLevel);
+    return match.hasMatch() ? match.captured(1) : QString();
 }
 
-// ´Ó JSON ÎÄ±¾ÖĞÌáÈ¡¶¥²ã×Ö¶ÎÖµ£¨×Ö·û´®ÀàĞÍ£©
+// ä» JSON æ–‡æœ¬ä¸­æå–é¡¶å±‚å­—æ®µå€¼ï¼ˆå­—ç¬¦ä¸²ç±»å‹ï¼‰
 QString MessageManager::extractJsonField(const QString& jsonText, const QString& fieldName)
 {
-	QJsonParseError parseError;
-	QJsonDocument doc = QJsonDocument::fromJson(jsonText.toUtf8(), &parseError);
-	if (parseError.error != QJsonParseError::NoError || !doc.isObject())
-		return QString();
-	QJsonObject obj = doc.object();
-	return obj.value(fieldName).toString();
+    QJsonParseError parseError;
+    QJsonDocument doc = QJsonDocument::fromJson(jsonText.toUtf8(), &parseError);
+    if (parseError.error != QJsonParseError::NoError || !doc.isObject())
+        return QString();
+    QJsonObject obj = doc.object();
+    return obj.value(fieldName).toString();
 }

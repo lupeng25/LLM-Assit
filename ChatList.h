@@ -12,85 +12,85 @@
 
 class ChatList : public QWidget
 {
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	// ¹¹Ôìº¯Êı
-	explicit ChatList(QWidget *parent = nullptr);
-	// Îö¹¹º¯Êı
-	~ChatList();
+    // æ„é€ å‡½æ•°
+    explicit ChatList(QWidget *parent = nullptr);
+    // ææ„å‡½æ•°
+    ~ChatList();
 
-	// »ñÈ¡×é¼şµÄ·ÃÎÊÆ÷
-	QPushButton* getNewConversationButton() const { return btnNewConversation; }
-	QListWidget* getConversationList() const { return m_conversationList; }
-	// ÁĞ±í²Ù×÷·½·¨
-	// Ìí¼Ó¶Ô»°Ïî
-	void addConversationItem(const QString& text, const QString& id);
-	// ²åÈë¶Ô»°Ïî
-	void insertConversationItem(int index, const QString& text, const QString& id);
-	// ÒÆ³ı¶Ô»°Ïî
-	void removeConversationItem(const QString& id);
-	// Çå¿ÕËùÓĞ¶Ô»°
-	void clearConversations();
-	// Ñ¡Ôñ²Ù×÷
-	// ÉèÖÃµ±Ç°¶Ô»°
-	void setCurrentConversation(const QString& id);
-	// »ñÈ¡µ±Ç°¶Ô»°ID
-	QString getCurrentConversationId() const;
-	// »ñÈ¡µ±Ç°Ïî
-	QListWidgetItem* getCurrentItem() const;
-	// ÉèÖÃµ±Ç°Ñ¡ÖĞÏîµÄÎÄ±¾
-	void setCurrentItemText(const QString& text);
-	// ÉèÖÃ¶Ô»°Ê±¼ä´Á
-	void setConversationTimestamp(const QString& id, const QString& timestamp);
-	// »ñÈ¡ÁĞ±íÏîÊıÁ¿
-	int count() const { return m_conversationList->count(); }
-	// ÉèÖÃµ±Ç°ĞĞ
-	void setCurrentRow(int row) { m_conversationList->setCurrentRow(row); }
-	// ¶Ô»°ÏîÊı¾İ½ÇÉ«Ã¶¾Ù
-	enum ConversationRole
-	{
-		IdRole = Qt::UserRole,        // ID½ÇÉ«
-		TimestampRole = Qt::UserRole + 1  // Ê±¼ä´Á½ÇÉ«
-	};
+    // è·å–ç»„ä»¶çš„è®¿é—®å™¨
+    QPushButton* getNewConversationButton() const { return btnNewConversation; }
+    QListWidget* getConversationList() const { return m_conversationList; }
+    // åˆ—è¡¨æ“ä½œæ–¹æ³•
+    // æ·»åŠ å¯¹è¯é¡¹
+    void addConversationItem(const QString& text, const QString& id);
+    // æ’å…¥å¯¹è¯é¡¹
+    void insertConversationItem(int index, const QString& text, const QString& id);
+    // ç§»é™¤å¯¹è¯é¡¹
+    void removeConversationItem(const QString& id);
+    // æ¸…ç©ºæ‰€æœ‰å¯¹è¯
+    void clearConversations();
+    // é€‰æ‹©æ“ä½œ
+    // è®¾ç½®å½“å‰å¯¹è¯
+    void setCurrentConversation(const QString& id);
+    // è·å–å½“å‰å¯¹è¯ID
+    QString getCurrentConversationId() const;
+    // è·å–å½“å‰é¡¹
+    QListWidgetItem* getCurrentItem() const;
+    // è®¾ç½®å½“å‰é€‰ä¸­é¡¹çš„æ–‡æœ¬
+    void setCurrentItemText(const QString& text);
+    // è®¾ç½®å¯¹è¯æ—¶é—´æˆ³
+    void setConversationTimestamp(const QString& id, const QString& timestamp);
+    // è·å–åˆ—è¡¨é¡¹æ•°é‡
+    int count() const { return m_conversationList->count(); }
+    // è®¾ç½®å½“å‰è¡Œ
+    void setCurrentRow(int row) { m_conversationList->setCurrentRow(row); }
+    // å¯¹è¯é¡¹æ•°æ®è§’è‰²æšä¸¾
+    enum ConversationRole
+    {
+        IdRole = Qt::UserRole,        // IDè§’è‰²
+        TimestampRole = Qt::UserRole + 1  // æ—¶é—´æˆ³è§’è‰²
+    };
 
 signals:
-	// ĞÂ½¨¶Ô»°ÇëÇóĞÅºÅ
-	void newConversationRequested();
-	// ¶Ô»°Ñ¡ÔñĞÅºÅ
-	void conversationSelected(const QString& conversationId);
-	// ¶Ô»°¸Ä±äĞÅºÅ
-	void conversationChanged(QListWidgetItem* current, QListWidgetItem* previous);
-	// ÉÏÏÂÎÄ²Ëµ¥ÇëÇóĞÅºÅ
-	void contextMenuRequested(const QPoint& pos);
-	// ÖØÃüÃûÇëÇóĞÅºÅ
-	void renameRequested();
-	// É¾³ıÇëÇóĞÅºÅ
-	void deleteRequested();
-	// µ¼³ö¶Ô»°ÇëÇóĞÅºÅ
-	void exportConversationRequested(const QString& conversationId, const QString& format);
-	// ÏÔÊ¾ÏêÇéÇëÇóĞÅºÅ
-	void showDetailsRequested(const QString& conversationId);
+    // æ–°å»ºå¯¹è¯è¯·æ±‚ä¿¡å·
+    void newConversationRequested();
+    // å¯¹è¯é€‰æ‹©ä¿¡å·
+    void conversationSelected(const QString& conversationId);
+    // å¯¹è¯æ”¹å˜ä¿¡å·
+    void conversationChanged(QListWidgetItem* current, QListWidgetItem* previous);
+    // ä¸Šä¸‹æ–‡èœå•è¯·æ±‚ä¿¡å·
+    void contextMenuRequested(const QPoint& pos);
+    // é‡å‘½åè¯·æ±‚ä¿¡å·
+    void renameRequested();
+    // åˆ é™¤è¯·æ±‚ä¿¡å·
+    void deleteRequested();
+    // å¯¼å‡ºå¯¹è¯è¯·æ±‚ä¿¡å·
+    void exportConversationRequested(const QString& conversationId, const QString& format);
+    // æ˜¾ç¤ºè¯¦æƒ…è¯·æ±‚ä¿¡å·
+    void showDetailsRequested(const QString& conversationId);
 
-	private slots:
-	// ĞÂ½¨¶Ô»°°´Å¥µã»÷´¦Àí
-	void onNewConversationClicked();
-	// ¶Ô»°Ñ¡Ôñ¸Ä±ä´¦Àí
-	void onConversationSelectionChanged(QListWidgetItem* current, QListWidgetItem* previous);
-	// ÏÔÊ¾ÉÏÏÂÎÄ²Ëµ¥
-	void showContextMenu(const QPoint& pos);
+    private slots:
+    // æ–°å»ºå¯¹è¯æŒ‰é’®ç‚¹å‡»å¤„ç†
+    void onNewConversationClicked();
+    // å¯¹è¯é€‰æ‹©æ”¹å˜å¤„ç†
+    void onConversationSelectionChanged(QListWidgetItem* current, QListWidgetItem* previous);
+    // æ˜¾ç¤ºä¸Šä¸‹æ–‡èœå•
+    void showContextMenu(const QPoint& pos);
 
 private:
-	// ÉèÖÃUI
-	void setupUI();
-	// Á¬½ÓĞÅºÅ²Û
-	void connectSignals();
-	// ¸ù¾İID²éÕÒÁĞ±íÏî
-	QListWidgetItem* findItemById(const QString& id) const;
-	// UI×é¼ş
-	QVBoxLayout* mainLayout;
-	QPushButton* btnNewConversation;
-	QListWidget* m_conversationList;
+    // è®¾ç½®UI
+    void setupUI();
+    // è¿æ¥ä¿¡å·æ§½
+    void connectSignals();
+    // æ ¹æ®IDæŸ¥æ‰¾åˆ—è¡¨é¡¹
+    QListWidgetItem* findItemById(const QString& id) const;
+    // UIç»„ä»¶
+    QVBoxLayout* mainLayout;
+    QPushButton* btnNewConversation;
+    QListWidget* m_conversationList;
 
 
 };

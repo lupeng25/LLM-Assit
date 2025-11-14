@@ -1,590 +1,590 @@
 #include "OllamaClient.h"
 
 OllamaClient::OllamaClient(QObject *parent)
-	: MessageManager(parent)
+    : MessageManager(parent)
 {
-	m_LLMParams = new LLMParams();
-	m_NetWorkParams = new ClientNetWork();
+    m_LLMParams = new LLMParams();
+    m_NetWorkParams = new ClientNetWork();
 
-	// ³õÊ¼»¯Á¬½Ó²âÊÔ¶¨Ê±Æ÷
-	m_connectionCheckTimer = new QTimer(this);
-	m_connectionCheckTimer->setSingleShot(true);
-	connect(m_connectionCheckTimer, &QTimer::timeout, this, &OllamaClient::onCheckConnectionTimeout);
+    // åˆå§‹åŒ–è¿æ¥æµ‹è¯•å®šæ—¶å™¨
+    m_connectionCheckTimer = new QTimer(this);
+    m_connectionCheckTimer->setSingleShot(true);
+    connect(m_connectionCheckTimer, &QTimer::timeout, this, &OllamaClient::onCheckConnectionTimeout);
 
-	// ³õÊ¼»¯»ñÈ¡Ä£ĞÍÁĞ±í¶¨Ê±Æ÷
-	m_fetchModelsTimer = new QTimer(this);
-	m_fetchModelsTimer->setSingleShot(true);
-	connect(m_fetchModelsTimer, &QTimer::timeout, this, &OllamaClient::onFetchModelsTimeout);
+    // åˆå§‹åŒ–è·å–æ¨¡å‹åˆ—è¡¨å®šæ—¶å™¨
+    m_fetchModelsTimer = new QTimer(this);
+    m_fetchModelsTimer->setSingleShot(true);
+    connect(m_fetchModelsTimer, &QTimer::timeout, this, &OllamaClient::onFetchModelsTimeout);
 
-	m_currentRequestType = RequestType::ConnectionCheck;
+    m_currentRequestType = RequestType::ConnectionCheck;
 }
 
 OllamaClient::~OllamaClient()
 {
-	if (m_NetWorkParams && m_NetWorkParams->clientNetWorkReply)
-	{
-		m_NetWorkParams->clientNetWorkReply->abort();
-		m_NetWorkParams->clientNetWorkReply->disconnect();
-		m_NetWorkParams->clientNetWorkReply.reset();
-	}
-	// ×¢Òâ£ºm_LLMParams ¿ÉÄÜÒÑ±» setLLMParams() ÉèÖÃÎªÍâ²¿¹ÜÀíµÄ¶ÔÏó
-	// setLLMParams() ÒÑ¾­´¦ÀíÁË¹¹Ôìº¯ÊıÖĞ´´½¨µÄ m_LLMParams µÄÉ¾³ı
-	// Èç¹û m_LLMParams ÊÇÍâ²¿´«ÈëµÄ£¬²»Ó¦¸ÃÔÚÕâÀïÉ¾³ı£¬ÓÉÍâ²¿¹ÜÀíÆäÉúÃüÖÜÆÚ
-	// Òò´ËÕâÀï²»É¾³ı m_LLMParams£¬±ÜÃâË«ÖØÊÍ·Å
-	delete m_NetWorkParams;
-	m_LLMParams = nullptr;
-	m_NetWorkParams = nullptr;
+    if (m_NetWorkParams && m_NetWorkParams->clientNetWorkReply)
+    {
+        m_NetWorkParams->clientNetWorkReply->abort();
+        m_NetWorkParams->clientNetWorkReply->disconnect();
+        m_NetWorkParams->clientNetWorkReply.reset();
+    }
+    // æ³¨æ„ï¼šm_LLMParams å¯èƒ½å·²è¢« setLLMParams() è®¾ç½®ä¸ºå¤–éƒ¨ç®¡ç†çš„å¯¹è±¡
+    // setLLMParams() å·²ç»å¤„ç†äº†æ„é€ å‡½æ•°ä¸­åˆ›å»ºçš„ m_LLMParams çš„åˆ é™¤
+    // å¦‚æœ m_LLMParams æ˜¯å¤–éƒ¨ä¼ å…¥çš„ï¼Œä¸åº”è¯¥åœ¨è¿™é‡Œåˆ é™¤ï¼Œç”±å¤–éƒ¨ç®¡ç†å…¶ç”Ÿå‘½å‘¨æœŸ
+    // å› æ­¤è¿™é‡Œä¸åˆ é™¤ m_LLMParamsï¼Œé¿å…åŒé‡é‡Šæ”¾
+    delete m_NetWorkParams;
+    m_LLMParams = nullptr;
+    m_NetWorkParams = nullptr;
 }
 
 AIProvider OllamaClient::getProvider() const
 {
-	return AIProvider::Ollama;
+    return AIProvider::Ollama;
 }
 
 QString OllamaClient::getProviderName() const
 {
-	return "Ollama";
+    return "Ollama";
 }
 
 QString OllamaClient::getVersion() const
 {
-	return "1.0";
+    return "1.0";
 }
 
 QByteArray OllamaClient::buildMessageBody(const ChatSendMessage& msg)
 {
-	QJsonObject SendMessageBody;
-	QJsonObject ModelSettingsBody;
-	QJsonArray messagesArray;
-	QJsonObject messageObject;
-	const std::map<int, QString> modelMap =
-	{
-		{ 0, "gkg" },
-		{ 1, "gkg32" },
-		{ 2, "gkgvision" },
-		{ 3, "Codeinter" }
-	};
-	messageObject["role"] = "user";//½ÇÉ«
+    QJsonObject SendMessageBody;
+    QJsonObject ModelSettingsBody;
+    QJsonArray messagesArray;
+    QJsonObject messageObject;
+    const std::map<int, QString> modelMap =
+    {
+        { 0, "gkg" },
+        { 1, "gkg32" },
+        { 2, "gkgvision" },
+        { 3, "Codeinter" }
+    };
+    messageObject["role"] = "user";//è§’è‰²
 
-								   //·¢ËÍĞÅÏ¢:ÊäÈëĞÅÏ¢+ÎÄµµi...
-	QString finalSendMsg = msg.SendText;
-	if (msg.fileContext.size() > 0)
-	{
-		for (int i = 0; i<msg.fileContext.size(); i++)
-		{
-			finalSendMsg += QStringLiteral("\n ÎÄµµ%1ÄÚÈİ:").arg(i) + msg.fileContext[i];
-		}
-	}
-	//finalSendMsg += m_LLMParams->getOpenThink() ? "\\think" : "\\no_think";
-	messageObject["content"] = finalSendMsg;
-	//Í¼Ïñ:Ä¿Ç°½öÖ§³Ö×ªbase64¸ñÊ½
-	if (msg.Image64.size() > 0)
-	{
-		QJsonArray ImagejsonArray;
-		for (const QString &base64Str : msg.Image64)
-		{
-			ImagejsonArray.append(base64Str);
-			qDebug() << base64Str;
-			std::string testc = base64Str.toStdString();
-		}
-		messageObject["images"] = ImagejsonArray;
-	}
-	messagesArray.append(messageObject);
-	//Ä£ĞÍ²ÎÊıÉèÖÃ
-	SendMessageBody["model"] = m_availableModelIds.empty() ? modelMap.find(m_LLMParams->getModel())->second :
-		m_availableModelIds[m_LLMParams->getModel()];
-	SendMessageBody["messages"] = messagesArray;
-	SendMessageBody["think"] = m_LLMParams->getOpenThink();
-	ModelSettingsBody["mode"] = (m_LLMParams->getChatMode() == 0) ? "query" : "chat";
-	ModelSettingsBody["max_tokens"] = m_LLMParams->getMaxToken();
-	ModelSettingsBody["temperature"] = m_LLMParams->getTemperature();
-	if (m_availableModelIds[m_LLMParams->getModel()] == "qwen2.5vl:32b")
-	{
-		ModelSettingsBody["keep_alive"] = "24h";
-	}
-	SendMessageBody["options"] = ModelSettingsBody;
-	if (m_LLMParams->getStreamChat())
-	{
-		SendMessageBody.insert("stream", true);
-	}
-	else
-	{
-		SendMessageBody.insert("stream", false);
-		//SendMessageBody["tools"] = m_LLMParams->getFunctionCallTools();
-	}
+                                   //å‘é€ä¿¡æ¯:è¾“å…¥ä¿¡æ¯+æ–‡æ¡£i...
+    QString finalSendMsg = msg.SendText;
+    if (msg.fileContext.size() > 0)
+    {
+        for (int i = 0; i<msg.fileContext.size(); i++)
+        {
+            finalSendMsg += QStringLiteral("\n æ–‡æ¡£%1å†…å®¹:").arg(i) + msg.fileContext[i];
+        }
+    }
+    //finalSendMsg += m_LLMParams->getOpenThink() ? "\\think" : "\\no_think";
+    messageObject["content"] = finalSendMsg;
+    //å›¾åƒ:ç›®å‰ä»…æ”¯æŒè½¬base64æ ¼å¼
+    if (msg.Image64.size() > 0)
+    {
+        QJsonArray ImagejsonArray;
+        for (const QString &base64Str : msg.Image64)
+        {
+            ImagejsonArray.append(base64Str);
+            qDebug() << base64Str;
+            std::string testc = base64Str.toStdString();
+        }
+        messageObject["images"] = ImagejsonArray;
+    }
+    messagesArray.append(messageObject);
+    //æ¨¡å‹å‚æ•°è®¾ç½®
+    SendMessageBody["model"] = m_availableModelIds.empty() ? modelMap.find(m_LLMParams->getModel())->second :
+        m_availableModelIds[m_LLMParams->getModel()];
+    SendMessageBody["messages"] = messagesArray;
+    SendMessageBody["think"] = m_LLMParams->getOpenThink();
+    ModelSettingsBody["mode"] = (m_LLMParams->getChatMode() == 0) ? "query" : "chat";
+    ModelSettingsBody["max_tokens"] = m_LLMParams->getMaxToken();
+    ModelSettingsBody["temperature"] = m_LLMParams->getTemperature();
+    if (m_availableModelIds[m_LLMParams->getModel()] == "qwen2.5vl:32b")
+    {
+        ModelSettingsBody["keep_alive"] = "24h";
+    }
+    SendMessageBody["options"] = ModelSettingsBody;
+    if (m_LLMParams->getStreamChat())
+    {
+        SendMessageBody.insert("stream", true);
+    }
+    else
+    {
+        SendMessageBody.insert("stream", false);
+        //SendMessageBody["tools"] = m_LLMParams->getFunctionCallTools();
+    }
 
-	return QJsonDocument(SendMessageBody).toJson();
+    return QJsonDocument(SendMessageBody).toJson();
 }
 
 void OllamaClient::SendPreProcess(const ChatSendMessage& msg)
 {
-	QByteArray postData = buildMessageBody(msg);
-	QSslConfiguration config = QSslConfiguration::defaultConfiguration();
-	config.setProtocol(QSsl::AnyProtocol);
-	config.setPeerVerifyMode(QSslSocket::VerifyNone);
-	m_NetWorkParams->clientRequest.setSslConfiguration(config);
-	m_NetWorkParams->clientNetWorkReply = std::unique_ptr<QNetworkReply>(m_NetWorkParams->clientNetWorkManager->post(m_NetWorkParams->clientRequest, postData));
+    QByteArray postData = buildMessageBody(msg);
+    QSslConfiguration config = QSslConfiguration::defaultConfiguration();
+    config.setProtocol(QSsl::AnyProtocol);
+    config.setPeerVerifyMode(QSslSocket::VerifyNone);
+    m_NetWorkParams->clientRequest.setSslConfiguration(config);
+    m_NetWorkParams->clientNetWorkReply = std::unique_ptr<QNetworkReply>(m_NetWorkParams->clientNetWorkManager->post(m_NetWorkParams->clientRequest, postData));
 }
 
 QJsonObject OllamaClient::parseJsonReplyToMsg(const QByteArray &data)
 {
-	QJsonDocument response_doc = QJsonDocument::fromJson(data);
-	if (response_doc.isNull())
-		return QJsonObject();
+    QJsonDocument response_doc = QJsonDocument::fromJson(data);
+    if (response_doc.isNull())
+        return QJsonObject();
 
-	QJsonObject rsp_json = response_doc.object();
-	return rsp_json;
+    QJsonObject rsp_json = response_doc.object();
+    return rsp_json;
 }
 
 int OllamaClient::send(const ChatSendMessage& msg)
 {
-	m_isStreamingReasoning = false;
-	SendPreProcess(msg);
-	connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished, this, &OllamaClient::getAnswer);
-	return true;
+    m_isStreamingReasoning = false;
+    SendPreProcess(msg);
+    connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished, this, &OllamaClient::getAnswer);
+    return true;
 }
 
 int OllamaClient::StreamSend(const ChatSendMessage& msg)
 {
-	m_isStreamingReasoning = false;
-	SendPreProcess(msg);
-	connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::readyRead, this, &OllamaClient::getStreamAnswer, Qt::QueuedConnection);
-	connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished, this, &OllamaClient::processStreamEnded);
-	return true;
+    m_isStreamingReasoning = false;
+    SendPreProcess(msg);
+    connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::readyRead, this, &OllamaClient::getStreamAnswer, Qt::QueuedConnection);
+    connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished, this, &OllamaClient::processStreamEnded);
+    return true;
 }
 
 QString OllamaClient::GetError(const QString& errorLevel, const QString& errorContext)
 {
-	ChangeButtonStatus(true);
-	static const QMap<QString, QString> contextErrorMap = {
-		{ "Connection timed out", QStringLiteral("Á¬½ÓÇëÇó³¬Ê±") },
-		{ "Permission denied",    QStringLiteral("È¨ÏŞ²»×ã") },
-		{ "Connection refused",QStringLiteral("·şÎñÆ÷¾Ü¾øÁ¬½Ó") }
-	};
+    ChangeButtonStatus(true);
+    static const QMap<QString, QString> contextErrorMap = {
+        { "Connection timed out", tr("Connection timed out") },
+        { "Permission denied", tr("Permission denied") },
+        { "Connection refused",tr("Connection refused") }
+    };
 
-	if (contextErrorMap.contains(errorLevel))
-	{
-		return contextErrorMap.value(errorLevel);
-	}
-	else if (errorLevel.contains("not found"))
-		return tr("IP Address Error");
+    if (contextErrorMap.contains(errorLevel))
+    {
+        return contextErrorMap.value(errorLevel);
+    }
+    else if (errorLevel.contains("not found"))
+        return tr("IP Address Error");
 
-	QString errorCode = MessageManager::extractHttpErrorCode(errorLevel);
+    QString errorCode = MessageManager::extractHttpErrorCode(errorLevel);
 
-	if (errorCode == "Bad Request")
-	{
-		const QString errorMsg = MessageManager::extractJsonField(errorContext, QStringLiteral("error"));
-		if (!errorMsg.isEmpty())
-		{
-			if (errorMsg == "Message is empty")
-				return tr("Please Input Useful Message");
-			return tr("Error") + errorMsg;
-		}
-		return tr("Please Check Input or IP Address");
-	}
-	else if (errorCode == "Forbidden")
-	{
-		return tr("API Key Error");
-	}
+    if (errorCode == "Bad Request")
+    {
+        const QString errorMsg = MessageManager::extractJsonField(errorContext, QStringLiteral("error"));
+        if (!errorMsg.isEmpty())
+        {
+            if (errorMsg == "Message is empty")
+                return tr("Please Input Useful Message");
+            return tr("Error") + errorMsg;
+        }
+        return tr("Please Check Input or IP Address");
+    }
+    else if (errorCode == "Forbidden")
+    {
+        return tr("API Key Error");
+    }
 
-	return tr("Unkonw Error");
+    return tr("Unkonw Error");
 }
 
 void OllamaClient::processStreamEnded()
 {
-	if (m_NetWorkParams->clientNetWorkReply->error())
-	{
-		QString errorMsg = GetError(m_NetWorkParams->clientNetWorkReply->errorString(), m_NetWorkParams->clientNetWorkReply->readAll());
-		emit Answer(errorMsg, true);
-		return;
-	}
-	if (m_isStreamingReasoning)
-	{
-		emit AnswerStream(QStringLiteral("</think>"));
-		m_isStreamingReasoning = false;
-	}
-	m_NetWorkParams->rawBuffer.clear();
-	emit StreamEnded();
+    if (m_NetWorkParams->clientNetWorkReply->error())
+    {
+        QString errorMsg = GetError(m_NetWorkParams->clientNetWorkReply->errorString(), m_NetWorkParams->clientNetWorkReply->readAll());
+        emit Answer(errorMsg, true);
+        return;
+    }
+    if (m_isStreamingReasoning)
+    {
+        emit AnswerStream(QStringLiteral("</think>"));
+        m_isStreamingReasoning = false;
+    }
+    m_NetWorkParams->rawBuffer.clear();
+    emit StreamEnded();
 }
 
 void OllamaClient::getAnswer()
 {
 
-	if (m_NetWorkParams->clientNetWorkReply->error() == QNetworkReply::NoError)
-	{
-		QByteArray read_data = m_NetWorkParams->clientNetWorkReply->readAll();
-		QJsonObject Content = parseJsonReplyToMsg(read_data);
-		QString textresponse;
-		bool isFunctionCall = Content.contains("tool_calls");
-		if (!isFunctionCall)
-		{
-			QJsonObject msgs = Content.value("message").toObject();
-			const QString content = msgs.value("content").toString();
-			const QString reasoning = msgs.value("thinking").toString();
-			if (!content.isEmpty() || !reasoning.isEmpty())
-			{
-				if (!reasoning.isEmpty())
-				{
-					textresponse = QStringLiteral("<think>%1</think>%2")
-						.arg(reasoning.trimmed(), content);
-				}
-				else
-				{
-					textresponse = content;
-				}
-				emit Answer(textresponse, false);
-			}
-			else
-			{
-				emit Answer("Invalid response format", false);
-			}
-		}
-		else
-		{
-			emit FunctionCallSignal(Content);
+    if (m_NetWorkParams->clientNetWorkReply->error() == QNetworkReply::NoError)
+    {
+        QByteArray read_data = m_NetWorkParams->clientNetWorkReply->readAll();
+        QJsonObject Content = parseJsonReplyToMsg(read_data);
+        QString textresponse;
+        bool isFunctionCall = Content.contains("tool_calls");
+        if (!isFunctionCall)
+        {
+            QJsonObject msgs = Content.value("message").toObject();
+            const QString content = msgs.value("content").toString();
+            const QString reasoning = msgs.value("thinking").toString();
+            if (!content.isEmpty() || !reasoning.isEmpty())
+            {
+                if (!reasoning.isEmpty())
+                {
+                    textresponse = QStringLiteral("<think>%1</think>%2")
+                        .arg(reasoning.trimmed(), content);
+                }
+                else
+                {
+                    textresponse = content;
+                }
+                emit Answer(textresponse, false);
+            }
+            else
+            {
+                emit Answer("Invalid response format", false);
+            }
+        }
+        else
+        {
+            emit FunctionCallSignal(Content);
 
-		}
-	}
-	else
-	{
-		emit Answer(GetError(m_NetWorkParams->clientNetWorkReply->errorString(), m_NetWorkParams->clientNetWorkReply->readAll()), true);
-	}
-	m_NetWorkParams->clientNetWorkReply.reset();
-	ChangeButtonStatus(true);
+        }
+    }
+    else
+    {
+        emit Answer(GetError(m_NetWorkParams->clientNetWorkReply->errorString(), m_NetWorkParams->clientNetWorkReply->readAll()), true);
+    }
+    m_NetWorkParams->clientNetWorkReply.reset();
+    ChangeButtonStatus(true);
 }
 
 void OllamaClient::getStreamAnswer()
 {
-	if (m_NetWorkParams->clientNetWorkReply->error() == QNetworkReply::NoError)
-	{
-		QByteArray response_data = m_NetWorkParams->clientNetWorkReply->readAll();
-		m_NetWorkParams->rawBuffer.append(response_data);
-		QByteArray tmp_data = QByteArray(response_data);
-		int pos;
-		while ((pos = m_NetWorkParams->rawBuffer.indexOf("\n")) != -1)
-		{
-			QByteArray chunk = m_NetWorkParams->rawBuffer.left(pos);
-			m_NetWorkParams->rawBuffer.remove(0, pos + 1);
-			if (chunk.trimmed().isEmpty())
-			{
-				continue;
-			}
-			QJsonObject obj = parseJsonReplyToMsg(chunk);
-			if (obj.contains("message"))
-			{
-				QJsonObject msg = obj["message"].toObject();
-				const QString reasoning = msg.value("thinking").toString();
-				const QString content = msg.value("content").toString();
+    if (m_NetWorkParams->clientNetWorkReply->error() == QNetworkReply::NoError)
+    {
+        QByteArray response_data = m_NetWorkParams->clientNetWorkReply->readAll();
+        m_NetWorkParams->rawBuffer.append(response_data);
+        QByteArray tmp_data = QByteArray(response_data);
+        int pos;
+        while ((pos = m_NetWorkParams->rawBuffer.indexOf("\n")) != -1)
+        {
+            QByteArray chunk = m_NetWorkParams->rawBuffer.left(pos);
+            m_NetWorkParams->rawBuffer.remove(0, pos + 1);
+            if (chunk.trimmed().isEmpty())
+            {
+                continue;
+            }
+            QJsonObject obj = parseJsonReplyToMsg(chunk);
+            if (obj.contains("message"))
+            {
+                QJsonObject msg = obj["message"].toObject();
+                const QString reasoning = msg.value("thinking").toString();
+                const QString content = msg.value("content").toString();
 
-				if (!reasoning.isEmpty()) {
-					if (!m_isStreamingReasoning) {
-						emit AnswerStream(QStringLiteral("<think>%1").arg(reasoning));
-						m_isStreamingReasoning = true;
-					}
-					else {
-						emit AnswerStream(reasoning);
-					}
-				}
+                if (!reasoning.isEmpty()) {
+                    if (!m_isStreamingReasoning) {
+                        emit AnswerStream(QStringLiteral("<think>%1").arg(reasoning));
+                        m_isStreamingReasoning = true;
+                    }
+                    else {
+                        emit AnswerStream(reasoning);
+                    }
+                }
 
-				if (!content.isEmpty()) {
-					if (m_isStreamingReasoning) {
-						emit AnswerStream(QStringLiteral("</think>%1").arg(content));
-						m_isStreamingReasoning = false;
-					}
-					else {
-						emit AnswerStream(content);
-					}
-				}
-			}
-		}
-	}
+                if (!content.isEmpty()) {
+                    if (m_isStreamingReasoning) {
+                        emit AnswerStream(QStringLiteral("</think>%1").arg(content));
+                        m_isStreamingReasoning = false;
+                    }
+                    else {
+                        emit AnswerStream(content);
+                    }
+                }
+            }
+        }
+    }
 }
 
 QNetworkRequest OllamaClient::createApiRequest(const QUrl& url)
 {
-	QNetworkRequest request(url);
+    QNetworkRequest request(url);
 
-	// ÉèÖÃÍ¨ÓÃÇëÇóÍ·
-	request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-	request.setHeader(QNetworkRequest::UserAgentHeader, "OpenWebUIClient/1.0");
+    // è®¾ç½®é€šç”¨è¯·æ±‚å¤´
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    request.setHeader(QNetworkRequest::UserAgentHeader, "OpenWebUIClient/1.0");
 
-	// ÅäÖÃSSL
-	QSslConfiguration config = QSslConfiguration::defaultConfiguration();
-	config.setProtocol(QSsl::AnyProtocol);
-	config.setPeerVerifyMode(QSslSocket::VerifyNone);
-	request.setSslConfiguration(config);
+    // é…ç½®SSL
+    QSslConfiguration config = QSslConfiguration::defaultConfiguration();
+    config.setProtocol(QSsl::AnyProtocol);
+    config.setPeerVerifyMode(QSslSocket::VerifyNone);
+    request.setSslConfiguration(config);
 
-	// ¸´ÖÆÈÏÖ¤ĞÅÏ¢
-	QVariant authHeader = m_NetWorkParams->clientRequest.rawHeader("Authorization");
-	if (authHeader.isValid())
-	{
-		request.setRawHeader("Authorization", authHeader.toByteArray());
-	}
+    // å¤åˆ¶è®¤è¯ä¿¡æ¯
+    QVariant authHeader = m_NetWorkParams->clientRequest.rawHeader("Authorization");
+    if (authHeader.isValid())
+    {
+        request.setRawHeader("Authorization", authHeader.toByteArray());
+    }
 
-	return request;
+    return request;
 }
 
 void OllamaClient::sendApiRequest(const QNetworkRequest& request, QTimer* timeoutTimer, int timeoutMs)
 {
-	m_NetWorkParams->clientNetWorkReply = std::unique_ptr<QNetworkReply>(
-		m_NetWorkParams->clientNetWorkManager->get(request));
+    m_NetWorkParams->clientNetWorkReply = std::unique_ptr<QNetworkReply>(
+        m_NetWorkParams->clientNetWorkManager->get(request));
 
-	// ¸ù¾İÇëÇóÀàĞÍÁ¬½ÓÏàÓ¦µÄ´¦Àíº¯Êı
-	if (m_currentRequestType == RequestType::FetchModels)
-	{
-		connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
-			this, &OllamaClient::onFetchModelsFinished);
-		// Æô¶¯³¬Ê±¶¨Ê±Æ÷
-		timeoutTimer->start(timeoutMs);
-	}
-	else if (m_currentRequestType == RequestType::ConnectionCheck)
-	{
-		connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
-			this, &OllamaClient::onCheckConnectionFinished);
-		// Æô¶¯³¬Ê±¶¨Ê±Æ÷
-		timeoutTimer->start(timeoutMs);
-	}
-	else if (m_currentRequestType == RequestType::GetKonwledgeBase)
-	{
-		connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
-			this, &OllamaClient::onGetKnowledgeBaseFinished);
-	}
+    // æ ¹æ®è¯·æ±‚ç±»å‹è¿æ¥ç›¸åº”çš„å¤„ç†å‡½æ•°
+    if (m_currentRequestType == RequestType::FetchModels)
+    {
+        connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
+            this, &OllamaClient::onFetchModelsFinished);
+        // å¯åŠ¨è¶…æ—¶å®šæ—¶å™¨
+        timeoutTimer->start(timeoutMs);
+    }
+    else if (m_currentRequestType == RequestType::ConnectionCheck)
+    {
+        connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
+            this, &OllamaClient::onCheckConnectionFinished);
+        // å¯åŠ¨è¶…æ—¶å®šæ—¶å™¨
+        timeoutTimer->start(timeoutMs);
+    }
+    else if (m_currentRequestType == RequestType::GetKonwledgeBase)
+    {
+        connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
+            this, &OllamaClient::onGetKnowledgeBaseFinished);
+    }
 }
 
 QStringList OllamaClient::parseModelIds(const QByteArray &jsonData)
 {
-	QStringList modelIds;
+    QStringList modelIds;
 
-	QJsonParseError parseError;
-	QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData, &parseError);
+    QJsonParseError parseError;
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData, &parseError);
 
-	if (parseError.error != QJsonParseError::NoError)
-	{
-		return modelIds;
-	}
+    if (parseError.error != QJsonParseError::NoError)
+    {
+        return modelIds;
+    }
 
-	QJsonObject jsonObj = jsonDoc.object();
-	QJsonArray modelsArray;
+    QJsonObject jsonObj = jsonDoc.object();
+    QJsonArray modelsArray;
 
-	// ¼ì²é²»Í¬µÄJSON½á¹¹
-	if (jsonObj.contains("data"))
-	{
-		modelsArray = jsonObj["data"].toArray();
-	}
-	else if (jsonObj.contains("models"))
-	{
-		modelsArray = jsonObj["models"].toArray();
-	}
-	else if (jsonDoc.isArray())
-	{
-		modelsArray = jsonDoc.array();
-	}
+    // æ£€æŸ¥ä¸åŒçš„JSONç»“æ„
+    if (jsonObj.contains("data"))
+    {
+        modelsArray = jsonObj["data"].toArray();
+    }
+    else if (jsonObj.contains("models"))
+    {
+        modelsArray = jsonObj["models"].toArray();
+    }
+    else if (jsonDoc.isArray())
+    {
+        modelsArray = jsonDoc.array();
+    }
 
-	for (const QJsonValue &modelValue : modelsArray)
-	{
-		if (modelValue.isObject())
-		{
-			QJsonObject modelObj = modelValue.toObject();
-			if (modelObj.contains("model"))
-			{
-				QString modelId = modelObj["model"].toString();
-				if (!modelId.isEmpty())
-				{
-					modelIds.append(modelId);
-				}
-			}
-		}
-	}
-	return modelIds;
+    for (const QJsonValue &modelValue : modelsArray)
+    {
+        if (modelValue.isObject())
+        {
+            QJsonObject modelObj = modelValue.toObject();
+            if (modelObj.contains("model"))
+            {
+                QString modelId = modelObj["model"].toString();
+                if (!modelId.isEmpty())
+                {
+                    modelIds.append(modelId);
+                }
+            }
+        }
+    }
+    return modelIds;
 }
 
 void OllamaClient::checkServerConnectionAsync(int timeoutMs)
 {
-	// È¡ÏûÖ®Ç°µÄÇëÇó
-	cancelCurrentRequest();
+    // å–æ¶ˆä¹‹å‰çš„è¯·æ±‚
+    cancelCurrentRequest();
 
-	// ÉèÖÃÇëÇóÀàĞÍ
-	m_currentRequestType = RequestType::ConnectionCheck;
+    // è®¾ç½®è¯·æ±‚ç±»å‹
+    m_currentRequestType = RequestType::ConnectionCheck;
 
-	// ÑéÖ¤URL
-	if (!validateServerUrl())
-	{
-		emit serverConnectionCheckFinished(false, tr("URL Error"));
-		return;
-	}
+    // éªŒè¯URL
+    if (!validateServerUrl())
+    {
+        emit serverConnectionCheckFinished(false, tr("URL Error"));
+        return;
+    }
 
-	// ¹¹½¨ÇëÇó²¢·¢ËÍ
-	QUrl testUrl = buildApiUrl("/api/version");
-	QNetworkRequest testRequest = createApiRequest(testUrl);
-	sendApiRequest(testRequest, m_connectionCheckTimer, timeoutMs);
+    // æ„å»ºè¯·æ±‚å¹¶å‘é€
+    QUrl testUrl = buildApiUrl("/api/version");
+    QNetworkRequest testRequest = createApiRequest(testUrl);
+    sendApiRequest(testRequest, m_connectionCheckTimer, timeoutMs);
 }
 
 void OllamaClient::onCheckConnectionFinished()
 {
-	if (!m_NetWorkParams->clientNetWorkReply) {
-		return;
-	}
+    if (!m_NetWorkParams->clientNetWorkReply) {
+        return;
+    }
 
-	// ¼ì²éÊÇ·ñ³¬Ê±
-	if (!m_connectionCheckTimer->isActive()) {
-		m_NetWorkParams->clientNetWorkReply.reset();
-		return;
-	}
+    // æ£€æŸ¥æ˜¯å¦è¶…æ—¶
+    if (!m_connectionCheckTimer->isActive()) {
+        m_NetWorkParams->clientNetWorkReply.reset();
+        return;
+    }
 
-	m_connectionCheckTimer->stop();
+    m_connectionCheckTimer->stop();
 
-	bool isConnected = false;
-	QString errorMessage;
+    bool isConnected = false;
+    QString errorMessage;
 
-	if (m_NetWorkParams->clientNetWorkReply->error() == QNetworkReply::NoError)
-	{
-		int statusCode = m_NetWorkParams->clientNetWorkReply->attribute(
-			QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    if (m_NetWorkParams->clientNetWorkReply->error() == QNetworkReply::NoError)
+    {
+        int statusCode = m_NetWorkParams->clientNetWorkReply->attribute(
+            QNetworkRequest::HttpStatusCodeAttribute).toInt();
 
-		if (statusCode == 200)
-		{
-			isConnected = true;
-			errorMessage = "Connection successful";
-		}
-		else
-		{
-			errorMessage = QString("HTTP Error: %1").arg(statusCode);
-		}
-	}
-	else
-	{
-		errorMessage = m_NetWorkParams->clientNetWorkReply->errorString();
-	}
+        if (statusCode == 200)
+        {
+            isConnected = true;
+            errorMessage = "Connection successful";
+        }
+        else
+        {
+            errorMessage = QString("HTTP Error: %1").arg(statusCode);
+        }
+    }
+    else
+    {
+        errorMessage = m_NetWorkParams->clientNetWorkReply->errorString();
+    }
 
-	m_NetWorkParams->clientNetWorkReply.reset();
-	emit serverConnectionCheckFinished(isConnected, errorMessage);
+    m_NetWorkParams->clientNetWorkReply.reset();
+    emit serverConnectionCheckFinished(isConnected, errorMessage);
 }
 
 void OllamaClient::fetchModelsAsync(int timeoutMs)
 {
-	// È¡ÏûÖ®Ç°µÄÇëÇó
-	cancelCurrentRequest();
+    // å–æ¶ˆä¹‹å‰çš„è¯·æ±‚
+    cancelCurrentRequest();
 
-	// ÉèÖÃÇëÇóÀàĞÍ
-	m_currentRequestType = RequestType::FetchModels;
+    // è®¾ç½®è¯·æ±‚ç±»å‹
+    m_currentRequestType = RequestType::FetchModels;
 
-	// ÑéÖ¤URL
-	if (!validateServerUrl())
-	{
-		emit modelsListFetched(false, QStringList(), tr("URL Error"));
-		return;
-	}
+    // éªŒè¯URL
+    if (!validateServerUrl())
+    {
+        emit modelsListFetched(false, QStringList(), tr("URL Error"));
+        return;
+    }
 
-	// ¹¹½¨ÇëÇó²¢·¢ËÍ
-	QUrl modelsUrl = buildApiUrl("/api/tags");
-	QNetworkRequest modelsRequest = createApiRequest(modelsUrl);
-	sendApiRequest(modelsRequest, m_fetchModelsTimer, timeoutMs);
+    // æ„å»ºè¯·æ±‚å¹¶å‘é€
+    QUrl modelsUrl = buildApiUrl("/api/tags");
+    QNetworkRequest modelsRequest = createApiRequest(modelsUrl);
+    sendApiRequest(modelsRequest, m_fetchModelsTimer, timeoutMs);
 }
 
 void OllamaClient::onFetchModelsFinished()
 {
-	if (!m_NetWorkParams->clientNetWorkReply) {
-		return;
-	}
+    if (!m_NetWorkParams->clientNetWorkReply) {
+        return;
+    }
 
-	// ¼ì²éÊÇ·ñ³¬Ê±
-	if (!m_fetchModelsTimer->isActive()) {
-		m_NetWorkParams->clientNetWorkReply.reset();
-		return;
-	}
+    // æ£€æŸ¥æ˜¯å¦è¶…æ—¶
+    if (!m_fetchModelsTimer->isActive()) {
+        m_NetWorkParams->clientNetWorkReply.reset();
+        return;
+    }
 
-	m_fetchModelsTimer->stop();
+    m_fetchModelsTimer->stop();
 
-	bool success = false;
-	QString errorMessage;
-	QStringList models;
+    bool success = false;
+    QString errorMessage;
+    QStringList models;
 
-	if (m_NetWorkParams->clientNetWorkReply->error() == QNetworkReply::NoError)
-	{
-		int statusCode = m_NetWorkParams->clientNetWorkReply->attribute(
-			QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    if (m_NetWorkParams->clientNetWorkReply->error() == QNetworkReply::NoError)
+    {
+        int statusCode = m_NetWorkParams->clientNetWorkReply->attribute(
+            QNetworkRequest::HttpStatusCodeAttribute).toInt();
 
-		if (statusCode == 200)
-		{
-			QByteArray responseData = m_NetWorkParams->clientNetWorkReply->readAll();
-			models = parseModelIds(responseData);
+        if (statusCode == 200)
+        {
+            QByteArray responseData = m_NetWorkParams->clientNetWorkReply->readAll();
+            models = parseModelIds(responseData);
 
-			if (!models.isEmpty())
-			{
-				m_availableModelIds = models;
-				success = true;
-				errorMessage = QString("Successfully fetched %1 models").arg(models.size());
-				// ·¢ËÍÄ£ĞÍ¸üĞÂĞÅºÅ
-				emit modelsListFetched(success, m_availableModelIds, errorMessage);
-			}
-			else
-			{
-				errorMessage = "No models found in response";
-			}
-		}
-		else
-		{
-			errorMessage = QString("HTTP Error: %1").arg(statusCode);
-		}
-	}
-	else
-	{
-		errorMessage = m_NetWorkParams->clientNetWorkReply->errorString();
-	}
+            if (!models.isEmpty())
+            {
+                m_availableModelIds = models;
+                success = true;
+                errorMessage = QString("Successfully fetched %1 models").arg(models.size());
+                // å‘é€æ¨¡å‹æ›´æ–°ä¿¡å·
+                emit modelsListFetched(success, m_availableModelIds, errorMessage);
+            }
+            else
+            {
+                errorMessage = "No models found in response";
+            }
+        }
+        else
+        {
+            errorMessage = QString("HTTP Error: %1").arg(statusCode);
+        }
+    }
+    else
+    {
+        errorMessage = m_NetWorkParams->clientNetWorkReply->errorString();
+    }
 
-	m_NetWorkParams->clientNetWorkReply.reset();
-	emit modelsListFetched(success, models, errorMessage);
+    m_NetWorkParams->clientNetWorkReply.reset();
+    emit modelsListFetched(success, models, errorMessage);
 }
 
 void OllamaClient::onCheckConnectionTimeout()
 {
-	if (m_NetWorkParams->clientNetWorkReply)
-	{
-		disconnect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
-			this, &OllamaClient::onCheckConnectionFinished);
+    if (m_NetWorkParams->clientNetWorkReply)
+    {
+        disconnect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
+            this, &OllamaClient::onCheckConnectionFinished);
 
-		m_NetWorkParams->clientNetWorkReply->abort();
-		m_NetWorkParams->clientNetWorkReply.reset();
-	}
-	emit serverConnectionCheckFinished(false, tr("Please Check IP Address or Network Setting"));
+        m_NetWorkParams->clientNetWorkReply->abort();
+        m_NetWorkParams->clientNetWorkReply.reset();
+    }
+    emit serverConnectionCheckFinished(false, tr("Please Check IP Address or Network Setting"));
 }
 
 void OllamaClient::onFetchModelsTimeout()
 {
-	if (m_NetWorkParams->clientNetWorkReply)
-	{
-		disconnect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
-			this, &OllamaClient::onFetchModelsFinished);
+    if (m_NetWorkParams->clientNetWorkReply)
+    {
+        disconnect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
+            this, &OllamaClient::onFetchModelsFinished);
 
-		m_NetWorkParams->clientNetWorkReply->abort();
-		m_NetWorkParams->clientNetWorkReply.reset();
-	}
-	emit modelsListFetched(false, QStringList(), tr("Fetch ModelList Timeout"));
+        m_NetWorkParams->clientNetWorkReply->abort();
+        m_NetWorkParams->clientNetWorkReply.reset();
+    }
+    emit modelsListFetched(false, QStringList(), tr("Fetch ModelList Timeout"));
 }
 
 void OllamaClient::AnalysisBlockResponse(QJsonObject& response_obj)
 {
-	QString textresponse;
-	bool isFunctionCall = response_obj.contains("tool_calls");
-	if (!isFunctionCall)
-	{
-		QJsonValue value;
-		value = response_obj["content"].toString();
-		if (value.isString())
-		{
-			textresponse = value.toString();
-			emit Answer(textresponse, false);
-		}
-		else
-		{
-			emit Answer("Invalid response format", false);
-		}
-	}
-	else
-	{
-		emit FunctionCallSignal(response_obj);
+    QString textresponse;
+    bool isFunctionCall = response_obj.contains("tool_calls");
+    if (!isFunctionCall)
+    {
+        QJsonValue value;
+        value = response_obj["content"].toString();
+        if (value.isString())
+        {
+            textresponse = value.toString();
+            emit Answer(textresponse, false);
+        }
+        else
+        {
+            emit Answer("Invalid response format", false);
+        }
+    }
+    else
+    {
+        emit FunctionCallSignal(response_obj);
 
-	}
+    }
 }
 
 void OllamaClient::AnalysisStreamResponse(QJsonObject& response_obj)
@@ -594,13 +594,13 @@ void OllamaClient::AnalysisStreamResponse(QJsonObject& response_obj)
 
 QStringList OllamaClient::GetFollowUpSuggestions()
 {
-	//to be continue
-	return QStringList();
+    //to be continue
+    return QStringList();
 }
 
 void OllamaClient::getKnowledgeBase()
 {
-	//Ollama NO Knowledge
+    //Ollama NO Knowledge
 }
 
 void OllamaClient::onGetKnowledgeBaseFinished()

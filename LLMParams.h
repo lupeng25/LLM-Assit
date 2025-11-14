@@ -1,74 +1,74 @@
 #pragma once
-#include <QNetworkAccessManager> 
-#include <QNetworkReply> 
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QFile>
-#include <memory> 
+#include <memory>
 class LLMParams : public QObject
 {
-	Q_OBJECT
+    Q_OBJECT
 public:
-	explicit LLMParams();
-	LLMParams(const LLMParams& other);
-	LLMParams& operator=(const LLMParams& other);
-	~LLMParams();
-	LLMParams* clone() const;
-	void copyFrom(const LLMParams& other);
-	//ÉèÖÃÄ£ĞÍ²ÎÊı
-	void setChatMode(const int &iChatMode);
-	void setMaxToken(const int &iMaxToken);
-	void setModel(const int &iModel);
-	void setTemperature(const double&dTemperature);
-	void setStreamChat(const bool& bStreamChat);
-	void setOpenThink(const bool& bOpenThink);
-	void setOpenNetSearch(const bool& bOpenNetSearch);
-	void setFunctionCallTools(const QJsonArray& tools);
-	void setApiKey(const QString &apiKey);
-	void setKnowledgeApi(const QString &apikey);
-	void setBaseUrl(const QString &baseUrl);
-	void setStreamUrl(const QString &StreamUrl);
-	void setTimeout(int timeoutMs);
-	void setLLMPlatForm(const int& platform);
-	//»ñÈ¡Ä£ĞÍ²ÎÊı
-	int getChatMode() const;
-	int getMaxToken() const;
-	int getModel() const;
-	double getTemperature() const;
-	bool getStreamChat() const;
-	bool getOpenThink() const;
-	bool getOpenNetSearch() const;
-	QJsonArray getFunctionCallTools() const;
-	QString getApiKey() const;
-	QString getKnowledgeApi() const;
-	QString getBaseUrl() const;
-	QString getStreamUrl() const;
-	int getTimeout() const;
-	int getLLMPlatForm() const;
-	//ĞòÁĞ»¯
-	bool serialize(const QString& jsonPath);
-	//·´ĞòÁĞ»¯
-	bool deserialize(const QString& jsonPath);
+    explicit LLMParams();
+    LLMParams(const LLMParams& other);
+    LLMParams& operator=(const LLMParams& other);
+    ~LLMParams();
+    LLMParams* clone() const;
+    void copyFrom(const LLMParams& other);
+    //è®¾ç½®æ¨¡å‹å‚æ•°
+    void setChatMode(const int &iChatMode);
+    void setMaxToken(const int &iMaxToken);
+    void setModel(const int &iModel);
+    void setTemperature(const double&dTemperature);
+    void setStreamChat(const bool& bStreamChat);
+    void setOpenThink(const bool& bOpenThink);
+    void setOpenNetSearch(const bool& bOpenNetSearch);
+    void setFunctionCallTools(const QJsonArray& tools);
+    void setApiKey(const QString &apiKey);
+    void setKnowledgeApi(const QString &apikey);
+    void setBaseUrl(const QString &baseUrl);
+    void setStreamUrl(const QString &StreamUrl);
+    void setTimeout(int timeoutMs);
+    void setLLMPlatForm(const int& platform);
+    //è·å–æ¨¡å‹å‚æ•°
+    int getChatMode() const;
+    int getMaxToken() const;
+    int getModel() const;
+    double getTemperature() const;
+    bool getStreamChat() const;
+    bool getOpenThink() const;
+    bool getOpenNetSearch() const;
+    QJsonArray getFunctionCallTools() const;
+    QString getApiKey() const;
+    QString getKnowledgeApi() const;
+    QString getBaseUrl() const;
+    QString getStreamUrl() const;
+    int getTimeout() const;
+    int getLLMPlatForm() const;
+    //åºåˆ—åŒ–
+    bool serialize(const QString& jsonPath);
+    //ååºåˆ—åŒ–
+    bool deserialize(const QString& jsonPath);
 private:
-	//Ä£ĞÍ²ÎÊı
-	int iChatMode = 0;
-	int iMaxToken = 4096;
-	int iModel = 0;
-	double dTemperature = 0.7;
-	bool bStreamChat = false;
-	bool bOpenThink = true;
-	bool bOpenNetSearch = false;
-	//ÍøÂç²ÎÊı
-	QString chatIP = "http://172.16.1.58:8080/api/chat/completions";
-	QString streamChatIP = "http://172.16.1.58:8080/api/chat/completions";
-	QString apiKey = "sk-73d0cbe04fd148568420d237079acefb";
-	QString KnowledgeApi = "dataset-eMXQPtWnRmhcOB1QycBglXtf";
-	int iTimeOuts = 30000;
-	//FunctionCall¹¤¾ß
-	QJsonArray tools;
-	//Æ½Ì¨:OpenWebUI Dify
-	int llmPlatform = 1;
+    //æ¨¡å‹å‚æ•°
+    int iChatMode = 0;
+    int iMaxToken = 4096;
+    int iModel = 0;
+    double dTemperature = 0.7;
+    bool bStreamChat = false;
+    bool bOpenThink = true;
+    bool bOpenNetSearch = false;
+    //ç½‘ç»œå‚æ•°
+    QString chatIP = "http://172.16.1.58:8080/api/chat/completions";
+    QString streamChatIP = "http://172.16.1.58:8080/api/chat/completions";
+    QString apiKey = "sk-73d0cbe04fd148568420d237079acefb";
+    QString KnowledgeApi = "dataset-eMXQPtWnRmhcOB1QycBglXtf";
+    int iTimeOuts = 30000;
+    //FunctionCallå·¥å…·
+    QJsonArray tools;
+    //å¹³å°:OpenWebUI Dify
+    int llmPlatform = 1;
 
 };
 

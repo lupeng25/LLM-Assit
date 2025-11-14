@@ -5,12 +5,21 @@ TARGET = AIAssit
 INCLUDEPATH += $$PWD
 
 SOURCES += \
-    $$files($$PWD/*.cpp, true)
+    $$files($$PWD/*.cpp, true) \
+    ChatList.cpp \
+    MessageManager.cpp \
+    OllamaClient.cpp
 
 HEADERS += \
     $$files($$PWD/*.h, true) \
+    ChatList.h \
+    DifyClient.h \
+    LLMParams.h \
+    MessageManager.h \
+    OllamaClient.h \
     PromptLibrary.h \
-    PromptLibraryDialog.h
+    PromptLibraryDialog.h \
+    SyntaxHighlighter.h
 
 FORMS += \
     $$files($$PWD/*.ui, true)

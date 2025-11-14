@@ -14,346 +14,346 @@
 
 namespace
 {
-	class ChatListDelegate : public QStyledItemDelegate
-	{
-	public:
-		explicit ChatListDelegate(QObject* parent = nullptr)
-			: QStyledItemDelegate(parent)
-		{
-		}
+    class ChatListDelegate : public QStyledItemDelegate
+    {
+    public:
+        explicit ChatListDelegate(QObject* parent = nullptr)
+            : QStyledItemDelegate(parent)
+        {
+        }
 
-		QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override
-		{
-			Q_UNUSED(index);
-			const int baseHeight = 60;
-			return QSize(option.rect.width(), baseHeight);
-		}
+        QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override
+        {
+            Q_UNUSED(index);
+            const int baseHeight = 60;
+            return QSize(option.rect.width(), baseHeight);
+        }
 
-		void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override
-		{
-			if (!painter)
-			{
-				return;
-			}
+        void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override
+        {
+            if (!painter)
+            {
+                return;
+            }
 
-			painter->save();
+            painter->save();
 
-			QStyleOptionViewItem opt(option);
-			initStyleOption(&opt, index);
+            QStyleOptionViewItem opt(option);
+            initStyleOption(&opt, index);
 
-			const QRectF cardRect = opt.rect.adjusted(6, 4, -6, -4);
-			const bool isSelected = opt.state & QStyle::State_Selected;
-			const bool isHovered = opt.state & QStyle::State_MouseOver;
+            const QRectF cardRect = opt.rect.adjusted(6, 4, -6, -4);
+            const bool isSelected = opt.state & QStyle::State_Selected;
+            const bool isHovered = opt.state & QStyle::State_MouseOver;
 
-			QColor baseColor(248, 250, 252);
-			QColor borderColor(226, 232, 240, 180);
-			QColor shadowColor(15, 23, 42, 24);
+            QColor baseColor(248, 250, 252);
+            QColor borderColor(226, 232, 240, 180);
+            QColor shadowColor(15, 23, 42, 24);
 
-			if (isSelected)
-			{
-				baseColor = QColor(37, 99, 235);
-				borderColor = QColor(30, 64, 175, 220);
-				shadowColor = QColor(37, 99, 235, 55);
-			}
-			else if (isHovered)
-			{
-				baseColor = QColor(241, 245, 249);
-				borderColor = QColor(191, 219, 254, 200);
-				shadowColor = QColor(59, 130, 246, 40);
-			}
+            if (isSelected)
+            {
+                baseColor = QColor(37, 99, 235);
+                borderColor = QColor(30, 64, 175, 220);
+                shadowColor = QColor(37, 99, 235, 55);
+            }
+            else if (isHovered)
+            {
+                baseColor = QColor(241, 245, 249);
+                borderColor = QColor(191, 219, 254, 200);
+                shadowColor = QColor(59, 130, 246, 40);
+            }
 
-			// ªÊ÷∆“ı”∞
-			if (shadowColor.alpha() > 0)
-			{
-				QPainterPath shadowPath;
-				QRectF shadowRect = cardRect.adjusted(0, 2, 0, 8);
-				shadowPath.addRoundedRect(shadowRect, 18, 18);
-				painter->setPen(Qt::NoPen);
-				painter->setBrush(shadowColor);
-				painter->drawPath(shadowPath);
-			}
+            // ÁªòÂà∂Èò¥ÂΩ±
+            if (shadowColor.alpha() > 0)
+            {
+                QPainterPath shadowPath;
+                QRectF shadowRect = cardRect.adjusted(0, 2, 0, 8);
+                shadowPath.addRoundedRect(shadowRect, 18, 18);
+                painter->setPen(Qt::NoPen);
+                painter->setBrush(shadowColor);
+                painter->drawPath(shadowPath);
+            }
 
-			// ªÊ÷∆ø®∆¨±≥æ∞
-			QPainterPath cardPath;
-			cardPath.addRoundedRect(cardRect, 18, 18);
-			painter->setPen(Qt::NoPen);
-			painter->setBrush(baseColor);
-			painter->drawPath(cardPath);
+            // ÁªòÂà∂Âç°ÁâáËÉåÊôØ
+            QPainterPath cardPath;
+            cardPath.addRoundedRect(cardRect, 18, 18);
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(baseColor);
+            painter->drawPath(cardPath);
 
-			// ªÊ÷∆√Ë±ﬂ
-			painter->setPen(QPen(borderColor, 1));
-			painter->setBrush(Qt::NoBrush);
-			painter->drawPath(cardPath);
+            // ÁªòÂà∂ÊèèËæπ
+            painter->setPen(QPen(borderColor, 1));
+            painter->setBrush(Qt::NoBrush);
+            painter->drawPath(cardPath);
 
-			// Œƒ±æƒ⁄»›
-			const QString title = index.data(Qt::DisplayRole).toString();
-			const QString timestamp = index.data(ChatList::TimestampRole).toString();
-			const bool hasTimestamp = !timestamp.trimmed().isEmpty();
+            // ÊñáÊú¨ÂÜÖÂÆπ
+            const QString title = index.data(Qt::DisplayRole).toString();
+            const QString timestamp = index.data(ChatList::TimestampRole).toString();
+            const bool hasTimestamp = !timestamp.trimmed().isEmpty();
 
-			const QColor titleColor = isSelected ? QColor(248, 250, 252)
-				: QColor(15, 23, 42);
-			const QColor timeColor = isSelected ? QColor(226, 232, 240, 240)
-				: QColor(100, 116, 139);
+            const QColor titleColor = isSelected ? QColor(248, 250, 252)
+                : QColor(15, 23, 42);
+            const QColor timeColor = isSelected ? QColor(226, 232, 240, 240)
+                : QColor(100, 116, 139);
 
-			QRectF textRect = cardRect.adjusted(18, 14, -18, -14);
-			const int timeWidth = hasTimestamp ? opt.fontMetrics.horizontalAdvance(timestamp) + 6 : 0;
-			const QRectF timeRect = hasTimestamp
-				? QRectF(textRect.right() - timeWidth, textRect.top(), timeWidth, 20)
-				: QRectF();
+            QRectF textRect = cardRect.adjusted(18, 14, -18, -14);
+            const int timeWidth = hasTimestamp ? opt.fontMetrics.horizontalAdvance(timestamp) + 6 : 0;
+            const QRectF timeRect = hasTimestamp
+                ? QRectF(textRect.right() - timeWidth, textRect.top(), timeWidth, 20)
+                : QRectF();
 
-			QFont titleFont = opt.font;
-			titleFont.setPointSizeF(titleFont.pointSizeF() + 0.4);
-			titleFont.setWeight(QFont::DemiBold);
+            QFont titleFont = opt.font;
+            titleFont.setPointSizeF(titleFont.pointSizeF() + 0.4);
+            titleFont.setWeight(QFont::DemiBold);
 
-			if (hasTimestamp)
-			{
-				painter->setPen(timeColor);
-				painter->setFont(opt.font);
-				painter->drawText(timeRect, Qt::AlignRight | Qt::AlignVCenter, timestamp);
-			}
+            if (hasTimestamp)
+            {
+                painter->setPen(timeColor);
+                painter->setFont(opt.font);
+                painter->drawText(timeRect, Qt::AlignRight | Qt::AlignVCenter, timestamp);
+            }
 
-			QRectF titleRect = textRect;
-			if (hasTimestamp)
-			{
-				titleRect.setRight(timeRect.left() - 12);
-			}
+            QRectF titleRect = textRect;
+            if (hasTimestamp)
+            {
+                titleRect.setRight(timeRect.left() - 12);
+            }
 
-			painter->setPen(titleColor);
-			painter->setFont(titleFont);
-			painter->drawText(titleRect, Qt::AlignLeft | Qt::AlignVCenter, title);
+            painter->setPen(titleColor);
+            painter->setFont(titleFont);
+            painter->drawText(titleRect, Qt::AlignLeft | Qt::AlignVCenter, title);
 
-			painter->restore();
-		}
-	};
+            painter->restore();
+        }
+    };
 }
 
 ChatList::ChatList(QWidget *parent)
-	: QWidget(parent)
-	, mainLayout(nullptr)
-	, btnNewConversation(nullptr)
-	, m_conversationList(nullptr)
+    : QWidget(parent)
+    , mainLayout(nullptr)
+    , btnNewConversation(nullptr)
+    , m_conversationList(nullptr)
 {
-	setupUI();
-	connectSignals();
+    setupUI();
+    connectSignals();
 }
 
 ChatList::~ChatList()
 {
-	// «Â¿Ì◊ ‘¥
-	m_conversationList->clear();
+    // Ê∏ÖÁêÜËµÑÊ∫ê
+    m_conversationList->clear();
 }
 
 void ChatList::setupUI()
 {
-	// …Ë÷√πÃ∂®øÌ∂»
-	setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
-	setMinimumWidth(220);
-	setMaximumWidth(320);
+    // ËÆæÁΩÆÂõ∫ÂÆöÂÆΩÂ∫¶
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    setMinimumWidth(220);
+    setMaximumWidth(320);
 
-	// ¥¥Ω®÷˜≤ºæ÷£®»Ù“—”–≤ºæ÷‘Ú∏¥”√£©
-	if (QLayout* existingLayout = layout())
-	{
-		if (auto* existing = qobject_cast<QVBoxLayout*>(existingLayout))
-		{
-			mainLayout = existing;
-		}
-		else
-		{
-			delete existingLayout;
-			mainLayout = new QVBoxLayout();
-			setLayout(mainLayout);
-		}
-	}
-	else
-	{
-		mainLayout = new QVBoxLayout();
-		setLayout(mainLayout);
-	}
-	mainLayout->setSpacing(12);
-	mainLayout->setContentsMargins(16, 16, 16, 16);
+    // ÂàõÂª∫‰∏ªÂ∏ÉÂ±ÄÔºàËã•Â∑≤ÊúâÂ∏ÉÂ±ÄÂàôÂ§çÁî®Ôºâ
+    if (QLayout* existingLayout = layout())
+    {
+        if (auto* existing = qobject_cast<QVBoxLayout*>(existingLayout))
+        {
+            mainLayout = existing;
+        }
+        else
+        {
+            delete existingLayout;
+            mainLayout = new QVBoxLayout();
+            setLayout(mainLayout);
+        }
+    }
+    else
+    {
+        mainLayout = new QVBoxLayout();
+        setLayout(mainLayout);
+    }
+    mainLayout->setSpacing(12);
+    mainLayout->setContentsMargins(16, 16, 16, 16);
 
-	// ¥¥Ω®–¬∂‘ª∞∞¥≈•
-	btnNewConversation = new QPushButton(this);
-	btnNewConversation->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-	btnNewConversation->setMinimumHeight(64);
-	btnNewConversation->setText(tr("New Conversation"));
-	btnNewConversation->setObjectName("btnNewConversation");
-	btnNewConversation->setCursor(Qt::PointingHandCursor);
-	btnNewConversation->setStyleSheet(R"(
-		QPushButton {
-			background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-				stop:0 #3b82f6, stop:1 #2563eb);
-			border-radius: 18px;
-			border: none;
-			padding: 14px 18px;
-			color: #F8FAFC;
-			font-size: 15px;
-			font-weight: 600;
-		}
-		QPushButton:hover {
-			background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-				stop:0 #60a5fa, stop:1 #3b82f6);
-		}
-		QPushButton:pressed {
-			background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-				stop:0 #2563eb, stop:1 #1d4ed8);
-		}
-	)");
+    // ÂàõÂª∫Êñ∞ÂØπËØùÊåâÈíÆ
+    btnNewConversation = new QPushButton(this);
+    btnNewConversation->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    btnNewConversation->setMinimumHeight(64);
+    btnNewConversation->setText(tr("New Conversation"));
+    btnNewConversation->setObjectName("btnNewConversation");
+    btnNewConversation->setCursor(Qt::PointingHandCursor);
+    btnNewConversation->setStyleSheet(R"(
+        QPushButton {
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                stop:0 #3b82f6, stop:1 #2563eb);
+            border-radius: 18px;
+            border: none;
+            padding: 14px 18px;
+            color: #F8FAFC;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        QPushButton:hover {
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                stop:0 #60a5fa, stop:1 #3b82f6);
+        }
+        QPushButton:pressed {
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                stop:0 #2563eb, stop:1 #1d4ed8);
+        }
+    )");
 
-	// ¥¥Ω®∂‘ª∞¡–±Ì
-	m_conversationList = new QListWidget(this);
-	m_conversationList->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-	m_conversationList->setObjectName("m_conversationList");
-	m_conversationList->setContextMenuPolicy(Qt::CustomContextMenu);
-	m_conversationList->setMouseTracking(true);
-	m_conversationList->setSpacing(14);
-	m_conversationList->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
-	m_conversationList->setFrameShape(QFrame::NoFrame);
-	m_conversationList->setSelectionMode(QAbstractItemView::SingleSelection);
-	m_conversationList->setStyleSheet(R"(
-		QListWidget {
-			background: transparent;
-			outline: none;
-		}
-		QListWidget::item {
-			margin: 0px;
-		}
-		QListWidget::indicator {
-			width: 0px;
-			height: 0px;
-		}
-	)");
-	m_conversationList->setItemDelegate(new ChatListDelegate(m_conversationList));
+    // ÂàõÂª∫ÂØπËØùÂàóË°®
+    m_conversationList = new QListWidget(this);
+    m_conversationList->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    m_conversationList->setObjectName("m_conversationList");
+    m_conversationList->setContextMenuPolicy(Qt::CustomContextMenu);
+    m_conversationList->setMouseTracking(true);
+    m_conversationList->setSpacing(14);
+    m_conversationList->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    m_conversationList->setFrameShape(QFrame::NoFrame);
+    m_conversationList->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_conversationList->setStyleSheet(R"(
+        QListWidget {
+            background: transparent;
+            outline: none;
+        }
+        QListWidget::item {
+            margin: 0px;
+        }
+        QListWidget::indicator {
+            width: 0px;
+            height: 0px;
+        }
+    )");
+    m_conversationList->setItemDelegate(new ChatListDelegate(m_conversationList));
 
-	// ÃÌº”µΩ≤ºæ÷
-	mainLayout->addWidget(btnNewConversation);
-	mainLayout->addWidget(m_conversationList);
+    // Ê∑ªÂä†Âà∞Â∏ÉÂ±Ä
+    mainLayout->addWidget(btnNewConversation);
+    mainLayout->addWidget(m_conversationList);
 }
 
 void ChatList::connectSignals()
 {
-	// ¡¨Ω”–¬∂‘ª∞∞¥≈•µ„ª˜–≈∫≈
-	connect(btnNewConversation, &QPushButton::clicked,
-		this, &ChatList::onNewConversationClicked);
+    // ËøûÊé•Êñ∞ÂØπËØùÊåâÈíÆÁÇπÂáª‰ø°Âè∑
+    connect(btnNewConversation, &QPushButton::clicked,
+        this, &ChatList::onNewConversationClicked);
 
-	// ¡¨Ω”¡–±Ì—°‘Ò∏ƒ±‰–≈∫≈
-	connect(m_conversationList, &QListWidget::currentItemChanged,
-		this, &ChatList::onConversationSelectionChanged);
+    // ËøûÊé•ÂàóË°®ÈÄâÊã©ÊîπÂèò‰ø°Âè∑
+    connect(m_conversationList, &QListWidget::currentItemChanged,
+        this, &ChatList::onConversationSelectionChanged);
 
-	// ¡¨Ω””“º¸≤Àµ•–≈∫≈
-	connect(m_conversationList, &QListWidget::customContextMenuRequested,
-		this, &ChatList::showContextMenu);
+    // ËøûÊé•Âè≥ÈîÆËèúÂçï‰ø°Âè∑
+    connect(m_conversationList, &QListWidget::customContextMenuRequested,
+        this, &ChatList::showContextMenu);
 }
 
 void ChatList::addConversationItem(const QString& text, const QString& id)
 {
-	QListWidgetItem* item = new QListWidgetItem();
-	item->setText(text);
-	item->setData(IdRole, id);
-	item->setFlags(item->flags() | Qt::ItemIsSelectable);
-	m_conversationList->addItem(item);
+    QListWidgetItem* item = new QListWidgetItem();
+    item->setText(text);
+    item->setData(IdRole, id);
+    item->setFlags(item->flags() | Qt::ItemIsSelectable);
+    m_conversationList->addItem(item);
 }
 
 void ChatList::insertConversationItem(int index, const QString& text, const QString& id)
 {
-	QListWidgetItem* item = new QListWidgetItem();
-	item->setText(text);
-	item->setData(IdRole, id);
-	item->setFlags(item->flags() | Qt::ItemIsSelectable);
-	m_conversationList->insertItem(index, item);
+    QListWidgetItem* item = new QListWidgetItem();
+    item->setText(text);
+    item->setData(IdRole, id);
+    item->setFlags(item->flags() | Qt::ItemIsSelectable);
+    m_conversationList->insertItem(index, item);
 
-	// ÃÌº”¥¥Ω®∂Øª≠–ßπ˚
-	QTimer::singleShot(10, [this, item]() {
-		QPropertyAnimation* animation = new QPropertyAnimation();
-		animation->setTargetObject(m_conversationList);
-		animation->setPropertyName("geometry");
-		animation->setDuration(200);
-		animation->setEasingCurve(QEasingCurve::OutCubic);
-		animation->start(QAbstractAnimation::DeleteWhenStopped);
-	});
+    // Ê∑ªÂä†ÂàõÂª∫Âä®ÁîªÊïàÊûú
+    QTimer::singleShot(10, [this, item]() {
+        QPropertyAnimation* animation = new QPropertyAnimation();
+        animation->setTargetObject(m_conversationList);
+        animation->setPropertyName("geometry");
+        animation->setDuration(200);
+        animation->setEasingCurve(QEasingCurve::OutCubic);
+        animation->start(QAbstractAnimation::DeleteWhenStopped);
+    });
 }
 
 void ChatList::removeConversationItem(const QString& id)
 {
-	for (int i = 0; i < m_conversationList->count(); ++i)
-	{
-		QListWidgetItem* item = m_conversationList->item(i);
-		if (item && item->data(IdRole).toString() == id)
-		{
-			delete m_conversationList->takeItem(i);
-			break;
-		}
-	}
+    for (int i = 0; i < m_conversationList->count(); ++i)
+    {
+        QListWidgetItem* item = m_conversationList->item(i);
+        if (item && item->data(IdRole).toString() == id)
+        {
+            delete m_conversationList->takeItem(i);
+            break;
+        }
+    }
 }
 
 void ChatList::clearConversations()
 {
-	m_conversationList->clear();
+    m_conversationList->clear();
 }
 
 void ChatList::setCurrentConversation(const QString& id)
 {
-	for (int i = 0; i < m_conversationList->count(); ++i)
-	{
-		QListWidgetItem* item = m_conversationList->item(i);
-		if (item && item->data(IdRole).toString() == id)
-		{
-			m_conversationList->setCurrentItem(item);
-			break;
-		}
-	}
+    for (int i = 0; i < m_conversationList->count(); ++i)
+    {
+        QListWidgetItem* item = m_conversationList->item(i);
+        if (item && item->data(IdRole).toString() == id)
+        {
+            m_conversationList->setCurrentItem(item);
+            break;
+        }
+    }
 }
 
 QString ChatList::getCurrentConversationId() const
 {
-	QListWidgetItem* current = m_conversationList->currentItem();
-	if (current)
-	{
-		return current->data(IdRole).toString();
-	}
-	return QString();
+    QListWidgetItem* current = m_conversationList->currentItem();
+    if (current)
+    {
+        return current->data(IdRole).toString();
+    }
+    return QString();
 }
 
 QListWidgetItem* ChatList::getCurrentItem() const
 {
-	return m_conversationList->currentItem();
+    return m_conversationList->currentItem();
 }
 
 void ChatList::setCurrentItemText(const QString& text)
 {
-	QListWidgetItem* current = m_conversationList->currentItem();
-	if (current)
-	{
-		current->setText(text);
-	}
+    QListWidgetItem* current = m_conversationList->currentItem();
+    if (current)
+    {
+        current->setText(text);
+    }
 }
 
 void ChatList::onNewConversationClicked()
 {
-	emit newConversationRequested();
+    emit newConversationRequested();
 }
 
 void ChatList::onConversationSelectionChanged(QListWidgetItem* current, QListWidgetItem* previous)
 {
-	emit conversationChanged(current, previous);
+    emit conversationChanged(current, previous);
 
-	if (current)
-	{
-		QString conversationId = current->data(IdRole).toString();
-		emit conversationSelected(conversationId);
-	}
+    if (current)
+    {
+        QString conversationId = current->data(IdRole).toString();
+        emit conversationSelected(conversationId);
+    }
 }
 
 void ChatList::showContextMenu(const QPoint& pos)
 {
-	QListWidgetItem* item = m_conversationList->itemAt(pos);
-	if (!item) return;
+    QListWidgetItem* item = m_conversationList->itemAt(pos);
+    if (!item) return;
 
-	const QString conversationId = item->data(IdRole).toString();
+    const QString conversationId = item->data(IdRole).toString();
 
-	QMenu contextMenu(this);
-	// √¿ªØ”“º¸≤Àµ•£¨”Î’˚ÃÂ UI ∑Á∏Ò“ª÷¬
-	contextMenu.setStyleSheet(R"(
+    QMenu contextMenu(this);
+    // ÁæéÂåñÂè≥ÈîÆËèúÂçïÔºå‰∏éÊï¥‰Ωì UI È£éÊ†º‰∏ÄËá¥
+    contextMenu.setStyleSheet(R"(
         QMenu {
             background: rgba(255, 255, 255, 0.98);
             border: 1px solid rgba(203, 213, 225, 0.8);
@@ -382,72 +382,71 @@ void ChatList::showContextMenu(const QPoint& pos)
         }
     )");
 
-	QAction* renameAction = contextMenu.addAction(tr("Rename"));
-	contextMenu.addSeparator();
-	
-	QMenu* exportMenu = contextMenu.addMenu(tr("Export Conversation"));
-	QAction* exportMarkdownAction = exportMenu->addAction(tr("Export As Markdown..."));
-	QAction* exportHtmlAction = exportMenu->addAction(tr("Export As HTML..."));
-	QAction* exportTextAction = exportMenu->addAction(tr("Export As Text..."));
-	
-	contextMenu.addSeparator();
-	QAction* showDetailsAction = contextMenu.addAction(tr("Show Details"));
-	contextMenu.addSeparator();
-	QAction* deleteAction = contextMenu.addAction(tr("Delete Chat"));
+    QAction* renameAction = contextMenu.addAction(tr("Rename"));
+    contextMenu.addSeparator();
 
-	QAction* selectedAction = contextMenu.exec(m_conversationList->mapToGlobal(pos));
-	if (!selectedAction)
-	{
-		return;
-	}
+    QMenu* exportMenu = contextMenu.addMenu(tr("Export Conversation"));
+    QAction* exportMarkdownAction = exportMenu->addAction(tr("Export As Markdown..."));
+    QAction* exportHtmlAction = exportMenu->addAction(tr("Export As HTML..."));
+    QAction* exportTextAction = exportMenu->addAction(tr("Export As Text..."));
 
-	if (selectedAction == renameAction)
-	{
-		emit renameRequested();
-	}
-	else if (selectedAction == exportMarkdownAction)
-	{
-		emit exportConversationRequested(conversationId, QStringLiteral("markdown"));
-	}
-	else if (selectedAction == exportHtmlAction)
-	{
-		emit exportConversationRequested(conversationId, QStringLiteral("html"));
-	}
-	else if (selectedAction == exportTextAction)
-	{
-		emit exportConversationRequested(conversationId, QStringLiteral("text"));
-	}
-	else if (selectedAction == showDetailsAction)
-	{
-		emit showDetailsRequested(conversationId);
-	}
-	else if (selectedAction == deleteAction)
-	{
-		emit deleteRequested();
-	}
+    contextMenu.addSeparator();
+    QAction* showDetailsAction = contextMenu.addAction(tr("Show Details"));
+    contextMenu.addSeparator();
+    QAction* deleteAction = contextMenu.addAction(tr("Delete Chat"));
 
-	emit contextMenuRequested(pos);
+    QAction* selectedAction = contextMenu.exec(m_conversationList->mapToGlobal(pos));
+    if (!selectedAction)
+    {
+        return;
+    }
+
+    if (selectedAction == renameAction)
+    {
+        emit renameRequested();
+    }
+    else if (selectedAction == exportMarkdownAction)
+    {
+        emit exportConversationRequested(conversationId, QStringLiteral("markdown"));
+    }
+    else if (selectedAction == exportHtmlAction)
+    {
+        emit exportConversationRequested(conversationId, QStringLiteral("html"));
+    }
+    else if (selectedAction == exportTextAction)
+    {
+        emit exportConversationRequested(conversationId, QStringLiteral("text"));
+    }
+    else if (selectedAction == showDetailsAction)
+    {
+        emit showDetailsRequested(conversationId);
+    }
+    else if (selectedAction == deleteAction)
+    {
+        emit deleteRequested();
+    }
+
+    emit contextMenuRequested(pos);
 }
 
 QListWidgetItem* ChatList::findItemById(const QString& id) const
 {
-	for (int i = 0; i < m_conversationList->count(); ++i)
-	{
-		QListWidgetItem* item = m_conversationList->item(i);
-		if (item && item->data(IdRole).toString() == id)
-		{
-			return item;
-		}
-	}
-	return nullptr;
+    for (int i = 0; i < m_conversationList->count(); ++i)
+    {
+        QListWidgetItem* item = m_conversationList->item(i);
+        if (item && item->data(IdRole).toString() == id)
+        {
+            return item;
+        }
+    }
+    return nullptr;
 }
 
 void ChatList::setConversationTimestamp(const QString& id, const QString& timestamp)
 {
-	if (auto* item = findItemById(id))
-	{
-		item->setData(TimestampRole, timestamp);
-		m_conversationList->update(m_conversationList->visualItemRect(item));
-	}
+    if (auto* item = findItemById(id))
+    {
+        item->setData(TimestampRole, timestamp);
+        m_conversationList->update(m_conversationList->visualItemRect(item));
+    }
 }
- 

@@ -9,6 +9,8 @@
 #include <QPainterPath>
 #include <QLinearGradient>
 #include <QEvent>
+#include <QMouseEvent>
+#include <QContextMenuEvent>
 #include <QtGlobal>
 #include <QHash>
 #include <QFileDialog>
@@ -885,6 +887,14 @@ QString LLMChatFrame::markdownToHtml(const QString &markdown)
 		code = code.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&");
 		// 使用语法高亮器生成高亮后的HTML
 		QString highlightedHtml = m_syntaxHighlighter->highlightCodeBlock(code, language);
+		// 从高亮后的HTML中提取代码块ID并保存代码内容
+		static const QRegularExpression idRegex("codeblock://copy\\?id=([^\"]+)");
+		QRegularExpressionMatch idMatch = idRegex.match(highlightedHtml);
+		if (idMatch.hasMatch())
+		{
+			QString codeBlockId = idMatch.captured(1);
+			m_codeBlockMap[codeBlockId] = code;
+		}
 		result.replace(match.captured(0), highlightedHtml);
 	}
 	// 处理行内代码
@@ -1114,6 +1124,8 @@ void LLMChatFrame::setTextSuccess()
 }
 void LLMChatFrame::resetForReuse()
 {
+	// 清理代码块映射
+	m_codeBlockMap.clear();
 	// 恢复基础数据
 	m_messageData = MessageData();
 	m_layoutData = LayoutData();
@@ -1654,6 +1666,45 @@ void LLMChatFrame::resizeEvent(QResizeEvent *event)
 }
 void LLMChatFrame::mousePressEvent(QMouseEvent *event)
 {
+	// 检测代码块复制按钮点击
+	QPoint localPos = event->pos();
+	QString anchor;
+	
+	// 检查点击位置是否在文本区域内
+	if (m_UserType == User_Owner && m_layoutData.rects.textRight.contains(localPos))
+	{
+		QTextDocument doc;
+		setTextDocs(doc, m_messageData.msg, m_layoutData.rects.textRight.width(), QStringLiteral("#F8FAFC"));
+		QPoint textPos = localPos - m_layoutData.rects.textRight.topLeft();
+		anchor = doc.documentLayout()->anchorAt(textPos);
+	}
+	else if (m_UserType == User_Customer)
+	{
+		if (m_layoutData.rects.textLeft.contains(localPos))
+		{
+			QTextDocument doc;
+			setTextDocs(doc, m_messageData.msg, m_layoutData.rects.textLeft.width(), QStringLiteral("#0F172A"));
+			QPoint textPos = localPos - m_layoutData.rects.textLeft.topLeft();
+			anchor = doc.documentLayout()->anchorAt(textPos);
+		}
+		else if (m_layoutData.rects.textLeftReason.isValid() && m_layoutData.rects.textLeftReason.contains(localPos))
+		{
+			QTextDocument doc;
+			setTextDocs(doc, m_messageData.reasoningText, m_layoutData.rects.textLeftReason.width(), QStringLiteral("#0F172A"));
+			QPoint textPos = localPos - m_layoutData.rects.textLeftReason.topLeft();
+			anchor = doc.documentLayout()->anchorAt(textPos);
+		}
+	}
+	
+	// 如果点击的是代码块复制链接
+	if (anchor.startsWith("codeblock://copy?id="))
+	{
+		QString codeBlockId = anchor.mid(20); // 跳过 "codeblock://copy?id="
+		handleCodeBlockCopy(codeBlockId);
+		event->accept();
+		return;
+	}
+	
 	QListWidget* listWidget = qobject_cast<QListWidget*>(parent()->parent());
 	if (listWidget)
 	{
@@ -1751,5 +1802,20 @@ void LLMChatFrame::contextMenuEvent(QContextMenuEvent *event)
 			tr("Export As Text"),
 			tr("Text Files (*.txt)"),
 			QStringLiteral("txt"));
+	}
+}
+
+void LLMChatFrame::handleCodeBlockCopy(const QString& codeBlockId)
+{
+	if (m_codeBlockMap.contains(codeBlockId))
+	{
+		QString code = m_codeBlockMap[codeBlockId];
+		QClipboard* clipboard = QApplication::clipboard();
+		if (clipboard)
+		{
+			clipboard->setText(code);
+			// 可选：显示复制成功的提示
+			// 可以使用 QToolTip 或状态栏提示
+		}
 	}
 }

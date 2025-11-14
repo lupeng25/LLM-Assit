@@ -34,7 +34,8 @@ AIParamWidget::~AIParamWidget()
 	llmParams = nullptr;
 }
 
-void AIParamWidget::setupUI() {
+void AIParamWidget::setupUI() 
+{
 	// 设置滚动区域
 	m_scrollArea->setWidget(m_contentWidget);
 	m_scrollArea->setWidgetResizable(true);
@@ -140,7 +141,8 @@ void AIParamWidget::setupUI() {
 	m_mainLayout->addStretch();
 }
 
-void AIParamWidget::setupStyles() {
+void AIParamWidget::setupStyles() 
+{
 	// 设置控件参数
 	m_temperatureSpinBox->setRange(0.0, 1.0);
 	m_temperatureSpinBox->setSingleStep(0.1);

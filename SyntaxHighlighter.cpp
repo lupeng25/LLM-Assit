@@ -61,13 +61,6 @@ QString SyntaxHighlighter::createToolbar(const QString& language, const QString&
 	QString uniqueId = generateUniqueId();
 	QString displayLanguage = language.isEmpty() ? "Code" : language.toUpper();
 
-	// 转义代码内容用于JavaScript
-	QString escapedCode = code;
-	escapedCode.replace("\\", "\\\\");
-	escapedCode.replace("\"", "\\\"");
-	escapedCode.replace("\n", "\\n");
-	escapedCode.replace("\r", "");
-
 	// 分步构建字符串，避免arg()参数过多的问题
 	QString toolbarHtml = QString(
 		"<div style=\"background-color: %1; padding: 8px 12px; border-bottom: 1px solid #3e3e42; "
@@ -75,53 +68,21 @@ QString SyntaxHighlighter::createToolbar(const QString& language, const QString&
 		"<span style=\"color: %2; font-size: 12px; font-weight: 500;\">%3</span>"
 	).arg(m_theme.toolbar, m_theme.toolbarText, displayLanguage);
 
+	// 使用锚点链接代替按钮，Qt 的 QTextDocument 不支持 JavaScript
+	// 锚点格式：codeblock://copy?id=uniqueId
 	QString buttonHtml = QString(
-		"<button id=\"copy-btn-%1\" "
+		"<a href=\"codeblock://copy?id=%1\" "
 		"style=\"background-color: %2; color: %3; border: 1px solid #565656; "
 		"border-radius: 4px; padding: 4px 8px; font-size: 11px; cursor: pointer; "
-		"font-family: inherit;\" "
+		"font-family: inherit; text-decoration: none; display: inline-block;\" "
 		"onmouseover=\"this.style.backgroundColor='%4'\" "
-		"onmouseout=\"this.style.backgroundColor='%2'\" "
+		"onmouseout=\"this.style.backgroundColor='%2'\">"
+		"Copy"
+		"</a>"
+		"</div>"
 	).arg(uniqueId, m_theme.button, m_theme.toolbarText, m_theme.buttonHover);
 
-	QString onclickScript = QString(
-		"onclick=\""
-		"try {"
-		"  if (navigator.clipboard && navigator.clipboard.writeText) {"
-		"    navigator.clipboard.writeText('%1').then(() => {"
-		"      this.textContent = 'Copied!'; "
-		"      setTimeout(() => { this.textContent = 'Copy'; }, 1000);"
-		"    }).catch(() => {"
-		"      fallbackCopy('%1', this);"
-		"    });"
-		"  } else {"
-		"    fallbackCopy('%1', this);"
-		"  }"
-		"} catch(e) {"
-		"  fallbackCopy('%1', this);"
-		"}"
-		"function fallbackCopy(text, btn) {"
-		"  const textArea = document.createElement('textarea');"
-		"  textArea.value = text;"
-		"  textArea.style.position = 'fixed';"
-		"  textArea.style.opacity = '0';"
-		"  document.body.appendChild(textArea);"
-		"  textArea.select();"
-		"  try {"
-		"    document.execCommand('copy');"
-		"    btn.textContent = 'Copied!';"
-		"    setTimeout(() => { btn.textContent = 'Copy'; }, 1000);"
-		"  } catch(e) {"
-		"    btn.textContent = 'Failed';"
-		"    setTimeout(() => { btn.textContent = 'Copy'; }, 1000);"
-		"  }"
-		"  document.body.removeChild(textArea);"
-		"}\""
-		"></button>"
-		"</div>"
-	).arg(escapedCode);
-
-	return toolbarHtml + buttonHtml + onclickScript;
+	return toolbarHtml + buttonHtml;
 }
 
 QString SyntaxHighlighter::generateUniqueId()

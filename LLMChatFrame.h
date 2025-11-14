@@ -19,6 +19,8 @@ class QPainter;
 class QEvent;
 class QLabel;
 class QMovie;
+class QMouseEvent;
+class QContextMenuEvent;
 class LLMChatFrame : public QWidget
 {
 	Q_OBJECT
@@ -322,4 +324,8 @@ private:
 	std::unique_ptr<SyntaxHighlighter> m_syntaxHighlighter;
 	std::vector<QPushButton> m_SuggestButton;
 	User_Type m_UserType = User_System;
+	// 代码块内容映射：ID -> 代码内容
+	QHash<QString, QString> m_codeBlockMap;
+	// 处理代码块复制
+	void handleCodeBlockCopy(const QString& codeBlockId);
 };

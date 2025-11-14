@@ -77,19 +77,16 @@ namespace
                 painter->drawPath(shadowPath);
             }
 
-            // 绘制卡片背景
             QPainterPath cardPath;
             cardPath.addRoundedRect(cardRect, 18, 18);
             painter->setPen(Qt::NoPen);
             painter->setBrush(baseColor);
             painter->drawPath(cardPath);
 
-            // 绘制描边
             painter->setPen(QPen(borderColor, 1));
             painter->setBrush(Qt::NoBrush);
             painter->drawPath(cardPath);
 
-            // 文本内�??
             const QString title = index.data(Qt::DisplayRole).toString();
             const QString timestamp = index.data(ChatList::TimestampRole).toString();
             const bool hasTimestamp = !timestamp.trimmed().isEmpty();
@@ -146,18 +143,15 @@ ChatList::ChatList(QWidget *parent)
 
 ChatList::~ChatList()
 {
-    // 清理资源
     m_conversationList->clear();
 }
 
 void ChatList::setupUI()
 {
-    // 设置固定宽度
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
     setMinimumWidth(220);
     setMaximumWidth(320);
 
-    // 创建主布局（若已有布局则�?�用�?
     if (QLayout* existingLayout = layout())
     {
         if (auto* existing = qobject_cast<QVBoxLayout*>(existingLayout))
@@ -179,7 +173,6 @@ void ChatList::setupUI()
     mainLayout->setSpacing(12);
     mainLayout->setContentsMargins(16, 16, 16, 16);
 
-    // 创建新�?�话按钮
     btnNewConversation = new QPushButton(this);
     btnNewConversation->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     btnNewConversation->setMinimumHeight(64);
@@ -207,7 +200,6 @@ void ChatList::setupUI()
         }
     )");
 
-    // 创建对话列表
     m_conversationList = new QListWidget(this);
     m_conversationList->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     m_conversationList->setObjectName("m_conversationList");
@@ -275,7 +267,6 @@ void ChatList::setupUI()
 
 void ChatList::connectSignals()
 {
-    // 连接新�?�话按钮点击信号
     connect(btnNewConversation, &QPushButton::clicked,
         this, &ChatList::onNewConversationClicked);
 
@@ -283,7 +274,6 @@ void ChatList::connectSignals()
     connect(m_conversationList, &QListWidget::currentItemChanged,
         this, &ChatList::onConversationSelectionChanged);
 
-    // 连接右键菜单信号
     connect(m_conversationList, &QListWidget::customContextMenuRequested,
         this, &ChatList::showContextMenu);
     
@@ -327,7 +317,6 @@ void ChatList::insertConversationItem(int index, const QString& text, const QStr
         allConversationIds.append(id);
     }
 
-    // 添加创建动画效果
     QTimer::singleShot(10, [this, item]() {
         QPropertyAnimation* animation = new QPropertyAnimation();
         animation->setTargetObject(m_conversationList);
@@ -418,7 +407,6 @@ void ChatList::showContextMenu(const QPoint& pos)
     const QString conversationId = item->data(IdRole).toString();
 
     QMenu contextMenu(this);
-    // 美化右键菜单，与整体 UI 风格一�?
     contextMenu.setStyleSheet(R"(
         QMenu {
             background: rgba(255, 255, 255, 0.98);

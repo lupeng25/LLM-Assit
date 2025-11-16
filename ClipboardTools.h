@@ -1,6 +1,8 @@
 #pragma once
 
 #include <QJsonObject>
+#include <QJsonArray>
+#include <QPixmap>
 #include <QString>
 
 // 剪贴板操作工具类

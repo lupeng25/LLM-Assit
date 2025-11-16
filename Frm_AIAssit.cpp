@@ -422,29 +422,48 @@ QJsonObject Frm_AIAssit::parseJsonReplyToMsg(const QByteArray &data, bool isStre
 	QJsonObject rsp_json = response_doc.object();
 	// msg对象
 	QJsonObject msg;
+	const QJsonArray choices = rsp_json.value("choices").toArray();
+	if (choices.isEmpty())
+	{
+		return msg; // 返回空对象，避免越界
+	}
+	const QJsonObject choice0 = choices.at(0).toObject();
 	if (!isStream)
-		msg = rsp_json.value("choices").toArray()[0].toObject().value("message").toObject();
+		msg = choice0.value("message").toObject();
 	else
-		msg = rsp_json.value("choices").toArray()[0].toObject().value("delta").toObject();
+		msg = choice0.value("delta").toObject();
 	return msg;
 }
 void Frm_AIAssit::preFuncall(QJsonObject& Content)
 {
 	// 处理函数调用
 	QJsonArray toolCalls = Content["tool_calls"].toArray();
-	if (!toolCalls.isEmpty())
+	if (toolCalls.isEmpty())
 	{
-		QJsonObject functionCall = toolCalls[0].toObject()["function"].toObject();
-		QString name = functionCall["name"].toString();
-		QJsonObject arguments = QJsonDocument::fromJson(functionCall["arguments"].toString().toUtf8()).object();
-		QJsonObject result = LLMFunctionCall::Get()->executeFunction(name, arguments);
-		Content["content"] = QString(QJsonDocument(result).toJson(QJsonDocument::Indented));
-		ProcessFunctionCall(Content);
+		return;
 	}
+
+	const QJsonObject functionObj = toolCalls.at(0).toObject().value("function").toObject();
+	const QString name = functionObj.value("name").toString();
+	const QString argsStr = functionObj.value("arguments").toString();
+
+	QJsonParseError parseErr;
+	QJsonDocument argsDoc = QJsonDocument::fromJson(argsStr.toUtf8(), &parseErr);
+	QJsonObject arguments = (parseErr.error == QJsonParseError::NoError && argsDoc.isObject())
+		? argsDoc.object()
+		: QJsonObject();
+
+	QJsonObject result = LLMFunctionCall::Get()->executeFunction(name, arguments);
+	Content["content"] = QString(QJsonDocument(result).toJson(QJsonDocument::Indented));
+	ProcessFunctionCall(Content);
 }
 void Frm_AIAssit::ProcessFunctionCall(QJsonObject FunctionMsg)
 {
 	QJsonArray toolCalls = FunctionMsg["tool_calls"].toArray();
+	if (toolCalls.isEmpty())
+	{
+		return;
+	}
 	QJsonArray toolmsg;
 	QJsonObject assistantMsg;
 	assistantMsg["role"] = "assistant";
@@ -452,7 +471,7 @@ void Frm_AIAssit::ProcessFunctionCall(QJsonObject FunctionMsg)
 	assistantMsg["tool_calls"] = toolCalls;
 	toolmsg.append(assistantMsg);
 	QJsonObject toolMsg;
-	QJsonObject tool_call = FunctionMsg["tool_calls"].toArray()[0].toObject();
+	QJsonObject tool_call = toolCalls.at(0).toObject();
 	toolMsg["tool_call_id"] = tool_call["id"];
 	toolMsg["role"] = "tool";
 	toolMsg["name"] = tool_call["function"].toObject()["name"].toString();

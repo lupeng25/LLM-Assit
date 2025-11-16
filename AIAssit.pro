@@ -1,4 +1,4 @@
-QT += core gui widgets network
+QT += core gui widgets network xml
 CONFIG += c++14
 TEMPLATE = app
 TARGET = AIAssit
@@ -13,13 +13,23 @@ SOURCES += \
 HEADERS += \
     $$files($$PWD/*.h, true) \
     ChatList.h \
+    ClipboardTools.h \
+    FunctionCallRouter.h \
+    VisionTools.h \
+    GitTools.h \
+    DataFormatTools.h \
+    DateTimeTools.h \
     DifyClient.h \
+    FileSystemTools.h \
     LLMParams.h \
     MessageManager.h \
     OllamaClient.h \
     PromptLibrary.h \
     PromptLibraryDialog.h \
-    SyntaxHighlighter.h
+    SyntaxHighlighter.h \
+    SystemInfoTools.h \
+    TextProcessingTools.h \
+    UtilityTools.h
 
 FORMS += \
     $$files($$PWD/*.ui, true)
@@ -44,5 +54,9 @@ CONFIG(debug, debug|release) {
 } else {
     DESTDIR = $$PWD/release
 }
+
+# Copy FunctionCall.json to output directory
+# Note: FunctionCall.json should be manually copied to debug/AIAssit/ and release/AIAssit/ directories
+# Or it will be created at runtime if it doesn't exist
 
 INCLUDEPATH += $$PWD

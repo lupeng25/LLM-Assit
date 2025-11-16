@@ -11,6 +11,17 @@
 #include <thread>
 #include <memory>
 #include "GitLogReader.h"
+#include "FileSystemTools.h"
+#include "TextProcessingTools.h"
+#include "ClipboardTools.h"
+#include "SystemInfoTools.h"
+#include "DateTimeTools.h"
+#include "UtilityTools.h"
+#include "DataFormatTools.h"
+#include "FunctionCallRouter.h"
+#include <QFileSystemWatcher>
+#include "VisionTools.h"
+#include "GitTools.h"
 class LLMFunctionCall : public QObject
 {
 	Q_OBJECT
@@ -30,9 +41,11 @@ public:
 	std::function<QString(QString)> m_LLMCommandFunc;
 private:
 	QString FunctionFilePath;
-	QJsonArray m_tools;
+	QJsonArray m_tools; // 保持对外兼容（从路由器读取）
 	QJsonObject m_toolTamplate;
 	QJsonObject m_noneParam;
+	FunctionCallRouter m_router;
+	std::unique_ptr<QFileSystemWatcher> m_fileWatcher;
 
 	// Git代码审查相关
 	std::unique_ptr<GitLogReader> m_gitReader;
@@ -40,8 +53,11 @@ private:
 	QMutex m_gitMutex;
 
 	//加载Functioncall的Tools
-	void LoadFunctionCallTool(const QString &name, const QString &description, const QJsonObject &params);
-	bool LoadFunctionCallTool(const QString &JsonFile);
+	void LoadFunctionCallTool(const QString &name, const QString &description, const QJsonObject &params); // 保留但不再使用
+	bool LoadFunctionCallTool(const QString &JsonFile); // 读取 JSON 并交给路由器保存
+	void registerAllHandlers(); // 注册所有工具到路由器
+	void setupFunctionJsonWatcher(); // 热加载 FunctionCall.json
+	void onFunctionJsonChanged(const QString& path); // 变更回调
 	
 	// ==FunctionCall测试函数 ==
 	//获取天气
@@ -61,31 +77,11 @@ private:
 	QJsonObject SwitchVisionTab(const QJsonObject &arguments);
 
 	// === Git代码审查功能函数 ===
-	//对最新的Git提交进行AI代码审查
-	QJsonObject CodeReviewLatest(const QJsonObject &arguments);
-	//对指定的Git提交进行AI代码审查
-	QJsonObject CodeReviewCommit(const QJsonObject &arguments);
-	//对Git提交范围进行AI代码审查，比较两个提交之间的所有变更
-	QJsonObject CodeReviewRange(const QJsonObject &arguments);
-	//对当前工作目录的未提交变更进行AI代码审查
-	QJsonObject CodeReviewWorkingDir(const QJsonObject &arguments);
-	//获取Git提交的详细信息
-	QJsonObject GetCommitInfo(const QJsonObject &arguments);
-	//获取Git仓库的状态信息
-	QJsonObject GetRepoStatus(const QJsonObject &arguments);
+	// 旧 Git 审查函数已迁移至 GitTools（此处不再声明）
 
-	// == 选型助手相关功能 ==
-	//通过选型助手获取选型结果
-	QJsonObject VisionSelectByAssit(const QJsonObject &arguments);
-	// === 辅助方法 ===
-	//字符串转json
+	// === Helpers (legacy) ===
+	// QString -> QJsonObject
 	QJsonObject QStringToQJsonObject(const QString &qStr);
-	//Git数据格式化
-	QJsonObject formatCodeReviewResponse(const CodeReviewData& reviewData, const QString& reviewType);
-	//处理Git异常
-	QJsonObject handleGitError(const QString& operation, const std::exception& e);
-	//Git数据转Json
-	QString codeReviewDataToJson(const CodeReviewData& reviewData);
 
 
 protected:

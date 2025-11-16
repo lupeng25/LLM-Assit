@@ -6,12 +6,15 @@
 #include<String>
 #include <QMutexLocker>
 #include <QDir>
+#include <QTimer>
 using namespace std;
 
 LLMFunctionCall::LLMFunctionCall()
 {
 	FunctionFilePath = QCoreApplication::applicationDirPath() + "/AIAssit/FunctionCall.json";
 	LoadFunctionCallTool(FunctionFilePath);
+	registerAllHandlers();
+	setupFunctionJsonWatcher();
 	m_currentRepoPath = QDir::currentPath();
 	m_gitReader = std::make_unique<GitLogReader>(m_currentRepoPath.isEmpty() ? "" : m_currentRepoPath.toStdString());
 }
@@ -43,445 +46,159 @@ void LLMFunctionCall::LoadFunctionCallTool(const QString &name, const QString &d
 
 bool LLMFunctionCall::LoadFunctionCallTool(const QString &JsonFile)
 {
-	QFile FunctionJsonFile(JsonFile);
-	if (!FunctionJsonFile.open(QIODevice::ReadOnly | QIODevice::Text))
-	{
-		return false;
-	}
-
-	QJsonParseError JsonErrorCode;
-	QJsonDocument JsonDoc = QJsonDocument::fromJson(FunctionJsonFile.readAll(), &JsonErrorCode);
-	FunctionJsonFile.close();
-	if (JsonErrorCode.error != QJsonParseError::NoError || !JsonDoc.isObject())
-	{
-		return false;
-	}
-
-	QJsonObject FunctionJsonData = JsonDoc.object();
-	if (FunctionJsonData.contains("tools") && FunctionJsonData["tools"].isArray())
-	{
-		QJsonArray toolsArray = FunctionJsonData["tools"].toArray();
-		m_tools = toolsArray;
-	}
+	// 使用路由器读取工具定义（解耦）
+	const bool ok = m_router.loadToolsDefinition(JsonFile);
+	m_tools = m_router.toolsDefinition();
+	return ok;
 }
 
+void LLMFunctionCall::registerAllHandlers()
+{
+	// 把外部视觉平台调用器注入给 VisionTools
+	VisionTools::setInvoker(m_LLMCommandFunc);
+
+	// 演示/视觉平台相关
+	m_router.registerTool(QStringLiteral("get_weather"), VisionTools::getWeather);
+	m_router.registerTool(QStringLiteral("get_time"), VisionTools::getTime);
+	m_router.registerTool(QStringLiteral("open_template_assistant"), VisionTools::openTemplateAssistant);
+	m_router.registerTool(QStringLiteral("run_current_visionscript"), VisionTools::runCurrentScript);
+	m_router.registerTool(QStringLiteral("close_vision_platform"), VisionTools::closeVisionPlatform);
+	m_router.registerTool(QStringLiteral("run_vision_order"), VisionTools::runVisionOrder);
+	m_router.registerTool(QStringLiteral("switch_vision_tab"), VisionTools::switchVisionTab);
+
+	// Git 代码审查（由 GitTools 管理 GitLogReader 生命周期）
+	m_router.registerTool(QStringLiteral("code_review_latest"), GitTools::codeReviewLatest);
+	m_router.registerTool(QStringLiteral("code_review_commit"), GitTools::codeReviewCommit);
+	m_router.registerTool(QStringLiteral("code_review_range"), GitTools::codeReviewRange);
+	m_router.registerTool(QStringLiteral("code_review_working_dir"), GitTools::codeReviewWorkingDir);
+	m_router.registerTool(QStringLiteral("get_commit_info"), GitTools::getCommitInfo);
+	m_router.registerTool(QStringLiteral("get_repo_status"), GitTools::getRepoStatus);
+
+	// 文件系统
+	m_router.registerTool(QStringLiteral("read_file"), FileSystemTools::readFile);
+	m_router.registerTool(QStringLiteral("write_file"), FileSystemTools::writeFile);
+	m_router.registerTool(QStringLiteral("list_directory"), FileSystemTools::listDirectory);
+	m_router.registerTool(QStringLiteral("search_in_files"), FileSystemTools::searchInFiles);
+	m_router.registerTool(QStringLiteral("create_directory"), FileSystemTools::createDirectory);
+	m_router.registerTool(QStringLiteral("delete_file"), FileSystemTools::deleteFile);
+	m_router.registerTool(QStringLiteral("delete_directory"), FileSystemTools::deleteDirectory);
+	m_router.registerTool(QStringLiteral("copy_file"), FileSystemTools::copyFile);
+	m_router.registerTool(QStringLiteral("move_file"), FileSystemTools::moveFile);
+	m_router.registerTool(QStringLiteral("get_file_info"), FileSystemTools::getFileInfo);
+	m_router.registerTool(QStringLiteral("find_files"), FileSystemTools::findFiles);
+	m_router.registerTool(QStringLiteral("count_lines"), FileSystemTools::countLines);
+	m_router.registerTool(QStringLiteral("path_exists"), FileSystemTools::pathExists);
+	m_router.registerTool(QStringLiteral("join_path"), FileSystemTools::joinPath);
+	m_router.registerTool(QStringLiteral("normalize_path"), FileSystemTools::normalizePath);
+	m_router.registerTool(QStringLiteral("get_file_name"), FileSystemTools::getFileName);
+	m_router.registerTool(QStringLiteral("get_directory"), FileSystemTools::getDirectory);
+	m_router.registerTool(QStringLiteral("get_file_extension"), FileSystemTools::getFileExtension);
+
+	// 文本处理
+	m_router.registerTool(QStringLiteral("text_replace"), TextProcessingTools::textReplace);
+	m_router.registerTool(QStringLiteral("text_statistics"), TextProcessingTools::textStatistics);
+	m_router.registerTool(QStringLiteral("regex_match"), TextProcessingTools::regexMatch);
+	m_router.registerTool(QStringLiteral("text_extract"), TextProcessingTools::textExtract);
+	m_router.registerTool(QStringLiteral("text_encode_decode"), TextProcessingTools::textEncodeDecode);
+	m_router.registerTool(QStringLiteral("text_format"), TextProcessingTools::textFormat);
+
+	// 剪贴板
+	m_router.registerTool(QStringLiteral("get_clipboard"), ClipboardTools::getClipboard);
+	m_router.registerTool(QStringLiteral("set_clipboard"), ClipboardTools::setClipboard);
+
+	// 系统信息
+	m_router.registerTool(QStringLiteral("get_system_info"), SystemInfoTools::getSystemInfo);
+	m_router.registerTool(QStringLiteral("get_disk_space"), SystemInfoTools::getDiskSpace);
+	m_router.registerTool(QStringLiteral("get_environment_variable"), SystemInfoTools::getEnvironmentVariable);
+	m_router.registerTool(QStringLiteral("get_current_directory"), SystemInfoTools::getCurrentDirectory);
+	m_router.registerTool(QStringLiteral("set_current_directory"), SystemInfoTools::setCurrentDirectory);
+
+	// 日期时间
+	m_router.registerTool(QStringLiteral("format_datetime"), DateTimeTools::formatDateTime);
+	m_router.registerTool(QStringLiteral("calculate_datetime"), DateTimeTools::calculateDateTime);
+	m_router.registerTool(QStringLiteral("parse_datetime"), DateTimeTools::parseDateTime);
+	m_router.registerTool(QStringLiteral("get_timezone"), DateTimeTools::getTimezone);
+	m_router.registerTool(QStringLiteral("time_difference"), DateTimeTools::timeDifference);
+
+	// 实用工具
+	m_router.registerTool(QStringLiteral("calculate"), UtilityTools::calculate);
+	m_router.registerTool(QStringLiteral("unit_convert"), UtilityTools::unitConvert);
+	m_router.registerTool(QStringLiteral("number_format"), UtilityTools::numberFormat);
+	m_router.registerTool(QStringLiteral("generate_uuid"), UtilityTools::generateUuid);
+	m_router.registerTool(QStringLiteral("generate_random_string"), UtilityTools::generateRandomString);
+	m_router.registerTool(QStringLiteral("hash_string"), UtilityTools::hashString);
+	m_router.registerTool(QStringLiteral("validate_json"), UtilityTools::validateJson);
+	m_router.registerTool(QStringLiteral("validate_xml"), UtilityTools::validateXml);
+
+	// 数据格式
+	m_router.registerTool(QStringLiteral("parse_json"), DataFormatTools::parseJson);
+	m_router.registerTool(QStringLiteral("format_json"), DataFormatTools::formatJson);
+	m_router.registerTool(QStringLiteral("parse_csv"), DataFormatTools::parseCsv);
+	m_router.registerTool(QStringLiteral("to_csv"), DataFormatTools::toCsv);
+}
+
+void LLMFunctionCall::setupFunctionJsonWatcher()
+{
+	m_fileWatcher = std::make_unique<QFileSystemWatcher>();
+	if (!FunctionFilePath.isEmpty())
+	{
+		m_fileWatcher->addPath(FunctionFilePath);
+	}
+	connect(m_fileWatcher.get(), &QFileSystemWatcher::fileChanged, this, &LLMFunctionCall::onFunctionJsonChanged);
+}
+
+void LLMFunctionCall::onFunctionJsonChanged(const QString& path)
+{
+	// 某些平台会触发两次变更事件，做简单防抖
+	QTimer::singleShot(200, this, [this]() {
+		LoadFunctionCallTool(FunctionFilePath);
+		// 变更后继续监听（有的编辑器会先删除再写入）
+		if (m_fileWatcher && !m_fileWatcher->files().contains(FunctionFilePath))
+		{
+			m_fileWatcher->addPath(FunctionFilePath);
+		}
+	});
+}
+
+// ==== Legacy demo/vision methods -> delegate to VisionTools ====
 QJsonObject LLMFunctionCall::getWeather(const QJsonObject &arguments)
 {
-	QString city = arguments["city"].toString();
-	QJsonObject result;
-	if (QStringLiteral("苏州") == city)
-	{
-		result["weather"] = QStringLiteral("晴天");
-		result["temperature"] = QStringLiteral("19℃");
-	}
-	else if (QStringLiteral("杭州") == city)
-	{
-		result["weather"] = QStringLiteral("晴天");
-		result["temperature"] = QStringLiteral("21℃");
-	}
-	else if (QStringLiteral("北京") == city)
-	{
-		result["weather"] = QStringLiteral("阴天");
-		result["temperature"] = QStringLiteral("18℃");
-	}
-	else {
-		result = QJsonObject();
-	}
-	return result;
+	return VisionTools::getWeather(arguments);
 }
 
 QJsonObject LLMFunctionCall::getTime(const QJsonObject &arguments)
 {
-	// 获取当前的日期和时间
-	QDateTime currentDateTime = QDateTime::currentDateTime();
-	QJsonObject result;
-	result["NowTime"] = currentDateTime.toString();
-	return result;
+	return VisionTools::getTime(arguments);
 }
 
 QJsonObject LLMFunctionCall::RunVisionOrder(const QJsonObject &arguments)
 {
-	QString VisionResult = m_LLMCommandFunc(QString("RunOnce"));
-	QJsonObject result;
-	result["result"] = QStringLiteral("执行成功");
-	return result;
+	return VisionTools::runVisionOrder(arguments);
 }
 
 QJsonObject LLMFunctionCall::OpenModelAssit(const QJsonObject &arguments)
 {
-	QString VisionResult = m_LLMCommandFunc(QString("ModelAssist"));
-	QJsonObject result;
-	result["result"] = QStringLiteral("打开模板助手成功");
-	return result;
+	return VisionTools::openTemplateAssistant(arguments);
 }
 
 QJsonObject LLMFunctionCall::RunCurrentScript(const QJsonObject &arguments)
 {
-	QString VisionResult = m_LLMCommandFunc(QString("ClickButton"));
-	QJsonObject result;
-	result["result"] = QStringLiteral("执行当前视觉脚本成功");
-	return result;
+	return VisionTools::runCurrentScript(arguments);
 }
 
 QJsonObject LLMFunctionCall::CloseVisionPlatForm(const QJsonObject &arguments)
 {
-	QString VisionResult = m_LLMCommandFunc(QString("ExitApplication"));
-	QJsonObject result;
-	result["result"] = QStringLiteral("视觉平台已退出");
-	return result;
+	return VisionTools::closeVisionPlatform(arguments);
 }
 
 QJsonObject LLMFunctionCall::SwitchVisionTab(const QJsonObject &arguments)
 {
-	QString ScriptName = arguments["TabName"].toString();
-	std::string reslt;
-	QJsonObject result;
-	result["result"] = QStringLiteral("切换视觉脚本页面成功");
-	return result;
+	return VisionTools::switchVisionTab(arguments);
 }
 
 QJsonObject LLMFunctionCall::executeFunction(const QString &name, const QJsonObject &arguments)
 {
-	if (name == "get_weather")
-		return getWeather(arguments);
-	else if (name == "get_time")
-		return getTime(arguments);
-	else if (name == "open_template_assistant")
-		return OpenModelAssit(arguments);
-	else if (name == "run_current_visionscript")
-		return RunCurrentScript(arguments);
-	else if (name == "close_vision_platform")
-		return CloseVisionPlatForm(arguments);
-	else if (name == "code_review_latest")
-		return CodeReviewLatest(arguments);
-	else if (name == "code_review_commit")
-		return CodeReviewCommit(arguments);
-	else if (name == "code_review_range")
-		return CodeReviewRange(arguments);
-	else if (name == "code_review_working_dir")
-		return CodeReviewWorkingDir(arguments);
-	else if (name == "get_commit_info")
-		return GetCommitInfo(arguments);
-	else if (name == "get_repo_status")
-		return GetRepoStatus(arguments);
-	else
-		return QJsonObject();
+	return m_router.execute(name, arguments);
 }
 
-QJsonObject LLMFunctionCall::CodeReviewLatest(const QJsonObject &arguments)
-{
-	QMutexLocker locker(&m_gitMutex);
-
-	try
-	{
-		// 检查是否指定了仓库路径
-		if (arguments.contains("repo_path"))
-		{
-			QString repoPath = arguments["repo_path"].toString();
-			repoPath.replace("think", "");
-			if (!repoPath.isEmpty() && repoPath != m_currentRepoPath)
-			{
-				if (m_currentRepoPath != repoPath)
-				{
-					m_currentRepoPath = repoPath;
-					m_gitReader = std::make_unique<GitLogReader>(repoPath.isEmpty() ? "" : repoPath.toStdString());
-				}
-			}
-		}
-
-		if (!m_gitReader)
-		{
-			return handleGitError("CodeReviewLatest", std::runtime_error("Git阅读器未初始化"));
-		}
-
-		// 获取最新提交的代码审查数据
-		CodeReviewData reviewData = m_gitReader->getLastCommitReviewData();
-
-		if (reviewData.isEmpty())
-		{
-			QJsonObject result;
-			result["success"] = false;
-			result["message"] = "没有找到可审查的代码变更";
-			return result;
-		}
-
-		// 格式化审查响应
-		QJsonObject result = formatCodeReviewResponse(reviewData, "latest_commit");
-
-		// 发出信号通知有新的代码审查数据
-		emit codeReviewReady(result);
-
-		return result;
-	}
-	catch (const std::exception& e)
-	{
-		return handleGitError("CodeReviewLatest", e);
-	}
-}
-
-QJsonObject LLMFunctionCall::CodeReviewCommit(const QJsonObject &arguments)
-{
-	QMutexLocker locker(&m_gitMutex);
-
-	try
-	{
-		QString commitHash = arguments["commit_hash"].toString();
-		if (commitHash.isEmpty())
-		{
-			QJsonObject result;
-			result["success"] = false;
-			result["message"] = "需要提供提交哈希值";
-			return result;
-		}
-
-		if (!m_gitReader)
-		{
-			return handleGitError("CodeReviewCommit", std::runtime_error("Git阅读器未初始化"));
-		}
-
-		// 获取指定提交的代码审查数据
-		CodeReviewData reviewData = m_gitReader->getCodeReviewData(commitHash.toStdString());
-
-		if (reviewData.isEmpty())
-		{
-			QJsonObject result;
-			result["success"] = false;
-			result["message"] = QString("提交 %1 没有找到可审查的代码变更").arg(commitHash);
-			return result;
-		}
-
-		return formatCodeReviewResponse(reviewData, "specific_commit");
-	}
-	catch (const std::exception& e)
-	{
-		return handleGitError("CodeReviewCommit", e);
-	}
-}
-
-QJsonObject LLMFunctionCall::CodeReviewRange(const QJsonObject &arguments)
-{
-	QMutexLocker locker(&m_gitMutex);
-
-	try
-	{
-		QString fromCommit = arguments["from_commit"].toString();
-		QString toCommit = arguments["to_commit"].toString();
-
-		if (fromCommit.isEmpty() || toCommit.isEmpty())
-		{
-			QJsonObject result;
-			result["success"] = false;
-			result["message"] = "需要提供起始和结束提交哈希值";
-			return result;
-		}
-
-		if (!m_gitReader)
-		{
-			return handleGitError("CodeReviewRange", std::runtime_error("Git阅读器未初始化"));
-		}
-
-		// 获取提交范围的代码审查数据
-		CodeReviewData reviewData = m_gitReader->getRangeReviewData(fromCommit.toStdString(), toCommit.toStdString());
-
-		if (reviewData.isEmpty())
-		{
-			QJsonObject result;
-			result["success"] = false;
-			result["message"] = QString("提交范围 %1..%2 没有找到可审查的代码变更").arg(fromCommit, toCommit);
-			return result;
-		}
-
-		return formatCodeReviewResponse(reviewData, "commit_range");
-	}
-	catch (const std::exception& e)
-	{
-		return handleGitError("CodeReviewRange", e);
-	}
-}
-
-QJsonObject LLMFunctionCall::CodeReviewWorkingDir(const QJsonObject &arguments)
-{
-	QMutexLocker locker(&m_gitMutex);
-
-	try
-	{
-		if (!m_gitReader)
-		{
-			return handleGitError("CodeReviewWorkingDir", std::runtime_error("Git阅读器未初始化"));
-		}
-
-		// 获取工作目录的代码审查数据
-		CodeReviewData reviewData = m_gitReader->getWorkingDirectoryReviewData();
-
-		if (reviewData.isEmpty())
-		{
-			QJsonObject result;
-			result["success"] = false;
-			result["message"] = "工作目录没有发现代码变更";
-			return result;
-		}
-
-		return formatCodeReviewResponse(reviewData, "working_directory");
-	}
-	catch (const std::exception& e)
-	{
-		return handleGitError("CodeReviewWorkingDir", e);
-	}
-}
-
-QJsonObject LLMFunctionCall::GetCommitInfo(const QJsonObject &arguments)
-{
-	QMutexLocker locker(&m_gitMutex);
-
-	try
-	{
-		QString commitHash = arguments["commit_hash"].toString();
-
-		if (!m_gitReader)
-		{
-			return handleGitError("GetCommitInfo", std::runtime_error("Git阅读器未初始化"));
-		}
-
-		GitCommit commit;
-		if (commitHash.isEmpty())
-		{
-			// 获取最新提交信息
-			auto commits = m_gitReader->getCommits(1);
-			if (!commits.empty())
-			{
-				commit = commits[0];
-			}
-		}
-		else
-		{
-			// 获取指定提交信息
-			commit = m_gitReader->getCommit(commitHash.toStdString());
-		}
-
-		QJsonObject result;
-		result["success"] = true;
-		result["commit_hash"] = QString::fromStdString(commit.hash);
-		result["author"] = QString::fromStdString(commit.author);
-		result["email"] = QString::fromStdString(commit.email);
-		result["date"] = QString::fromStdString(commit.date);
-		result["message"] = QString::fromStdString(commit.message);
-		result["branch"] = QString::fromStdString(commit.branch);
-
-		return result;
-	}
-	catch (const std::exception& e)
-	{
-		return handleGitError("GetCommitInfo", e);
-	}
-}
-
-QJsonObject LLMFunctionCall::GetRepoStatus(const QJsonObject &arguments)
-{
-	QMutexLocker locker(&m_gitMutex);
-	try
-	{
-		if (!m_gitReader)
-		{
-			return handleGitError("GetRepoStatus", std::runtime_error("Git阅读器未初始化"));
-		}
-
-		RepoInfo repoInfo = m_gitReader->getRepoInfo();
-
-		QJsonObject result;
-		result["success"] = true;
-		result["current_branch"] = QString::fromStdString(repoInfo.currentBranch);
-		result["last_commit_hash"] = QString::fromStdString(repoInfo.lastCommitHash);
-		result["has_uncommitted_changes"] = repoInfo.hasUncommittedChanges;
-		result["total_commits"] = repoInfo.totalCommits;
-		result["repo_path"] = m_currentRepoPath;
-
-		QJsonArray branchesArray;
-		for (const auto& branch : repoInfo.branches)
-		{
-			branchesArray.append(QString::fromStdString(branch));
-		}
-		result["branches"] = branchesArray;
-
-		return result;
-	}
-	catch (const std::exception& e)
-	{
-		return handleGitError("GetRepoStatus", e);
-	}
-}
-
-QJsonObject LLMFunctionCall::VisionSelectByAssit(const QJsonObject &arguments)
-{
-	return QJsonObject{};
-}
-
-QJsonObject LLMFunctionCall::formatCodeReviewResponse(const CodeReviewData& reviewData, const QString& reviewType)
-{
-	QJsonObject result;
-	result["success"] = true;
-	result["review_type"] = reviewType;
-	result["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
-
-	// 基本信息
-	QJsonObject commitInfo;
-	commitInfo["hash"] = QString::fromStdString(reviewData.commitHash);
-	commitInfo["range"] = QString::fromStdString(reviewData.commitRange);
-	commitInfo["author"] = QString::fromStdString(reviewData.commitInfo.author);
-	commitInfo["email"] = QString::fromStdString(reviewData.commitInfo.email);
-	commitInfo["date"] = QString::fromStdString(reviewData.commitInfo.date);
-	commitInfo["message"] = QString::fromStdString(reviewData.commitInfo.message);
-	result["commit_info"] = commitInfo;
-
-	// 统计信息
-	QJsonObject stats;
-	stats["total_files_changed"] = reviewData.totalFilesChanged;
-	stats["code_files_changed"] = reviewData.codeFilesChanged;
-	stats["total_additions"] = reviewData.totalAdditions;
-	stats["total_deletions"] = reviewData.totalDeletions;
-	stats["net_changes"] = reviewData.totalAdditions - reviewData.totalDeletions;
-	result["statistics"] = stats;
-
-	// 主要变更文件
-	QJsonArray mainFiles;
-	for (const auto& file : reviewData.mainChangedFiles)
-	{
-		QJsonObject fileObj;
-		fileObj["filename"] = QString::fromStdString(file.filename);
-		fileObj["language"] = QString::fromStdString(file.language);
-		fileObj["status"] = QString::fromStdString(file.status);
-		fileObj["additions"] = file.additions;
-		fileObj["deletions"] = file.deletions;
-		fileObj["total_changes"] = file.totalChanges();
-		mainFiles.append(fileObj);
-	}
-	result["main_changed_files"] = mainFiles;
-
-	// LLM格式化的审查文本
-	result["llm_review_text"] = QString::fromStdString(reviewData.reviewText);
-	result["formatted_for_llm"] = QString::fromStdString(m_gitReader->formatForLLM(reviewData, true));
-
-	return result;
-}
-
-QJsonObject LLMFunctionCall::handleGitError(const QString& operation, const std::exception& e)
-{
-	QString errorMsg = QString("Git操作失败 [%1]: %2").arg(operation, e.what());
-	qDebug() << errorMsg;
-
-	emit gitOperationFailed(errorMsg);
-
-	QJsonObject result;
-	result["success"] = false;
-	result["error"] = errorMsg;
-	result["operation"] = operation;
-	result["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
-
-	return result;
-}
-
-QString LLMFunctionCall::codeReviewDataToJson(const CodeReviewData& reviewData)
-{
-	QJsonObject reviewObj = formatCodeReviewResponse(reviewData, "data_export");
-	QJsonDocument doc(reviewObj);
-	return doc.toJson(QJsonDocument::Compact);
-}
+// Legacy Git review functions have been removed (migrated to GitTools)

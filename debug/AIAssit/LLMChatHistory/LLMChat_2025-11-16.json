@@ -1,0 +1,55 @@
+{
+    "{7e881180-c8ac-4dcd-acb9-718210daaf7e}": {
+        "messages": [
+            {
+                "bubbleid": "{9e4c22f0-cb9a-4188-9f4d-99265784e62c}",
+                "dialogname": "New Conversation",
+                "height": 162,
+                "important": false,
+                "msg": "生成一个UUID",
+                "note": "",
+                "reasoningMsg": "",
+                "time": "1763283641",
+                "userType": 1,
+                "width": 895
+            },
+            {
+                "bubbleid": "{3a6ad194-5b06-4f2a-8f21-e802261992b2}",
+                "dialogname": "",
+                "height": 381,
+                "important": false,
+                "msg": "\n ### 回答 \n\n",
+                "note": "",
+                "reasoningMsg": "\n ### 推理 \n本模型不支持推理",
+                "time": "1763283648",
+                "userType": 2,
+                "width": 895
+            },
+            {
+                "bubbleid": "{c275235f-af72-4a46-bf85-00b815119a33}",
+                "dialogname": "New Conversation",
+                "height": 162,
+                "important": false,
+                "msg": "生成一个UUID",
+                "note": "",
+                "reasoningMsg": "",
+                "time": "1763284150",
+                "userType": 1,
+                "width": 895
+            },
+            {
+                "bubbleid": "{36334a59-826d-4097-ac05-8a95a93433e2}",
+                "dialogname": "",
+                "height": 381,
+                "important": false,
+                "msg": "\n ### 回答 \n\n",
+                "note": "",
+                "reasoningMsg": "\n ### 推理 \n本模型不支持推理",
+                "time": "1763284158",
+                "userType": 2,
+                "width": 895
+            }
+        ],
+        "saveTime": "2025-11-16T17:09:18"
+    }
+}

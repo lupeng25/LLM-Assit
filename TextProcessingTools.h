@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QJsonObject>
+#include <QStringList>
 #include <QString>
 
 // 文本处理工具类

@@ -34,11 +34,18 @@ public:
 
 	~LLMFunctionCall();
 
-	QJsonArray Tools() { return m_tools; }
+	// Return tools filtered by enabled modules
+	QJsonArray Tools();
 
 	//执行函数
 	QJsonObject executeFunction(const QString &name, const QJsonObject &arguments);
 	std::function<QString(QString)> m_LLMCommandFunc;
+
+	// Module switches
+	void setEnabledModules(const QStringList& modules);
+	void enableModule(const QString& module, bool enabled);
+	QStringList enabledModules() const;
+
 private:
 	QString FunctionFilePath;
 	QJsonArray m_tools; // 保持对外兼容（从路由器读取）
@@ -46,6 +53,8 @@ private:
 	QJsonObject m_noneParam;
 	FunctionCallRouter m_router;
 	std::unique_ptr<QFileSystemWatcher> m_fileWatcher;
+	QSet<QString> m_enabledModules;              // e.g. {"vision","git","fs","text","clipboard","system","datetime","utility","data"}
+	QHash<QString, QString> m_functionToModule;  // function name -> module id
 
 	// Git代码审查相关
 	std::unique_ptr<GitLogReader> m_gitReader;
@@ -58,6 +67,10 @@ private:
 	void registerAllHandlers(); // 注册所有工具到路由器
 	void setupFunctionJsonWatcher(); // 热加载 FunctionCall.json
 	void onFunctionJsonChanged(const QString& path); // 变更回调
+
+	// Helper to register and track module ownership
+	void registerTool(const QString& module, const QString& name, FunctionCallRouter::Handler handler);
+	QJsonArray buildFilteredTools() const;
 	
 	// ==FunctionCall测试函数 ==
 	//获取天气

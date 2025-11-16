@@ -12,6 +12,12 @@ using namespace std;
 LLMFunctionCall::LLMFunctionCall()
 {
 	FunctionFilePath = QCoreApplication::applicationDirPath() + "/AIAssit/FunctionCall.json";
+	// default: enable all modules
+	m_enabledModules = QSet<QString>::fromList({
+		QStringLiteral("vision"), QStringLiteral("git"), QStringLiteral("fs"), QStringLiteral("text"),
+		QStringLiteral("clipboard"), QStringLiteral("system"), QStringLiteral("datetime"),
+		QStringLiteral("utility"), QStringLiteral("data")
+	});
 	LoadFunctionCallTool(FunctionFilePath);
 	registerAllHandlers();
 	setupFunctionJsonWatcher();
@@ -22,6 +28,46 @@ LLMFunctionCall::LLMFunctionCall()
 LLMFunctionCall::~LLMFunctionCall()
 {
 
+}
+
+QJsonArray LLMFunctionCall::Tools()
+{
+	return buildFilteredTools();
+}
+
+QStringList LLMFunctionCall::enabledModules() const
+{
+	return m_enabledModules.values();
+}
+
+void LLMFunctionCall::setEnabledModules(const QStringList& modules)
+{
+	m_enabledModules = QSet<QString>(modules.begin(), modules.end());
+}
+
+void LLMFunctionCall::enableModule(const QString& module, bool enabled)
+{
+	if (enabled) m_enabledModules.insert(module);
+	else m_enabledModules.remove(module);
+}
+
+QJsonArray LLMFunctionCall::buildFilteredTools() const
+{
+	QJsonArray all = m_router.toolsDefinition();
+	if (m_enabledModules.isEmpty()) return QJsonArray();
+	QJsonArray filtered;
+	for (const QJsonValue& v : all)
+	{
+		QJsonObject obj = v.toObject();
+		QJsonObject fn = obj.value("function").toObject();
+		const QString name = fn.value("name").toString();
+		const QString module = m_functionToModule.value(name);
+		if (module.isEmpty() || m_enabledModules.contains(module))
+		{
+			filtered.append(obj);
+		}
+	}
+	return filtered;
 }
 
 QJsonObject LLMFunctionCall::QStringToQJsonObject(const QString &qStr)
@@ -52,89 +98,95 @@ bool LLMFunctionCall::LoadFunctionCallTool(const QString &JsonFile)
 	return ok;
 }
 
+void LLMFunctionCall::registerTool(const QString& module, const QString& name, FunctionCallRouter::Handler handler)
+{
+	m_functionToModule.insert(name, module);
+	m_router.registerTool(name, handler);
+}
+
 void LLMFunctionCall::registerAllHandlers()
 {
-	// 把外部视觉平台调用器注入给 VisionTools
+	// Inject external invoker into VisionTools
 	VisionTools::setInvoker(m_LLMCommandFunc);
 
-	// 演示/视觉平台相关
-	m_router.registerTool(QStringLiteral("get_weather"), VisionTools::getWeather);
-	m_router.registerTool(QStringLiteral("get_time"), VisionTools::getTime);
-	m_router.registerTool(QStringLiteral("open_template_assistant"), VisionTools::openTemplateAssistant);
-	m_router.registerTool(QStringLiteral("run_current_visionscript"), VisionTools::runCurrentScript);
-	m_router.registerTool(QStringLiteral("close_vision_platform"), VisionTools::closeVisionPlatform);
-	m_router.registerTool(QStringLiteral("run_vision_order"), VisionTools::runVisionOrder);
-	m_router.registerTool(QStringLiteral("switch_vision_tab"), VisionTools::switchVisionTab);
+	// Vision/Demo
+	registerTool("vision", "get_weather", VisionTools::getWeather);
+	registerTool("vision", "get_time", VisionTools::getTime);
+	registerTool("vision", "open_template_assistant", VisionTools::openTemplateAssistant);
+	registerTool("vision", "run_current_visionscript", VisionTools::runCurrentScript);
+	registerTool("vision", "close_vision_platform", VisionTools::closeVisionPlatform);
+	registerTool("vision", "run_vision_order", VisionTools::runVisionOrder);
+	registerTool("vision", "switch_vision_tab", VisionTools::switchVisionTab);
 
-	// Git 代码审查（由 GitTools 管理 GitLogReader 生命周期）
-	m_router.registerTool(QStringLiteral("code_review_latest"), GitTools::codeReviewLatest);
-	m_router.registerTool(QStringLiteral("code_review_commit"), GitTools::codeReviewCommit);
-	m_router.registerTool(QStringLiteral("code_review_range"), GitTools::codeReviewRange);
-	m_router.registerTool(QStringLiteral("code_review_working_dir"), GitTools::codeReviewWorkingDir);
-	m_router.registerTool(QStringLiteral("get_commit_info"), GitTools::getCommitInfo);
-	m_router.registerTool(QStringLiteral("get_repo_status"), GitTools::getRepoStatus);
+	// Git
+	registerTool("git", "code_review_latest", GitTools::codeReviewLatest);
+	registerTool("git", "code_review_commit", GitTools::codeReviewCommit);
+	registerTool("git", "code_review_range", GitTools::codeReviewRange);
+	registerTool("git", "code_review_working_dir", GitTools::codeReviewWorkingDir);
+	registerTool("git", "get_commit_info", GitTools::getCommitInfo);
+	registerTool("git", "get_repo_status", GitTools::getRepoStatus);
 
-	// 文件系统
-	m_router.registerTool(QStringLiteral("read_file"), FileSystemTools::readFile);
-	m_router.registerTool(QStringLiteral("write_file"), FileSystemTools::writeFile);
-	m_router.registerTool(QStringLiteral("list_directory"), FileSystemTools::listDirectory);
-	m_router.registerTool(QStringLiteral("search_in_files"), FileSystemTools::searchInFiles);
-	m_router.registerTool(QStringLiteral("create_directory"), FileSystemTools::createDirectory);
-	m_router.registerTool(QStringLiteral("delete_file"), FileSystemTools::deleteFile);
-	m_router.registerTool(QStringLiteral("delete_directory"), FileSystemTools::deleteDirectory);
-	m_router.registerTool(QStringLiteral("copy_file"), FileSystemTools::copyFile);
-	m_router.registerTool(QStringLiteral("move_file"), FileSystemTools::moveFile);
-	m_router.registerTool(QStringLiteral("get_file_info"), FileSystemTools::getFileInfo);
-	m_router.registerTool(QStringLiteral("find_files"), FileSystemTools::findFiles);
-	m_router.registerTool(QStringLiteral("count_lines"), FileSystemTools::countLines);
-	m_router.registerTool(QStringLiteral("path_exists"), FileSystemTools::pathExists);
-	m_router.registerTool(QStringLiteral("join_path"), FileSystemTools::joinPath);
-	m_router.registerTool(QStringLiteral("normalize_path"), FileSystemTools::normalizePath);
-	m_router.registerTool(QStringLiteral("get_file_name"), FileSystemTools::getFileName);
-	m_router.registerTool(QStringLiteral("get_directory"), FileSystemTools::getDirectory);
-	m_router.registerTool(QStringLiteral("get_file_extension"), FileSystemTools::getFileExtension);
+	// File system
+	registerTool("fs", "read_file", FileSystemTools::readFile);
+	registerTool("fs", "write_file", FileSystemTools::writeFile);
+	registerTool("fs", "list_directory", FileSystemTools::listDirectory);
+	registerTool("fs", "search_in_files", FileSystemTools::searchInFiles);
+	registerTool("fs", "create_directory", FileSystemTools::createDirectory);
+	registerTool("fs", "delete_file", FileSystemTools::deleteFile);
+	registerTool("fs", "delete_directory", FileSystemTools::deleteDirectory);
+	registerTool("fs", "copy_file", FileSystemTools::copyFile);
+	registerTool("fs", "move_file", FileSystemTools::moveFile);
+	registerTool("fs", "get_file_info", FileSystemTools::getFileInfo);
+	registerTool("fs", "find_files", FileSystemTools::findFiles);
+	registerTool("fs", "count_lines", FileSystemTools::countLines);
+	registerTool("fs", "path_exists", FileSystemTools::pathExists);
+	registerTool("fs", "join_path", FileSystemTools::joinPath);
+	registerTool("fs", "normalize_path", FileSystemTools::normalizePath);
+	registerTool("fs", "get_file_name", FileSystemTools::getFileName);
+	registerTool("fs", "get_directory", FileSystemTools::getDirectory);
+	registerTool("fs", "get_file_extension", FileSystemTools::getFileExtension);
 
-	// 文本处理
-	m_router.registerTool(QStringLiteral("text_replace"), TextProcessingTools::textReplace);
-	m_router.registerTool(QStringLiteral("text_statistics"), TextProcessingTools::textStatistics);
-	m_router.registerTool(QStringLiteral("regex_match"), TextProcessingTools::regexMatch);
-	m_router.registerTool(QStringLiteral("text_extract"), TextProcessingTools::textExtract);
-	m_router.registerTool(QStringLiteral("text_encode_decode"), TextProcessingTools::textEncodeDecode);
-	m_router.registerTool(QStringLiteral("text_format"), TextProcessingTools::textFormat);
+	// Text
+	registerTool("text", "text_replace", TextProcessingTools::textReplace);
+	registerTool("text", "text_statistics", TextProcessingTools::textStatistics);
+	registerTool("text", "regex_match", TextProcessingTools::regexMatch);
+	registerTool("text", "text_extract", TextProcessingTools::textExtract);
+	registerTool("text", "text_encode_decode", TextProcessingTools::textEncodeDecode);
+	registerTool("text", "text_format", TextProcessingTools::textFormat);
 
-	// 剪贴板
-	m_router.registerTool(QStringLiteral("get_clipboard"), ClipboardTools::getClipboard);
-	m_router.registerTool(QStringLiteral("set_clipboard"), ClipboardTools::setClipboard);
+	// Clipboard
+	registerTool("clipboard", "get_clipboard", ClipboardTools::getClipboard);
+	registerTool("clipboard", "set_clipboard", ClipboardTools::setClipboard);
 
-	// 系统信息
-	m_router.registerTool(QStringLiteral("get_system_info"), SystemInfoTools::getSystemInfo);
-	m_router.registerTool(QStringLiteral("get_disk_space"), SystemInfoTools::getDiskSpace);
-	m_router.registerTool(QStringLiteral("get_environment_variable"), SystemInfoTools::getEnvironmentVariable);
-	m_router.registerTool(QStringLiteral("get_current_directory"), SystemInfoTools::getCurrentDirectory);
-	m_router.registerTool(QStringLiteral("set_current_directory"), SystemInfoTools::setCurrentDirectory);
+	// System
+	registerTool("system", "get_system_info", SystemInfoTools::getSystemInfo);
+	registerTool("system", "get_disk_space", SystemInfoTools::getDiskSpace);
+	registerTool("system", "get_environment_variable", SystemInfoTools::getEnvironmentVariable);
+	registerTool("system", "get_current_directory", SystemInfoTools::getCurrentDirectory);
+	registerTool("system", "set_current_directory", SystemInfoTools::setCurrentDirectory);
 
-	// 日期时间
-	m_router.registerTool(QStringLiteral("format_datetime"), DateTimeTools::formatDateTime);
-	m_router.registerTool(QStringLiteral("calculate_datetime"), DateTimeTools::calculateDateTime);
-	m_router.registerTool(QStringLiteral("parse_datetime"), DateTimeTools::parseDateTime);
-	m_router.registerTool(QStringLiteral("get_timezone"), DateTimeTools::getTimezone);
-	m_router.registerTool(QStringLiteral("time_difference"), DateTimeTools::timeDifference);
+	// Datetime
+	registerTool("datetime", "format_datetime", DateTimeTools::formatDateTime);
+	registerTool("datetime", "calculate_datetime", DateTimeTools::calculateDateTime);
+	registerTool("datetime", "parse_datetime", DateTimeTools::parseDateTime);
+	registerTool("datetime", "get_timezone", DateTimeTools::getTimezone);
+	registerTool("datetime", "time_difference", DateTimeTools::timeDifference);
 
-	// 实用工具
-	m_router.registerTool(QStringLiteral("calculate"), UtilityTools::calculate);
-	m_router.registerTool(QStringLiteral("unit_convert"), UtilityTools::unitConvert);
-	m_router.registerTool(QStringLiteral("number_format"), UtilityTools::numberFormat);
-	m_router.registerTool(QStringLiteral("generate_uuid"), UtilityTools::generateUuid);
-	m_router.registerTool(QStringLiteral("generate_random_string"), UtilityTools::generateRandomString);
-	m_router.registerTool(QStringLiteral("hash_string"), UtilityTools::hashString);
-	m_router.registerTool(QStringLiteral("validate_json"), UtilityTools::validateJson);
-	m_router.registerTool(QStringLiteral("validate_xml"), UtilityTools::validateXml);
+	// Utility
+	registerTool("utility", "calculate", UtilityTools::calculate);
+	registerTool("utility", "unit_convert", UtilityTools::unitConvert);
+	registerTool("utility", "number_format", UtilityTools::numberFormat);
+	registerTool("utility", "generate_uuid", UtilityTools::generateUuid);
+	registerTool("utility", "generate_random_string", UtilityTools::generateRandomString);
+	registerTool("utility", "hash_string", UtilityTools::hashString);
+	registerTool("utility", "validate_json", UtilityTools::validateJson);
+	registerTool("utility", "validate_xml", UtilityTools::validateXml);
 
-	// 数据格式
-	m_router.registerTool(QStringLiteral("parse_json"), DataFormatTools::parseJson);
-	m_router.registerTool(QStringLiteral("format_json"), DataFormatTools::formatJson);
-	m_router.registerTool(QStringLiteral("parse_csv"), DataFormatTools::parseCsv);
-	m_router.registerTool(QStringLiteral("to_csv"), DataFormatTools::toCsv);
+	// Data format
+	registerTool("data", "parse_json", DataFormatTools::parseJson);
+	registerTool("data", "format_json", DataFormatTools::formatJson);
+	registerTool("data", "parse_csv", DataFormatTools::parseCsv);
+	registerTool("data", "to_csv", DataFormatTools::toCsv);
 }
 
 void LLMFunctionCall::setupFunctionJsonWatcher()
@@ -149,10 +201,10 @@ void LLMFunctionCall::setupFunctionJsonWatcher()
 
 void LLMFunctionCall::onFunctionJsonChanged(const QString& path)
 {
-	// 某些平台会触发两次变更事件，做简单防抖
+	// Some editors trigger multiple change events; debounce it
 	QTimer::singleShot(200, this, [this]() {
 		LoadFunctionCallTool(FunctionFilePath);
-		// 变更后继续监听（有的编辑器会先删除再写入）
+		// Re-add watch if the file was recreated
 		if (m_fileWatcher && !m_fileWatcher->files().contains(FunctionFilePath))
 		{
 			m_fileWatcher->addPath(FunctionFilePath);

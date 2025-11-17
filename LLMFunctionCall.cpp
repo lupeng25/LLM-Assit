@@ -3,21 +3,26 @@
 #include <QCoreApplication>
 #include <QFile>
 #include <QTextStream>
-#include<String>
+#include <String>
 #include <QMutexLocker>
 #include <QDir>
 #include <QTimer>
+#include <QSet>
 using namespace std;
 
 LLMFunctionCall::LLMFunctionCall()
 {
 	FunctionFilePath = QCoreApplication::applicationDirPath() + "/AIAssit/FunctionCall.json";
 	// default: enable all modules
-	m_enabledModules = QSet<QString>::fromList({
-		QStringLiteral("vision"), QStringLiteral("git"), QStringLiteral("fs"), QStringLiteral("text"),
-		QStringLiteral("clipboard"), QStringLiteral("system"), QStringLiteral("datetime"),
-		QStringLiteral("utility"), QStringLiteral("data")
-	});
+	m_enabledModules.insert(QStringLiteral("vision"));
+	m_enabledModules.insert(QStringLiteral("git"));
+	m_enabledModules.insert(QStringLiteral("fs"));
+	m_enabledModules.insert(QStringLiteral("text"));
+	m_enabledModules.insert(QStringLiteral("clipboard"));
+	m_enabledModules.insert(QStringLiteral("system"));
+	m_enabledModules.insert(QStringLiteral("datetime"));
+	m_enabledModules.insert(QStringLiteral("utility"));
+	m_enabledModules.insert(QStringLiteral("data"));
 	LoadFunctionCallTool(FunctionFilePath);
 	registerAllHandlers();
 	setupFunctionJsonWatcher();
@@ -42,7 +47,10 @@ QStringList LLMFunctionCall::enabledModules() const
 
 void LLMFunctionCall::setEnabledModules(const QStringList& modules)
 {
-	m_enabledModules = QSet<QString>(modules.begin(), modules.end());
+	m_enabledModules.clear();
+	for (const QString& module : modules) {
+		m_enabledModules.insert(module);
+	}
 }
 
 void LLMFunctionCall::enableModule(const QString& module, bool enabled)
@@ -210,42 +218,6 @@ void LLMFunctionCall::onFunctionJsonChanged(const QString& path)
 			m_fileWatcher->addPath(FunctionFilePath);
 		}
 	});
-}
-
-// ==== Legacy demo/vision methods -> delegate to VisionTools ====
-QJsonObject LLMFunctionCall::getWeather(const QJsonObject &arguments)
-{
-	return VisionTools::getWeather(arguments);
-}
-
-QJsonObject LLMFunctionCall::getTime(const QJsonObject &arguments)
-{
-	return VisionTools::getTime(arguments);
-}
-
-QJsonObject LLMFunctionCall::RunVisionOrder(const QJsonObject &arguments)
-{
-	return VisionTools::runVisionOrder(arguments);
-}
-
-QJsonObject LLMFunctionCall::OpenModelAssit(const QJsonObject &arguments)
-{
-	return VisionTools::openTemplateAssistant(arguments);
-}
-
-QJsonObject LLMFunctionCall::RunCurrentScript(const QJsonObject &arguments)
-{
-	return VisionTools::runCurrentScript(arguments);
-}
-
-QJsonObject LLMFunctionCall::CloseVisionPlatForm(const QJsonObject &arguments)
-{
-	return VisionTools::closeVisionPlatform(arguments);
-}
-
-QJsonObject LLMFunctionCall::SwitchVisionTab(const QJsonObject &arguments)
-{
-	return VisionTools::switchVisionTab(arguments);
 }
 
 QJsonObject LLMFunctionCall::executeFunction(const QString &name, const QJsonObject &arguments)

@@ -71,26 +71,6 @@ private:
 	// Helper to register and track module ownership
 	void registerTool(const QString& module, const QString& name, FunctionCallRouter::Handler handler);
 	QJsonArray buildFilteredTools() const;
-	
-	// ==FunctionCall测试函数 ==
-	//获取天气
-	QJsonObject getWeather(const QJsonObject &arguments);
-	//获取当前时间
-	QJsonObject getTime(const QJsonObject &arguments = QJsonObject());
-	// ===视觉平台功能函数 ===
-	//执行视觉命令
-	QJsonObject RunVisionOrder(const QJsonObject &arguments);
-	//打开模板助手
-	QJsonObject OpenModelAssit(const QJsonObject &arguments);
-	//执行视觉平台当前脚本
-	QJsonObject RunCurrentScript(const QJsonObject &arguments);
-	//关闭视觉平台
-	QJsonObject CloseVisionPlatForm(const QJsonObject &arguments);
-	//切换视觉平台脚本页
-	QJsonObject SwitchVisionTab(const QJsonObject &arguments);
-
-	// === Git代码审查功能函数 ===
-	// 旧 Git 审查函数已迁移至 GitTools（此处不再声明）
 
 	// === Helpers (legacy) ===
 	// QString -> QJsonObject

@@ -48,6 +48,8 @@ signals:
 protected:
 	// 大小改变事件
 	void resizeEvent(QResizeEvent* event) override;
+	// 滚轮事件（优化滚动性能）
+	bool eventFilter(QObject* obj, QEvent* event) override;
 
 	private slots:
 	// 切换按钮点击处理

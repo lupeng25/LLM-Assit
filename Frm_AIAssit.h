@@ -190,6 +190,8 @@ signals:
 	void onBubbleNoteChanged(const QString& bubbleId, const QString& note);
 	// 气泡重要性切换处理
 	void onBubbleImportantToggled(const QString& bubbleId, bool isImportant);
+	// 气泡折叠状态切换处理
+	void onBubbleCollapsedToggled(const QString& bubbleId, bool isCollapsed);
 	// 导出对话请求处理
 	void onExportConversationRequested(const QString& conversationId, const QString& format);
 	// 显示详情请求处理

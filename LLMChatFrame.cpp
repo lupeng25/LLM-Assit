@@ -298,6 +298,7 @@ void LLMChatFrame::setUserNote(const QString& note)
 void LLMChatFrame::refreshLayoutAfterContentChange()
 {
 	m_layoutCache.isValid = false;
+	m_docCache.invalidate(); // 使文档缓存失效
 	m_layoutDirty = true;
 	if (m_UserType == User_Customer)
 	{
@@ -961,6 +962,7 @@ void LLMChatFrame::setCollapsed(bool collapsed)
 		return;
 	}
 	m_messageData.isCollapsed = collapsed;
+	m_docCache.invalidate(); // 折叠状态改变，使文档缓存失效
 	refreshLayoutAfterContentChange();
 	if (!m_messageData.uniqueID.isEmpty())
 	{
@@ -1022,6 +1024,7 @@ void LLMChatFrame::setReasoningCollapsed(bool collapsed)
 		return;
 	}
 	m_messageData.isReasoningCollapsed = collapsed;
+	m_docCache.invalidate(); // 折叠状态改变，使文档缓存失效
 	refreshLayoutAfterContentChange();
 	if (!m_messageData.uniqueID.isEmpty())
 	{
@@ -1138,6 +1141,11 @@ void LLMChatFrame::setTextDocs(QTextDocument& docText, const QString& src, const
 	option.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
 	docText.setDefaultTextOption(option);
 	docText.setTextWidth(iWidth);
+	
+	// 性能优化：禁用不必要的功能以提升渲染速度
+	docText.setUndoRedoEnabled(false);
+	// 使用更快的渲染模式（如果可用）
+	docText.setUseDesignMetrics(false);
 }
 int LLMChatFrame::computeTimeExtraHeight() const
 {
@@ -1328,6 +1336,7 @@ void LLMChatFrame::resetForReuse()
 	m_layoutData = LayoutData();
 	m_state = StateFlags();
 	m_layoutCache = LayoutCache();
+	m_docCache.invalidate(); // 清除文档缓存
 	m_UserType = User_System;
 	m_allowDeferredDelete = false;
 
@@ -1638,30 +1647,59 @@ void LLMChatFrame::drawCustomerMessage(QPainter& painter)
 		answerShadow, LayoutConstants::BORDER_RADIUS, LayoutConstants::SHADOW_OFFSET);
 	const QString primaryTextColor = QStringLiteral("#0F172A");
 	const bool hasReasoningBubble = m_layoutData.rects.frameLeftReason.isValid();
+	
+	// 获取或创建缓存的文档（优化性能）
+	// 注意：需要传入折叠状态以确保缓存正确性
+	auto getOrCreateDoc = [this, &primaryTextColor](std::unique_ptr<QTextDocument>& doc, 
+		const QString& html, int width, QString& cachedHtml, int& cachedWidth, 
+		bool isCollapsed, bool& cachedCollapsed) -> QTextDocument* {
+		// 检查缓存是否有效（包括折叠状态）
+		if (doc && cachedHtml == html && cachedWidth == width && cachedCollapsed == isCollapsed)
+		{
+			return doc.get();
+		}
+		
+		// 创建新文档或重用现有文档
+		if (!doc)
+		{
+			doc = std::make_unique<QTextDocument>();
+			// 优化文档设置以提升渲染性能
+			doc->setUndoRedoEnabled(false);
+		}
+		
+		setTextDocs(*doc, html, width, primaryTextColor);
+		cachedHtml = html;
+		cachedWidth = width;
+		cachedCollapsed = isCollapsed;
+		return doc.get();
+	};
+	
 	if (m_state.isStreamEnd)
 	{
-		QTextDocument docAnswer;
-		setTextDocs(docAnswer, markdownToHtml(m_messageData.rawMsg), m_layoutData.rects.textLeft.width(), primaryTextColor);
+		// 流式输出结束后，需要考虑折叠状态
+		QString answerHtml = m_messageData.isCollapsed ? getCollapsedSummary() : markdownToHtml(m_messageData.rawMsg);
+		QTextDocument* docAnswer = getOrCreateDoc(m_docCache.docAnswer, answerHtml, 
+			m_layoutData.rects.textLeft.width(), 
+			m_docCache.cachedAnswerHtml, m_docCache.cachedAnswerWidth,
+			m_messageData.isCollapsed, m_docCache.answerCollapsed);
+		
 		painter.save();
 		painter.translate(m_layoutData.rects.textLeft.topLeft());
-		docAnswer.documentLayout()->draw(&painter, QAbstractTextDocumentLayout::PaintContext());
+		docAnswer->documentLayout()->draw(&painter, QAbstractTextDocumentLayout::PaintContext());
 		painter.restore();
+		
 		if (hasReasoningBubble)
 		{
-			QTextDocument docReasoning;
-			if (m_messageData.isReasoningCollapsed)
-			{
-				// 推理框折叠时只显示摘要
-				QString summary = getReasoningCollapsedSummary();
-				setTextDocs(docReasoning, summary, m_layoutData.rects.textLeftReason.width(), primaryTextColor);
-			}
-			else
-			{
-				setTextDocs(docReasoning, markdownToHtml(m_messageData.rawReasoningMsg), m_layoutData.rects.textLeftReason.width(), primaryTextColor);
-			}
+			QString reasoningHtml = m_messageData.isReasoningCollapsed ? 
+				getReasoningCollapsedSummary() : markdownToHtml(m_messageData.rawReasoningMsg);
+			QTextDocument* docReasoning = getOrCreateDoc(m_docCache.docReasoning, reasoningHtml, 
+				m_layoutData.rects.textLeftReason.width(), 
+				m_docCache.cachedReasoningHtml, m_docCache.cachedReasoningWidth,
+				m_messageData.isReasoningCollapsed, m_docCache.reasoningCollapsed);
+			
 			painter.save();
 			painter.translate(m_layoutData.rects.textLeftReason.topLeft());
-			docReasoning.documentLayout()->draw(&painter, QAbstractTextDocumentLayout::PaintContext());
+			docReasoning->documentLayout()->draw(&painter, QAbstractTextDocumentLayout::PaintContext());
 			painter.restore();
 		}
 	}
@@ -1669,36 +1707,28 @@ void LLMChatFrame::drawCustomerMessage(QPainter& painter)
 	{
 		if (hasReasoningBubble)
 		{
-			QTextDocument docReasoning;
-			if (m_messageData.isReasoningCollapsed)
-			{
-				// 推理框折叠时只显示摘要
-				QString summary = getReasoningCollapsedSummary();
-				setTextDocs(docReasoning, summary, m_layoutData.rects.textLeftReason.width(), primaryTextColor);
-			}
-			else
-			{
-				setTextDocs(docReasoning, m_messageData.reasoningText, m_layoutData.rects.textLeftReason.width(), primaryTextColor);
-			}
+			QString reasoningHtml = m_messageData.isReasoningCollapsed ? 
+				getReasoningCollapsedSummary() : m_messageData.reasoningText;
+			QTextDocument* docReasoning = getOrCreateDoc(m_docCache.docReasoning, reasoningHtml, 
+				m_layoutData.rects.textLeftReason.width(), 
+				m_docCache.cachedReasoningHtml, m_docCache.cachedReasoningWidth,
+				m_messageData.isReasoningCollapsed, m_docCache.reasoningCollapsed);
+			
 			painter.save();
 			painter.translate(m_layoutData.rects.textLeftReason.topLeft());
-			docReasoning.documentLayout()->draw(&painter, QAbstractTextDocumentLayout::PaintContext());
+			docReasoning->documentLayout()->draw(&painter, QAbstractTextDocumentLayout::PaintContext());
 			painter.restore();
 		}
-		QTextDocument docAnswer;
-		if (m_messageData.isCollapsed)
-		{
-			// 折叠时只显示摘要
-			QString summary = getCollapsedSummary();
-			setTextDocs(docAnswer, summary, m_layoutData.rects.textLeft.width(), primaryTextColor);
-		}
-		else
-		{
-			setTextDocs(docAnswer, m_messageData.msg, m_layoutData.rects.textLeft.width(), primaryTextColor);
-		}
+		
+		QString answerHtml = m_messageData.isCollapsed ? getCollapsedSummary() : m_messageData.msg;
+		QTextDocument* docAnswer = getOrCreateDoc(m_docCache.docAnswer, answerHtml, 
+			m_layoutData.rects.textLeft.width(), 
+			m_docCache.cachedAnswerHtml, m_docCache.cachedAnswerWidth,
+			m_messageData.isCollapsed, m_docCache.answerCollapsed);
+		
 		painter.save();
 		painter.translate(m_layoutData.rects.textLeft.topLeft());
-		docAnswer.documentLayout()->draw(&painter, QAbstractTextDocumentLayout::PaintContext());
+		docAnswer->documentLayout()->draw(&painter, QAbstractTextDocumentLayout::PaintContext());
 		painter.restore();
 	}
 }
@@ -1738,20 +1768,30 @@ void LLMChatFrame::drawOwnerMessage(QPainter& painter)
 	drawBubble(painter, m_layoutData.rects.frameRight, m_layoutData.rects.triangleRight, false,
 		ownerBackground, ownerBorder,
 		ownerShadow, LayoutConstants::BORDER_RADIUS, LayoutConstants::SHADOW_OFFSET);
-	QTextDocument doc;
-	if (m_messageData.isCollapsed)
+	
+	// 使用缓存的文档（优化性能）
+	const QString ownerTextColor = QStringLiteral("#F8FAFC");
+	QString answerHtml = m_messageData.isCollapsed ? getCollapsedSummary() : m_messageData.msg;
+	int textWidth = m_layoutData.rects.textRight.width();
+	
+	// 检查缓存是否有效
+	if (!m_docCache.docOwner || m_docCache.cachedOwnerHtml != answerHtml || 
+		m_docCache.cachedOwnerWidth != textWidth || m_docCache.answerCollapsed != m_messageData.isCollapsed)
 	{
-		// 折叠时只显示摘要
-		QString summary = getCollapsedSummary();
-		setTextDocs(doc, summary, m_layoutData.rects.textRight.width(), QStringLiteral("#F8FAFC"));
+		if (!m_docCache.docOwner)
+		{
+			m_docCache.docOwner = std::make_unique<QTextDocument>();
+			m_docCache.docOwner->setUndoRedoEnabled(false);
+		}
+		setTextDocs(*m_docCache.docOwner, answerHtml, textWidth, ownerTextColor);
+		m_docCache.cachedOwnerHtml = answerHtml;
+		m_docCache.cachedOwnerWidth = textWidth;
+		m_docCache.answerCollapsed = m_messageData.isCollapsed;
 	}
-	else
-	{
-		setTextDocs(doc, m_messageData.msg, m_layoutData.rects.textRight.width(), QStringLiteral("#F8FAFC"));
-	}
+	
 	painter.save();
 	painter.translate(m_layoutData.rects.textRight.topLeft());
-	doc.documentLayout()->draw(&painter, QAbstractTextDocumentLayout::PaintContext());
+	m_docCache.docOwner->documentLayout()->draw(&painter, QAbstractTextDocumentLayout::PaintContext());
 	painter.restore();
 }
 void LLMChatFrame::drawTimeMessage(QPainter& painter)
@@ -1893,6 +1933,7 @@ void LLMChatFrame::resizeEvent(QResizeEvent *event)
 	if (oldWidth != newWidth) {
 		// 清除布局缓存，因为尺寸已经改变
 		m_layoutCache.isValid = false;
+		m_docCache.invalidate(); // 使文档缓存失效（宽度改变需要重新渲染）
 		m_layoutDirty = true;
 
 		// 当尺寸变化时重新计算布局

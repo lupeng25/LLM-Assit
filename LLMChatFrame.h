@@ -315,6 +315,37 @@ private:
 		int cachedWidth = -1;
 		bool isValid = false;
 	} m_layoutCache;
+	
+	// QTextDocument 缓存结构（优化代码块渲染性能）
+	struct DocumentCache
+	{
+		std::unique_ptr<QTextDocument> docAnswer;
+		std::unique_ptr<QTextDocument> docReasoning;
+		std::unique_ptr<QTextDocument> docOwner; // 用户消息的文档缓存
+		QString cachedAnswerHtml;
+		QString cachedReasoningHtml;
+		QString cachedOwnerHtml;
+		int cachedAnswerWidth = -1;
+		int cachedReasoningWidth = -1;
+		int cachedOwnerWidth = -1;
+		bool answerCollapsed = false;
+		bool reasoningCollapsed = false;
+		bool isValid = false;
+		
+		void invalidate()
+		{
+			docAnswer.reset();
+			docReasoning.reset();
+			docOwner.reset();
+			cachedAnswerHtml.clear();
+			cachedReasoningHtml.clear();
+			cachedOwnerHtml.clear();
+			cachedAnswerWidth = -1;
+			cachedReasoningWidth = -1;
+			cachedOwnerWidth = -1;
+			isValid = false;
+		}
+	} m_docCache;
 
 	// UI性能优化：减少不必要的重绘
 	bool m_needsUpdate = false;

@@ -900,6 +900,7 @@ void Frm_AIAssit::attachBubbleSignals(LLMChatFrame* bubble)
 	connect(bubble, &LLMChatFrame::regenerateClicked, this, &Frm_AIAssit::AskQuestionAgain, Qt::UniqueConnection);
 	connect(bubble, &LLMChatFrame::bubbleNoteChanged, this, &Frm_AIAssit::onBubbleNoteChanged, Qt::UniqueConnection);
 	connect(bubble, &LLMChatFrame::bubbleImportantToggled, this, &Frm_AIAssit::onBubbleImportantToggled, Qt::UniqueConnection);
+	connect(bubble, &LLMChatFrame::bubbleCollapsedToggled, this, &Frm_AIAssit::onBubbleCollapsedToggled, Qt::UniqueConnection);
 }
 
 LLMChatFrame* Frm_AIAssit::acquireBubble(QWidget* parent)
@@ -1291,6 +1292,54 @@ void Frm_AIAssit::onBubbleNoteChanged(const QString& bubbleId, const QString& no
 				session->SaveTime = QDateTime::currentDateTime();
 				break;
 			}
+		}
+	}
+}
+
+void Frm_AIAssit::onBubbleCollapsedToggled(const QString& bubbleId, bool isCollapsed)
+{
+	if (bubbleId.isEmpty())
+	{
+		return;
+	}
+	
+	// 找到对应的列表项并更新大小
+	QListWidget* chatFrame = ui.ChatShow->getChatFrame();
+	if (!chatFrame)
+	{
+		return;
+	}
+	
+	// 遍历所有列表项，找到对应的气泡
+	for (int i = 0; i < chatFrame->count(); ++i)
+	{
+		QListWidgetItem* item = chatFrame->item(i);
+		if (!item)
+		{
+			continue;
+		}
+		
+		LLMChatFrame* bubbleWidget = qobject_cast<LLMChatFrame*>(chatFrame->itemWidget(item));
+		if (bubbleWidget && bubbleWidget->getBubbleID() == bubbleId)
+		{
+			// 重新计算布局以获取新的大小（refreshLayoutAfterContentChange 已经在 setCollapsed 中调用）
+			// 这里只需要更新列表项的大小
+			refreshBubbleSize(bubbleWidget, item);
+			
+			// 更新会话数据中的大小
+			if (ChatSession* session = currentSession())
+			{
+				for (auto& msg : session->sMsg)
+				{
+					if (msg.m_BubbleID == bubbleId)
+					{
+						msg.m_AllSize = bubbleWidget->getSize();
+						session->SaveTime = QDateTime::currentDateTime();
+						break;
+					}
+				}
+			}
+			break;
 		}
 	}
 }

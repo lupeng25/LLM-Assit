@@ -4,6 +4,8 @@
 #include <QTimer>
 #include <QStackedWidget>
 #include <QDebug>
+#include <QWheelEvent>
+#include <QScrollBar>
 ChatShowWidget::ChatShowWidget(QWidget *parent)
 	: QWidget(parent)
 	, mainLayout(nullptr)
@@ -129,8 +131,16 @@ void ChatShowWidget::setupUI()
 	listWgChatFrame->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
 	listWgChatFrame->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 	listWgChatFrame->setResizeMode(QListView::Adjust);
-	listWgChatFrame->verticalScrollBar()->setSingleStep(20);
+	// 增加滚动步长以提升滚动速度（特别是对于包含代码的消息）
+	listWgChatFrame->verticalScrollBar()->setSingleStep(40);
+	// 增加页面步长以提升滚动速度
+	listWgChatFrame->verticalScrollBar()->setPageStep(200);
+	// 优化视图设置
+	listWgChatFrame->setViewMode(QListView::ListMode);
+	listWgChatFrame->setUniformItemSizes(false); // 由于消息高度不同，不能使用uniform
 	listWgChatFrame->setStyleSheet("QListWidget{border:0px;}");
+	// 为列表安装事件过滤器以优化滚轮滚动
+	listWgChatFrame->installEventFilter(this);
 	// 设置空状态组件
 	setupEmptyStateWidget();
 	// 将聊天列表和空状态添加到堆叠widget
@@ -384,4 +394,37 @@ void ChatShowWidget::onScrollPositionChanged()
 		UpButton->setVisible(true);
 		DownButton->setVisible(true);
 	}
+}
+
+bool ChatShowWidget::eventFilter(QObject* obj, QEvent* event)
+{
+	// 优化滚轮滚动性能
+	if (obj == listWgChatFrame && event->type() == QEvent::Wheel)
+	{
+		QWheelEvent* wheelEvent = static_cast<QWheelEvent*>(event);
+		QScrollBar* scrollBar = listWgChatFrame->verticalScrollBar();
+		
+		if (scrollBar && scrollBar->isVisible())
+		{
+			// 计算加速滚动：对于包含代码的消息，使用更大的滚动步长
+			int delta = wheelEvent->angleDelta().y();
+			int step = qAbs(delta) / 8; // 标准步长
+			
+			// 如果滚动幅度较大，增加滚动速度（加速滚动）
+			if (qAbs(delta) > 120)
+			{
+				step = step * 2; // 加速2倍
+			}
+			
+			// 应用滚动
+			int currentValue = scrollBar->value();
+			int newValue = currentValue - (delta > 0 ? step : -step);
+			scrollBar->setValue(newValue);
+			
+			// 阻止默认滚轮事件处理，使用我们的优化版本
+			return true;
+		}
+	}
+	
+	return QWidget::eventFilter(obj, event);
 }

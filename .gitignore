@@ -1,5 +1,7 @@
 debug/
+debug/AIAssit/LLMChatHistory/*
 release/
+release/AIAssit/LLMChatHistory/*
 *.pro.user
 *.user
 *.log

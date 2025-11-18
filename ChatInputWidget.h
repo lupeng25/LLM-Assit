@@ -25,6 +25,10 @@
 #include <QImageReader>
 #include <QDragEnterEvent>
 #include <QGraphicsDropShadowEffect>
+#include <QHash>
+#include <QMouseEvent>
+#include <QDialog>
+#include <QTextEdit>
 #include "PromptLibrary.h"
 #include "PromptLibraryDialog.h"
 
@@ -133,6 +137,12 @@ private:
 	void dragEnterEvent(QDragEnterEvent *event) override;
 	// 拖放释放事件
 	void dropEvent(QDropEvent *event) override;
+	// 打开文本文件预览
+	void openTextFilePreview(const QString& filePath);
+	// 打开图片预览
+	void openImageFilePreview(const QString& filePath);
+	// Markdown 转 HTML
+	QString markdownToHtml(const QString& markdown);
 
 	//控件
 	QTextEdit *textEdit;//文本输入框

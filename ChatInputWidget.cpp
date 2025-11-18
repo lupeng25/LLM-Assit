@@ -2,6 +2,168 @@
 #include <QApplication>
 #include <QDebug>
 #include <QIcon>
+#include <QWheelEvent>
+#include <algorithm>
+
+namespace
+{
+	class ImagePreviewController : public QObject
+	{
+	public:
+		ImagePreviewController(const QPixmap& pixmap, QLabel* targetLabel, QObject* parent = nullptr)
+			: QObject(parent)
+			, m_pixmap(pixmap)
+			, m_label(targetLabel)
+		{
+		}
+
+		bool eventFilter(QObject* obj, QEvent* event) override
+		{
+			if (event->type() == QEvent::Wheel)
+			{
+				auto* wheelEvent = static_cast<QWheelEvent*>(event);
+				if (wheelEvent->modifiers() & Qt::ControlModifier)
+				{
+					if (wheelEvent->angleDelta().y() > 0)
+					{
+						zoomIn();
+					}
+					else
+					{
+						zoomOut();
+					}
+					return true;
+				}
+			}
+			return QObject::eventFilter(obj, event);
+		}
+
+		void zoomIn()
+		{
+			adjustScale(1.25);
+		}
+
+		void zoomOut()
+		{
+			adjustScale(1.0 / 1.25);
+		}
+
+		void reset()
+		{
+			m_scaleFactor = 1.0;
+			applyScale();
+		}
+
+		void applyScale()
+		{
+			if (!m_label)
+			{
+				return;
+			}
+			if (m_scaleFactor < 0.05)
+			{
+				m_scaleFactor = 0.05;
+			}
+			else if (m_scaleFactor > 8.0)
+			{
+				m_scaleFactor = 8.0;
+			}
+			const QSize targetSize = (m_pixmap.size() * m_scaleFactor).boundedTo(QSize(10000, 10000));
+			m_label->setPixmap(m_pixmap.scaled(targetSize, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+		}
+
+	private:
+		void adjustScale(double factor)
+		{
+			m_scaleFactor *= factor;
+			applyScale();
+		}
+
+		QPixmap m_pixmap;
+		QLabel* m_label = nullptr;
+		double m_scaleFactor = 1.0;
+	};
+}
+
+QString ChatInputWidget::markdownToHtml(const QString& markdown)
+{
+	static QHash<QString, QString> mdCache;
+	static const int MAX_CACHE_SIZE = 100;
+
+	auto it = mdCache.find(markdown);
+	if (it != mdCache.end())
+	{
+		return *it;
+	}
+
+	if (mdCache.size() >= MAX_CACHE_SIZE)
+	{
+		QHash<QString, QString> newCache;
+		int count = 0;
+		for (auto cacheIt = mdCache.begin(); cacheIt != mdCache.end(); ++cacheIt)
+		{
+			if ((count++ % 2) == 0)
+			{
+				newCache.insert(cacheIt.key(), cacheIt.value());
+			}
+		}
+		mdCache.swap(newCache);
+	}
+
+	QString html = markdown;
+
+	static const QRegularExpression codeBlockRegex(QStringLiteral("```(\\w+)?\\n([\\s\\S]*?)```"));
+	int offset = 0;
+	QRegularExpressionMatch match;
+	while ((match = codeBlockRegex.match(html, offset)).hasMatch())
+	{
+		QString language = match.captured(1);
+		QString code = match.captured(2);
+		code.replace(QStringLiteral("&"), QStringLiteral("&amp;"));
+		code.replace(QStringLiteral("<"), QStringLiteral("&lt;"));
+		code.replace(QStringLiteral(">"), QStringLiteral("&gt;"));
+		QString replacement = QStringLiteral("<pre class=\"code-block\"><code class=\"language-%1\">%2</code></pre>")
+			.arg(language).arg(code);
+		html.replace(match.capturedStart(), match.capturedLength(), replacement);
+		offset = match.capturedStart() + replacement.length();
+	}
+
+	html.replace(QStringLiteral("**"), QStringLiteral("__BOLD__"));
+	html.replace(QStringLiteral("*"), QStringLiteral("__ITALIC__"));
+	html.replace(QStringLiteral("__BOLD__"), QStringLiteral("<strong>"));
+	html.replace(QStringLiteral("__ITALIC__"), QStringLiteral("<em>"));
+
+	html.replace(QStringLiteral("`"), QStringLiteral("<code>"));
+
+	QStringList lines = html.split(QRegularExpression(QStringLiteral("[\\r\\n]+")));
+	QStringList htmlLines;
+	for (const QString& line : lines)
+	{
+		if (line.trimmed().startsWith(QStringLiteral("#")))
+		{
+			int level = 0;
+			while (level < line.length() && line.at(level) == QLatin1Char('#'))
+			{
+				++level;
+			}
+			level = qBound(1, level, 6);
+			QString content = line.mid(level).trimmed();
+			htmlLines << QStringLiteral("<h%1>%2</h%1>").arg(level).arg(content);
+		}
+		else if (line.trimmed().startsWith(QStringLiteral("- ")))
+		{
+			htmlLines << QStringLiteral("<li>%1</li>").arg(line.mid(2).trimmed());
+		}
+		else
+		{
+			htmlLines << QStringLiteral("<p>%1</p>").arg(line);
+		}
+	}
+	html = htmlLines.join(QString());
+
+	mdCache.insert(markdown, html);
+	return html;
+}
 
 ChatInputWidget::ChatInputWidget(QWidget *parent)
 	: QWidget(parent)
@@ -449,10 +611,126 @@ void ChatInputWidget::updateFileDisplay()
 
 		layout->addLayout(headerLayout);
 
+		auto setPreviewProperty = [this, &file](QWidget* target) {
+			if (!target)
+			{
+				return;
+			}
+			target->setProperty("filePath", file.filePath);
+			target->setProperty("fileType", static_cast<int>(file.fileType));
+			target->installEventFilter(this);
+		};
+
+		setPreviewProperty(fileWidget);
+		setPreviewProperty(fileLabel);
+		setPreviewProperty(nameLabel);
+
 		imageLayout->addWidget(fileWidget);
 	}
 
 	imageLayout->addStretch();
+}
+
+void ChatInputWidget::openTextFilePreview(const QString& filePath)
+{
+	QFile file(filePath);
+	if (!file.exists())
+	{
+		QMessageBox::warning(this, tr("File Missing"), tr("The file %1 no longer exists.").arg(QFileInfo(filePath).fileName()));
+		return;
+	}
+
+	if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+	{
+		QMessageBox::warning(this, tr("Open Failed"), tr("Cannot open the file %1.").arg(QFileInfo(filePath).fileName()));
+		return;
+	}
+
+	QTextStream stream(&file);
+	stream.setCodec("UTF-8");
+	const QString content = stream.readAll();
+	file.close();
+
+	QDialog* dialog = new QDialog(this);
+	dialog->setAttribute(Qt::WA_DeleteOnClose, true);
+	dialog->setWindowTitle(QFileInfo(filePath).fileName());
+	dialog->resize(700, 500);
+
+	QVBoxLayout* layout = new QVBoxLayout(dialog);
+	QTextEdit* viewer = new QTextEdit(dialog);
+	viewer->setReadOnly(true);
+	const QString suffix = QFileInfo(filePath).suffix().toLower();
+	if (suffix == QStringLiteral("md"))
+	{
+		viewer->setHtml(markdownToHtml(content));
+	}
+	else
+	{
+		viewer->setPlainText(content);
+	}
+	layout->addWidget(viewer);
+
+	dialog->show();
+}
+
+void ChatInputWidget::openImageFilePreview(const QString& filePath)
+{
+	QFileInfo info(filePath);
+	if (!info.exists())
+	{
+		QMessageBox::warning(this, tr("File Missing"), tr("The file %1 no longer exists.").arg(info.fileName()));
+		return;
+	}
+
+	QPixmap pixmap(filePath);
+	if (pixmap.isNull())
+	{
+		QMessageBox::warning(this, tr("Open Failed"), tr("Unable to display the image %1.").arg(info.fileName()));
+		return;
+	}
+
+	QDialog* dialog = new QDialog(this);
+	dialog->setAttribute(Qt::WA_DeleteOnClose, true);
+	dialog->setWindowTitle(info.fileName());
+	dialog->resize(800, 600);
+
+	auto* layout = new QVBoxLayout(dialog);
+	auto* controlsLayout = new QHBoxLayout();
+
+	auto* zoomInBtn = new QPushButton(tr("Zoom In"), dialog);
+	auto* zoomOutBtn = new QPushButton(tr("Zoom Out"), dialog);
+	auto* resetBtn = new QPushButton(tr("Actual Size"), dialog);
+	controlsLayout->addWidget(zoomInBtn);
+	controlsLayout->addWidget(zoomOutBtn);
+	controlsLayout->addWidget(resetBtn);
+	controlsLayout->addStretch();
+
+	auto* scrollArea = new QScrollArea(dialog);
+	scrollArea->setWidgetResizable(true);
+
+	auto* imageLabel = new QLabel();
+	imageLabel->setAlignment(Qt::AlignCenter);
+	scrollArea->setWidget(imageLabel);
+
+	layout->addLayout(controlsLayout);
+	layout->addWidget(scrollArea);
+
+	auto* controller = new ImagePreviewController(pixmap, imageLabel, dialog);
+	controller->applyScale();
+
+	connect(zoomInBtn, &QPushButton::clicked, dialog, [controller]() {
+		controller->zoomIn();
+	});
+	connect(zoomOutBtn, &QPushButton::clicked, dialog, [controller]() {
+		controller->zoomOut();
+	});
+	connect(resetBtn, &QPushButton::clicked, dialog, [controller]() {
+		controller->reset();
+	});
+
+	scrollArea->viewport()->installEventFilter(controller);
+
+	dialog->show();
 }
 
 void ChatInputWidget::onAttachButtonClicked()
@@ -468,9 +746,9 @@ void ChatInputWidget::onAddFileClicked()
 		this,
 		tr("Select File"),
 		"",
-		QStringLiteral("支持的文件 (*.png *.jpg *.jpeg *.bmp *.gif *.webp *.txt *.md *.log *.json *.xml *.csv *.cpp *.h *.py *.js *.html *.css *.bat *.iss);;")
+		QStringLiteral("支持的文件 (*.png *.jpg *.jpeg *.bmp *.gif *.webp *.txt *.md *.log *.json *.xml *.csv *.cpp *.h *.py *.js *.html *.css *.bat *.iss *.ts);;")
 		+ QStringLiteral("图片文件 (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;")
-		+ QStringLiteral("文本文件 (*.txt *.md *.log *.json *.xml *.csv *.cpp *.h *.py *.js *.html *.css *.bat *.iss)")
+		+ QStringLiteral("文本文件 (*.txt *.md *.log *.json *.xml *.csv *.cpp *.h *.py *.js *.html *.css *.bat *.iss *.ts)")
 	);
 	if (!fileName.isEmpty())
 	{
@@ -505,6 +783,25 @@ bool ChatInputWidget::eventFilter(QObject *obj, QEvent *event)
 		if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter)
 		{
 			return false;
+		}
+	}
+	else if (event->type() == QEvent::MouseButtonDblClick)
+	{
+		QWidget* widget = qobject_cast<QWidget*>(obj);
+		if (widget && widget->property("filePath").isValid())
+		{
+			const QString filePath = widget->property("filePath").toString();
+			const FileType type = static_cast<FileType>(widget->property("fileType").toInt());
+			if (type == TEXT_FILE)
+			{
+				openTextFilePreview(filePath);
+				return true;
+			}
+			else if (type == IMAGE_FILE)
+			{
+				openImageFilePreview(filePath);
+				return true;
+			}
 		}
 	}
 

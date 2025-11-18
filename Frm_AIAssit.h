@@ -18,6 +18,7 @@
 #include <memory> 
 #include <QVector>
 #include <QPointer>
+#include <QDialog>
 #include "LLMParams.h"
 #include "ui_Frm_AIAssit.h" 
 #include "LLMChatFrame.h"
@@ -78,6 +79,7 @@ private:
 	bool loadChatMapFromJson();
 	// 显示或隐藏参数设置界面 
 	void ShowAIParam();
+	void ensureParamDialog();
 	// 设置信号和槽连接 
 	void setupSignals();
 	// 设置LLMClient的信号槽连接
@@ -124,7 +126,8 @@ private:
 	void UpAllFilesToHost(const QString& files);
 	Ui::Frm_AIAssit ui;
 
-	bool bShowParam = false;
+	QDialog* m_paramDialog = nullptr;
+	AIParamWidget* m_paramWidget = nullptr;
 	QString ChatJsonFile;
 	QJsonArray m_FunctionTools;
 	QString m_currentConversationId; // 当前激活的对话ID 

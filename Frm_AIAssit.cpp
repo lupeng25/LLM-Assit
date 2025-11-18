@@ -18,7 +18,6 @@
 #include <QFileInfo>
 #include <QApplication>
 #include <algorithm>
-#include "include\cmark\cmark.h"
 
 namespace
 {
@@ -59,6 +58,25 @@ Frm_AIAssit::Frm_AIAssit(QWidget *parent)
 	m_bubblePoolHost->hide();
 	ui.setupUi(this);
 
+	if (ui.AIParams)
+	{
+		m_paramWidget = ui.AIParams;
+		if (ui.mainHorizontalLayout)
+		{
+			ui.mainHorizontalLayout->removeWidget(m_paramWidget);
+		}
+		m_paramWidget->setMinimumSize(QSize(0, 0));
+		m_paramWidget->setMaximumSize(QSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX));
+		m_paramWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+		m_paramWidget->setParent(nullptr);
+		m_paramWidget->hide();
+	}
+	else
+	{
+		m_paramWidget = new AIParamWidget(this);
+		m_paramWidget->hide();
+	}
+
 	connect(m_clientManager.get(), &LLMClientManager::clientChanged, this, &Frm_AIAssit::attachToClient);
 	connect(m_clientManager.get(), &LLMClientManager::connectionCheckFailed, this, &Frm_AIAssit::onConnectionCheckFailed);
 	connect(m_clientManager.get(), &LLMClientManager::connectionCheckSucceeded, this, &Frm_AIAssit::onConnectionCheckSucceeded);
@@ -84,7 +102,10 @@ void Frm_AIAssit::setupSignals()
 	connect(this, &Frm_AIAssit::AnswerStream, this, &Frm_AIAssit::getStreamAnswerShow);
 	connect(this, &Frm_AIAssit::PushBtnChanged, ui.ChatInput, &ChatInputWidget::SetButtonEnable);
 	connect(this, &Frm_AIAssit::ChangeCurModel, ui.ChatInput, &ChatInputWidget::setModelCurrIndex);
-	connect(ui.AIParams, &AIParamWidget::paramsChanged, this, &Frm_AIAssit::ApplyModelParam);
+	if (m_paramWidget)
+	{
+		connect(m_paramWidget, &AIParamWidget::paramsChanged, this, &Frm_AIAssit::ApplyModelParam);
+	}
 	connect(ui.ChatInput, &ChatInputWidget::MessageUp, this, &Frm_AIAssit::on_pushButton_clicked);
 	connect(ui.ChatInput, &ChatInputWidget::ModelSelect, this, &Frm_AIAssit::ChangeModel);
 	connect(ui.ChatInput, &ChatInputWidget::addButtonSignal, this, [this]() {
@@ -156,9 +177,52 @@ void Frm_AIAssit::setupLLMClientSignals()
 }
 void Frm_AIAssit::ShowAIParam()
 {
-	ui.AIParams->setVisible(bShowParam);
-	bShowParam = !bShowParam;
-	QTimer::singleShot(50, this, &Frm_AIAssit::recalculateAllChatBubbles);
+	ensureParamDialog();
+	if (!m_paramDialog)
+	{
+		return;
+	}
+	if (m_paramDialog->isMinimized())
+	{
+		m_paramDialog->showNormal();
+	}
+	m_paramDialog->show();
+	m_paramDialog->raise();
+	m_paramDialog->activateWindow();
+}
+
+void Frm_AIAssit::ensureParamDialog()
+{
+	if (!m_paramWidget)
+	{
+		return;
+	}
+	if (!m_paramDialog)
+	{
+		m_paramDialog = new QDialog(this);
+		m_paramDialog->setWindowTitle(tr("Workspace Settings"));
+		m_paramDialog->setModal(false);
+		m_paramDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+		m_paramDialog->resize(1000, 640);
+		m_paramDialog->setMinimumSize(880, 560);
+		auto* layout = new QVBoxLayout(m_paramDialog);
+		layout->setContentsMargins(0, 0, 0, 0);
+		layout->setSpacing(0);
+		layout->addWidget(m_paramWidget);
+		m_paramWidget->show();
+	}
+	else if (m_paramWidget->parent() != m_paramDialog)
+	{
+		if (!m_paramDialog->layout())
+		{
+			auto* layout = new QVBoxLayout(m_paramDialog);
+			layout->setContentsMargins(0, 0, 0, 0);
+			layout->setSpacing(0);
+		}
+		m_paramWidget->setParent(m_paramDialog);
+		m_paramDialog->layout()->addWidget(m_paramWidget);
+		m_paramWidget->show();
+	}
 }
 void Frm_AIAssit::initHistoryFile()
 {
@@ -197,8 +261,10 @@ void Frm_AIAssit::initUI()
 	this->setWindowTitle(tr("GKG AI Assit"));
 	setWindowFlags(Qt::Window | Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint);
 	
-	ChangeCurModel(ui.AIParams->GetAIParamModel());
-	ShowAIParam();
+	if (m_paramWidget)
+	{
+		ChangeCurModel(m_paramWidget->GetAIParamModel());
+	}
 	bool loadJson = loadChatMapFromJson();
 	if (!loadJson)
 		createNewConversation();
@@ -342,10 +408,14 @@ void Frm_AIAssit::initParams()
 	m_FunctionTools = LLMFunctionCall::Get()->Tools();
 	params = std::make_unique<LLMParams>();
 	params->setFunctionCallTools(m_FunctionTools);
-	ui.AIParams->setLLMParams(params.get());
-	const QString jsonFileName = m_configRepository ? m_configRepository->modelConfigFile() : QString();
-	if (!jsonFileName.isEmpty()) {
-		ui.AIParams->loadParamsFromJson(jsonFileName);
+	if (m_paramWidget)
+	{
+		m_paramWidget->setLLMParams(params.get());
+		const QString jsonFileName = m_configRepository ? m_configRepository->modelConfigFile() : QString();
+		if (!jsonFileName.isEmpty())
+		{
+			m_paramWidget->loadParamsFromJson(jsonFileName);
+		}
 	}
 	AIProvider platform = static_cast<AIProvider>(params->getLLMPlatForm());
 	setLLMClient(platform);
@@ -395,7 +465,8 @@ void Frm_AIAssit::addChatBubble(const QString& text, bool bIsUser)
 void Frm_AIAssit::on_pushButton_clicked(ChatSendMessage msg)
 {
 	addChatBubble(msg.SendText, false);
-	if (ui.AIParams->GetAIParambStream())
+	const bool enableStream = m_paramWidget ? m_paramWidget->GetAIParambStream() : false;
+	if (enableStream)
 		StreamSend(msg);
 	else
 		send(msg);
@@ -1119,7 +1190,10 @@ void Frm_AIAssit::AskQuestionAgain(QString msg)
 }
 void Frm_AIAssit::ChangeModel(int iModel)
 {
-	ui.AIParams->SetAIParamModel(iModel);
+	if (m_paramWidget)
+	{
+		m_paramWidget->SetAIParamModel(iModel);
+	}
 }
 void Frm_AIAssit::resizeEvent(QResizeEvent *event)
 {

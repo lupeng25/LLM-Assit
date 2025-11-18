@@ -24,20 +24,15 @@
 #include <QApplication>
 #include <QFrame>
 #include <QScrollArea>
+#include <QListWidget>
+#include <QStackedWidget>
+#include <QFormLayout>
+#include <QGraphicsDropShadowEffect>
+#include <QIcon>
+#include <QEvent>
+#include <QVector>
+#include <QSet>
 #include "llmParams.h"
-
-QT_BEGIN_NAMESPACE
-class QLineEdit;
-class QComboBox;
-class QDoubleSpinBox;
-class QSpinBox;
-class QCheckBox;
-class QPushButton;
-class QVBoxLayout;
-class QGridLayout;
-class QGroupBox;
-class QScrollArea;
-QT_END_NAMESPACE
 
 class AIParamWidget : public QWidget {
 	Q_OBJECT
@@ -68,15 +63,13 @@ protected:
 	void resizeEvent(QResizeEvent* event) override;
 
 private:
-	// 主布局容器
-	QScrollArea* m_scrollArea;
-	QWidget* m_contentWidget;
-	QVBoxLayout* m_mainLayout;
-
-	// 分组框
-	QGroupBox* m_connectionGroup;
-	QGroupBox* m_modelGroup;
-	QGroupBox* m_optionsGroup;
+	// 导航与内容
+	QFrame* m_navPanel;
+	QListWidget* m_navList;
+	QStackedWidget* m_stackWidget;
+	QFrame* m_footerBar;
+	QFrame* m_navIndicator = nullptr;
+	QLineEdit* m_navSearchEdit;
 
 	// UI控件
 	QLineEdit* m_apiKeyEdit;
@@ -88,18 +81,59 @@ private:
 	QCheckBox* m_streamChatCheck;
 	QCheckBox* m_openThinkCheck;
 	QCheckBox* m_openNetSearchCheck;
+	QComboBox* m_fontScaleCombo;
+	QCheckBox* m_darkModeCheck;
 	QPushButton* m_applyButton;
 	QPushButton* m_resetButton;
 
 	// 参数数据
 	LLMParams* llmParams;
+	bool m_darkModeEnabled = false;
+	qreal m_fontScaleFactor = 1.0;
+	qreal m_baseFontPointSize = 0.0;
+	bool m_syncingUI = false;
+	QSet<int> m_dirtyPages;
 
 	// UI设置
-	void setupUI();//ui
-	void setupStyles();//qss
-	void setupConnections();//信号槽
-	void setupToolTips();//控件提示
+	void setupUI();
+	void setupStyles();
+	void setupConnections();
+	void setupToolTips();
+	void setupDirtyTracking();
 	void setupDefaultValues();
 	void updateUIFromParams();
-	void updateIPToolTips(); // 更新IP地址输入框的工具提示
+	void updateIPToolTips();
+
+	// 现代化界面构建
+	void buildNavigation();
+	void populateNavItems();
+	void createPages();
+	void updateNavIndicatorPosition(int row);
+	QIcon createNavIcon(const QString& glyph, const QColor& color) const;
+	QWidget* buildConnectionPage();
+	QWidget* buildModelPage();
+	QWidget* buildFeaturePage();
+	QFrame* createSettingCard(const QString& title, const QString& description, QVBoxLayout** bodyLayout = nullptr);
+	QWidget* wrapInScrollArea(QWidget* page);
+
+	bool eventFilter(QObject* watched, QEvent* event) override;
+
+	struct NavEntry
+	{
+		QString title;
+		QString description;
+		QString glyph;
+		QColor color;
+	};
+
+	QVector<NavEntry> m_navEntries;
+
+	void handleSearchTextChanged(const QString& text);
+	void markPageDirty(int index);
+	void clearDirtyMarkers();
+	void updateNavItemDisplay(int index);
+	void applyThemeStyles();
+	void applyFontScale();
+	void onFontScaleChanged(int index);
+	void onDarkModeToggled(bool checked);
 };

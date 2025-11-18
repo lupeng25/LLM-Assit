@@ -7,6 +7,7 @@
 #include <QHBoxLayout>
 #include <QFrame>
 #include <QListWidgetItem>
+#include <QLabel>
 #include <QMenu>
 #include <QAction>
 #include <QString>
@@ -76,6 +77,8 @@ signals:
     // 删除请求信号
     void deleteRequested();
     void paramSettingRequested();
+    void aboutClicked();
+    void clearAllRequested();
     // 导出对话请求信号
     void exportConversationRequested(const QString& conversationId, const QString& format);
     // 显示详情请求信号
@@ -93,6 +96,8 @@ signals:
     // 执�?�搜�?
     void performSearch();
     void onParamSettingClicked();
+    void onAboutClicked();
+    void onClearAllClicked();
 
 private:
     // 设置UI
@@ -114,8 +119,17 @@ private:
     QListWidget* m_conversationList;
     QFrame* footerDivider;
     QWidget* footerWidget;
-    QHBoxLayout* footerLayout;
+    QVBoxLayout* footerLayout;
     QPushButton* btnParamSetting;
+    // Chatbox??????
+    QWidget* topHeaderWidget;
+    QLabel* appIconLabel;
+    QLabel* appTitleLabel;
+    QWidget* conversationHeaderWidget;
+    QLabel* conversationTitleLabel;
+    QPushButton* listViewButton;
+    QPushButton* clearAllButton;
+    QPushButton* btnAbout;
     // 搜索相关
     QTimer* searchTimer;  // 搜索防抖定时�?
     std::function<QString(const QString&)> searchCallback;  // 搜索回调函数

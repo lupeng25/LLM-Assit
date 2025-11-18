@@ -15,6 +15,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QTextDocument>
+#include <QIcon>
 
 namespace
 {
@@ -29,7 +30,7 @@ namespace
         QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override
         {
             Q_UNUSED(index);
-            const int baseHeight = 60;
+            const int baseHeight = 48; // Chatbox风格：更紧凑
             return QSize(option.rect.width(), baseHeight);
         }
 
@@ -45,67 +46,46 @@ namespace
             QStyleOptionViewItem opt(option);
             initStyleOption(&opt, index);
 
-            const QRectF cardRect = opt.rect.adjusted(6, 4, -6, -4);
+            const QRectF itemRect = opt.rect;
             const bool isSelected = opt.state & QStyle::State_Selected;
             const bool isHovered = opt.state & QStyle::State_MouseOver;
 
-            QColor baseColor(248, 250, 252);
-            QColor borderColor(226, 232, 240, 180);
-            QColor shadowColor(15, 23, 42, 24);
-
+            // Chatbox style: clean and flat, no shadow, no border
+            QColor bgColor = Qt::transparent;
             if (isSelected)
             {
-                baseColor = QColor(37, 99, 235);
-                borderColor = QColor(30, 64, 175, 220);
-                shadowColor = QColor(37, 99, 235, 55);
+                bgColor = QColor(59, 130, 246, 25);
             }
             else if (isHovered)
             {
-                baseColor = QColor(241, 245, 249);
-                borderColor = QColor(191, 219, 254, 200);
-                shadowColor = QColor(59, 130, 246, 40);
+                bgColor = QColor(241, 245, 249);
             }
 
-            // 缁樺埗闃村奖
-            if (shadowColor.alpha() > 0)
+            // Draw background
+            if (bgColor.alpha() > 0)
             {
-                QPainterPath shadowPath;
-                QRectF shadowRect = cardRect.adjusted(0, 2, 0, 8);
-                shadowPath.addRoundedRect(shadowRect, 18, 18);
-                painter->setPen(Qt::NoPen);
-                painter->setBrush(shadowColor);
-                painter->drawPath(shadowPath);
+                painter->fillRect(itemRect, bgColor);
             }
-
-            QPainterPath cardPath;
-            cardPath.addRoundedRect(cardRect, 18, 18);
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(baseColor);
-            painter->drawPath(cardPath);
-
-            painter->setPen(QPen(borderColor, 1));
-            painter->setBrush(Qt::NoBrush);
-            painter->drawPath(cardPath);
 
             const QString title = index.data(Qt::DisplayRole).toString();
             const QString timestamp = index.data(ChatList::TimestampRole).toString();
             const bool hasTimestamp = !timestamp.trimmed().isEmpty();
 
-            const QColor titleColor = isSelected ? QColor(248, 250, 252)
-                : QColor(15, 23, 42);
-            const QColor timeColor = isSelected ? QColor(226, 232, 240, 240)
-                : QColor(100, 116, 139);
+            // Text color: use dark color for both selected and unselected
+            const QColor titleColor = QColor(30, 41, 59);
+            const QColor timeColor = QColor(148, 163, 184);
 
-            QRectF textRect = cardRect.adjusted(18, 14, -18, -14);
-            const int timeWidth = hasTimestamp ? opt.fontMetrics.horizontalAdvance(timestamp) + 6 : 0;
+            QRectF textRect = itemRect.adjusted(16, 0, -16, 0);
+            const int timeWidth = hasTimestamp ? opt.fontMetrics.horizontalAdvance(timestamp) + 8 : 0;
             const QRectF timeRect = hasTimestamp
-                ? QRectF(textRect.right() - timeWidth, textRect.top(), timeWidth, 20)
+                ? QRectF(textRect.right() - timeWidth, textRect.top(), timeWidth, textRect.height())
                 : QRectF();
 
             QFont titleFont = opt.font;
-            titleFont.setPointSizeF(titleFont.pointSizeF() + 0.4);
-            titleFont.setWeight(QFont::DemiBold);
+            titleFont.setPointSize(10);
+            titleFont.setWeight(QFont::Medium);
 
+            // Draw timestamp
             if (hasTimestamp)
             {
                 painter->setPen(timeColor);
@@ -113,10 +93,11 @@ namespace
                 painter->drawText(timeRect, Qt::AlignRight | Qt::AlignVCenter, timestamp);
             }
 
+            // Draw title
             QRectF titleRect = textRect;
             if (hasTimestamp)
             {
-                titleRect.setRight(timeRect.left() - 12);
+                titleRect.setRight(timeRect.left() - 8);
             }
 
             painter->setPen(titleColor);
@@ -131,15 +112,23 @@ namespace
 ChatList::ChatList(QWidget *parent)
     : QWidget(parent)
     , mainLayout(nullptr)
-    , btnNewConversation(nullptr)
-    , searchEdit(nullptr)
+    , topHeaderWidget(nullptr)
+    , appIconLabel(nullptr)
+    , appTitleLabel(nullptr)
+    , conversationHeaderWidget(nullptr)
+    , conversationTitleLabel(nullptr)
+    , listViewButton(nullptr)
+    , clearAllButton(nullptr)
     , m_conversationList(nullptr)
-    , searchTimer(nullptr)
-    , searchCallback(nullptr)
+    , btnNewConversation(nullptr)
     , footerDivider(nullptr)
     , footerWidget(nullptr)
     , footerLayout(nullptr)
+    , btnAbout(nullptr)
     , btnParamSetting(nullptr)
+    , searchEdit(nullptr)
+    , searchTimer(nullptr)
+    , searchCallback(nullptr)
 {
     setupUI();
     connectSignals();
@@ -174,66 +163,115 @@ void ChatList::setupUI()
         mainLayout = new QVBoxLayout();
         setLayout(mainLayout);
     }
-    mainLayout->setSpacing(12);
-    mainLayout->setContentsMargins(16, 16, 16, 16);
+    mainLayout->setSpacing(0);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
 
-    btnNewConversation = new QPushButton(this);
-    btnNewConversation->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    btnNewConversation->setMinimumHeight(64);
-    btnNewConversation->setText(tr("New Conversation"));
-    btnNewConversation->setObjectName("btnNewConversation");
-    btnNewConversation->setCursor(Qt::PointingHandCursor);
+    // 顶部header：图标+标题
+    topHeaderWidget = new QWidget(this);
+    topHeaderWidget->setObjectName("topHeaderWidget");
+    QHBoxLayout* topHeaderLayout = new QHBoxLayout(topHeaderWidget);
+    topHeaderLayout->setContentsMargins(16, 16, 16, 12);
+    topHeaderLayout->setSpacing(10);
 
+    appIconLabel = new QLabel(topHeaderWidget);
+    appIconLabel->setObjectName("appIconLabel");
+    appIconLabel->setFixedSize(32, 32);
+    appIconLabel->setPixmap(QIcon(":/QtWidgetsApp/ICONs/CustomerService.png").pixmap(32, 32));
+
+    appTitleLabel = new QLabel(tr("Chatbox"), topHeaderWidget);
+    appTitleLabel->setObjectName("appTitleLabel");
+    QFont titleFont;
+    titleFont.setFamily("Microsoft YaHei UI");
+    titleFont.setPointSize(18);
+    titleFont.setBold(true);
+    appTitleLabel->setFont(titleFont);
+
+    topHeaderLayout->addWidget(appIconLabel);
+    topHeaderLayout->addWidget(appTitleLabel);
+    topHeaderLayout->addStretch();
+
+    // Conversation header
+    conversationHeaderWidget = new QWidget(this);
+    conversationHeaderWidget->setObjectName("conversationHeaderWidget");
+    QHBoxLayout* conversationHeaderLayout = new QHBoxLayout(conversationHeaderWidget);
+    conversationHeaderLayout->setContentsMargins(16, 8, 16, 8);
+    conversationHeaderLayout->setSpacing(8);
+
+    conversationTitleLabel = new QLabel(tr("Conversation"), conversationHeaderWidget);
+    conversationTitleLabel->setObjectName("conversationTitleLabel");
+    conversationTitleLabel->hide(); // Hide the label
+    QFont conversationTitleFont;
+    conversationTitleFont.setFamily("Microsoft YaHei UI");
+    conversationTitleFont.setPointSize(14);
+    conversationTitleFont.setBold(true);
+    conversationTitleLabel->setFont(conversationTitleFont);
+
+    listViewButton = new QPushButton(conversationHeaderWidget);
+    listViewButton->setObjectName("listViewButton");
+    listViewButton->setFixedSize(24, 24);
+    listViewButton->setIcon(QIcon(":/QtWidgetsApp/ICONs/icon_open.png"));
+    listViewButton->setIconSize(QSize(20, 20));
+    listViewButton->setCursor(Qt::PointingHandCursor);
+
+    clearAllButton = new QPushButton(conversationHeaderWidget);
+    clearAllButton->setObjectName("clearAllButton");
+    clearAllButton->setFixedSize(24, 24);
+    clearAllButton->setIcon(QIcon(":/QtWidgetsApp/ICONs/icon_up.png")); // Temporary icon, can be replaced with trash icon later
+    clearAllButton->setIconSize(QSize(20, 20));
+    clearAllButton->setCursor(Qt::PointingHandCursor);
+
+    conversationHeaderLayout->addStretch();
+    conversationHeaderLayout->addWidget(listViewButton);
+    conversationHeaderLayout->addWidget(clearAllButton);
+
+    // Conversation list
     m_conversationList = new QListWidget(this);
     m_conversationList->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     m_conversationList->setObjectName("m_conversationList");
     m_conversationList->setContextMenuPolicy(Qt::CustomContextMenu);
     m_conversationList->setMouseTracking(true);
-    m_conversationList->setSpacing(14);
+    m_conversationList->setSpacing(8);
     m_conversationList->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
     m_conversationList->setFrameShape(QFrame::NoFrame);
     m_conversationList->setSelectionMode(QAbstractItemView::SingleSelection);
     m_conversationList->setItemDelegate(new ChatListDelegate(m_conversationList));
 
-    // 创建搜索框
+    // New conversation button
+    btnNewConversation = new QPushButton(this);
+    btnNewConversation->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    btnNewConversation->setMinimumHeight(32);
+    btnNewConversation->setText(tr("New Conversation"));
+    btnNewConversation->setObjectName("btnNewConversation");
+    btnNewConversation->setCursor(Qt::PointingHandCursor);
+    btnNewConversation->setIcon(QIcon(":/QtWidgetsApp/ICONs/icon_open.png"));
+    btnNewConversation->setIconSize(QSize(14, 14));
+
+    // Create search box
     QWidget* searchWidget = new QWidget(this);
     QHBoxLayout* searchLayout = new QHBoxLayout(searchWidget);
-    searchLayout->setContentsMargins(0, 0, 0, 0);
+    searchLayout->setContentsMargins(16, 8, 16, 8);
     searchLayout->setSpacing(8);
     
-    searchEdit = new QLineEdit(this);
+    searchEdit = new QLineEdit(searchWidget);
     searchEdit->setPlaceholderText(tr("Search conversations..."));
     searchEdit->setObjectName("searchEdit");
-    searchEdit->setStyleSheet(R"(
-        QLineEdit {
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid rgba(203, 213, 225, 0.8);
-            border-radius: 8px;
-            padding: 8px 12px;
-            font-size: 13px;
-            color: #1e293b;
-        }
-        QLineEdit:focus {
-            border-color: #3b82f6;
-            background: rgba(255, 255, 255, 1.0);
-        }
-        QLineEdit::placeholder {
-            color: #94a3b8;
-        }
-    )");
     
     searchLayout->addWidget(searchEdit);
     searchWidget->setLayout(searchLayout);
 
-    // 创建搜索防抖定时器
+    // Create search debounce timer
     searchTimer = new QTimer(this);
     searchTimer->setSingleShot(true);
-    searchTimer->setInterval(300);  // 300ms 防抖
+    searchTimer->setInterval(300);
 
-    // 添加到布局
-    mainLayout->addWidget(btnNewConversation);
+    // Add to layout
+    mainLayout->addWidget(topHeaderWidget);
+    // Hide conversation header widget (only keep buttons if needed, or remove entirely)
+    conversationHeaderWidget->hide();
+    // mainLayout->addWidget(conversationHeaderWidget); // Commented out to hide the entire header
     mainLayout->addWidget(searchWidget);
     mainLayout->addWidget(m_conversationList);
+    mainLayout->addWidget(btnNewConversation);
 
     footerDivider = new QFrame(this);
     footerDivider->setObjectName("footerDivider");
@@ -243,18 +281,26 @@ void ChatList::setupUI()
 
     footerWidget = new QWidget(this);
     footerWidget->setObjectName("footerWidget");
-    footerLayout = new QHBoxLayout(footerWidget);
-    footerLayout->setContentsMargins(4, 12, 4, 0);
-    footerLayout->setSpacing(10);
+    footerLayout = new QVBoxLayout(footerWidget);
+    footerLayout->setContentsMargins(16, 8, 16, 16);
+    footerLayout->setSpacing(8);
 
     btnParamSetting = new QPushButton(tr("Param Setting"), footerWidget);
     btnParamSetting->setObjectName("btnParamSetting");
     btnParamSetting->setCursor(Qt::PointingHandCursor);
-    btnParamSetting->setMinimumHeight(44);
+    btnParamSetting->setMinimumHeight(32);
+    btnParamSetting->setIcon(QIcon(":/QtWidgetsApp/ICONs/icon_open.png")); // Temporary icon
+    btnParamSetting->setIconSize(QSize(16, 16));
 
-    footerLayout->addStretch(1);
+    btnAbout = new QPushButton(tr("About (1.17.1)"), footerWidget);
+    btnAbout->setObjectName("btnAbout");
+    btnAbout->setCursor(Qt::PointingHandCursor);
+    btnAbout->setMinimumHeight(32);
+    btnAbout->setIcon(QIcon(":/QtWidgetsApp/ICONs/icon_open.png")); // Temporary icon
+    btnAbout->setIconSize(QSize(16, 16));
+
     footerLayout->addWidget(btnParamSetting);
-    footerLayout->addStretch(1);
+    footerLayout->addWidget(btnAbout);
 
     mainLayout->addWidget(footerWidget);
 
@@ -266,14 +312,14 @@ void ChatList::connectSignals()
     connect(btnNewConversation, &QPushButton::clicked,
         this, &ChatList::onNewConversationClicked);
 
-    // 杩炴帴鍒楄〃閫夋嫨鏀瑰彉淇″彿
+    // Connect list selection change signal
     connect(m_conversationList, &QListWidget::currentItemChanged,
         this, &ChatList::onConversationSelectionChanged);
 
     connect(m_conversationList, &QListWidget::customContextMenuRequested,
         this, &ChatList::showContextMenu);
     
-    // 连接搜索框信号
+    // Connect search box signals
     if (searchEdit && searchTimer) {
         connect(searchEdit, &QLineEdit::textChanged,
             this, &ChatList::onSearchTextChanged);
@@ -285,6 +331,16 @@ void ChatList::connectSignals()
     {
         connect(btnParamSetting, &QPushButton::clicked,
             this, &ChatList::onParamSettingClicked);
+    }
+    if (btnAbout)
+    {
+        connect(btnAbout, &QPushButton::clicked,
+            this, &ChatList::onAboutClicked);
+    }
+    if (clearAllButton)
+    {
+        connect(clearAllButton, &QPushButton::clicked,
+            this, &ChatList::onClearAllClicked);
     }
 }
 
@@ -610,6 +666,16 @@ void ChatList::onParamSettingClicked()
     emit paramSettingRequested();
 }
 
+void ChatList::onAboutClicked()
+{
+    emit aboutClicked();
+}
+
+void ChatList::onClearAllClicked()
+{
+    emit clearAllRequested();
+}
+
 void ChatList::setConversationTimestamp(const QString& id, const QString& timestamp)
 {
     if (auto* item = findItemById(id))
@@ -622,70 +688,109 @@ void ChatList::setConversationTimestamp(const QString& id, const QString& timest
 void ChatList::applyStyles()
 {
     static const QString kStyleSheet = QStringLiteral(R"(ChatList {
-    background: rgba(255, 255, 255, 0.82);
-    border: 1px solid rgba(148, 163, 184, 0.28);
-    border-radius: 14px;
-    padding: 10px 6px;
+    background: #ffffff;
+    border: none;
+}
+
+ChatList QWidget#topHeaderWidget {
+    background: transparent;
+    border: none;
+}
+
+ChatList QLabel#appIconLabel {
+    background: transparent;
+    border: none;
+}
+
+ChatList QLabel#appTitleLabel {
+    color: #1e293b;
+    background: transparent;
+    border: none;
+}
+
+ChatList QWidget#conversationHeaderWidget {
+    background: transparent;
+    border: none;
+}
+
+ChatList QLabel#conversationTitleLabel {
+    color: #1e293b;
+    background: transparent;
+    border: none;
+}
+
+ChatList QPushButton#listViewButton,
+ChatList QPushButton#clearAllButton {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 4px;
+}
+
+ChatList QPushButton#listViewButton:hover,
+ChatList QPushButton#clearAllButton:hover {
+    background: rgba(148, 163, 184, 0.15);
+}
+
+ChatList QPushButton#listViewButton:pressed,
+ChatList QPushButton#clearAllButton:pressed {
+    background: rgba(148, 163, 184, 0.25);
 }
 
 ChatList QPushButton#btnNewConversation {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-        stop:0 #2563eb, stop:1 #1d4ed8);
-    color: #f8fafc;
+    background: #3b82f6;
+    color: #ffffff;
     border: none;
-    border-radius: 12px;
-    font-size: 15px;
-    padding: 14px 20px;
-    margin: 12px 10px 10px 10px;
-    min-height: 52px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    margin: 6px 16px;
+    min-height: 32px;
     text-align: left;
 }
 
 ChatList QPushButton#btnNewConversation:hover {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-        stop:0 #3b82f6, stop:1 #2563eb);
+    background: #2563eb;
 }
 
 ChatList QPushButton#btnNewConversation:pressed {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-        stop:0 #1d4ed8, stop:1 #1e40af);
+    background: #1d4ed8;
 }
 
 QListWidget#m_conversationList {
     border: none;
     background: transparent;
     outline: 0;
-    padding: 6px 4px 12px 4px;
+    padding: 8px 16px;
     font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
 }
 
 QListWidget#m_conversationList::item {
-    padding: 14px 18px;
-    margin: 6px 8px;
-    border-radius: 12px;
+    padding: 12px 16px;
+    margin: 2px 0;
+    border-radius: 8px;
     color: #1e293b;
     font-weight: 500;
-    font-size: 14px;
-    background: rgba(248, 250, 252, 0.95);
-    border: 1px solid rgba(203, 213, 225, 0.6);
-    min-height: 26px;
+    font-size: 10px;
+    background: transparent;
+    border: none;
+    min-height: 44px;
 }
 
 QListWidget#m_conversationList::item:hover {
-    background: rgba(59, 130, 246, 0.12);
-    border-color: rgba(59, 130, 246, 0.45);
+    background: rgba(241, 245, 249, 0.8);
 }
 
 QListWidget#m_conversationList::item:selected {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-        stop:0 rgba(37, 99, 235, 0.18), stop:1 rgba(37, 99, 235, 0.28));
-    color: #1d4ed8;
-    font-weight: 600;
-    border: 2px solid rgba(37, 99, 235, 0.35);
+    background: rgba(59, 130, 246, 0.1);
+    color: #1e293b;
+    font-weight: 500;
+    border: none;
 }
 
 QListWidget#m_conversationList::item:selected:hover {
-    border-color: rgba(37, 99, 235, 0.58);
+    background: rgba(59, 130, 246, 0.15);
 }
 
 QListWidget#m_conversationList QScrollBar:vertical {
@@ -712,51 +817,60 @@ QListWidget#m_conversationList QScrollBar::sub-page:vertical {
     width: 0;
 }
 
-ChatList QLabel {
-    color: #0f172a;
-    font-weight: 600;
-    font-size: 16px;
-    padding: 12px 16px 6px 16px;
-    background: transparent;
-}
-
-ChatList QLabel[objectName="sectionTitle"] {
-    border-bottom: 1px solid rgba(203, 213, 225, 0.5);
-    margin-bottom: 8px;
-}
-
 ChatList QFrame#footerDivider {
-    background: rgba(203, 213, 225, 0.8);
+    background: rgba(226, 232, 240, 0.8);
     border: none;
-    margin: 8px 12px 8px 12px;
+    margin: 8px 16px;
 }
 
+/* Footer */
 ChatList QWidget#footerWidget {
     background: transparent;
     border: none;
     margin-top: 0;
-    padding: 12px 8px 4px 8px;
+    padding: 0;
 }
 
+ChatList QPushButton#btnAbout,
 ChatList QPushButton#btnParamSetting {
-    background-color: rgba(37, 99, 235, 0.12);
-    border: 1px solid rgba(37, 99, 235, 0.35);
-    border-radius: 12px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #1d4ed8;
-    padding: 10px 18px;
-    min-height: 44px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #64748b;
+    padding: 6px 12px;
+    min-height: 32px;
+    text-align: left;
 }
 
+ChatList QPushButton#btnAbout:hover,
 ChatList QPushButton#btnParamSetting:hover {
-    background-color: rgba(37, 99, 235, 0.2);
-    border-color: rgba(37, 99, 235, 0.5);
+    background: rgba(241, 245, 249, 0.8);
+    color: #1e293b;
 }
 
+ChatList QPushButton#btnAbout:pressed,
 ChatList QPushButton#btnParamSetting:pressed {
-    background-color: rgba(37, 99, 235, 0.32);
-    border-color: rgba(37, 99, 235, 0.6);
+    background: rgba(226, 232, 240, 0.8);
+}
+
+ChatList QLineEdit#searchEdit {
+    background: rgba(241, 245, 249, 0.8);
+    border: 1px solid rgba(203, 213, 225, 0.6);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: #1e293b;
+}
+
+ChatList QLineEdit#searchEdit:focus {
+    border-color: #3b82f6;
+    background: rgba(255, 255, 255, 1.0);
+}
+
+ChatList QLineEdit#searchEdit::placeholder {
+    color: #94a3b8;
 })");
 
     setStyleSheet(kStyleSheet);

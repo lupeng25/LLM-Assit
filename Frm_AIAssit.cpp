@@ -207,6 +207,39 @@ void Frm_AIAssit::setupSignals()
 	connect(ui.ChatListWidget, &ChatList::exportConversationRequested, this, &Frm_AIAssit::onExportConversationRequested);
 	connect(ui.ChatListWidget, &ChatList::showDetailsRequested, this, &Frm_AIAssit::onShowDetailsRequested);
 	connect(ui.ChatListWidget, &ChatList::paramSettingRequested, this, &Frm_AIAssit::ShowAIParam);
+	connect(ui.ChatListWidget, &ChatList::aboutClicked, this, [this]() {
+		QMessageBox::about(this, tr("About"), tr("GKG AI Assist\nVersion 1.17.1"));
+	});
+	connect(ui.ChatListWidget, &ChatList::clearAllRequested, this, [this]() {
+		if (QMessageBox::question(this, tr("Confirm"), tr("Are you sure you want to clear all conversations?"),
+			QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
+			// Get all conversation items and delete them one by one
+			QListWidget* list = ui.ChatListWidget->getConversationList();
+			QStringList allIds;
+			for (int i = 0; i < list->count(); ++i) {
+				QListWidgetItem* item = list->item(i);
+				if (item) {
+					QString id = item->data(ChatList::IdRole).toString();
+					if (!id.isEmpty()) {
+						allIds.append(id);
+					}
+				}
+			}
+			// Delete all sessions
+			for (const QString& id : allIds) {
+				if (m_chatSessionService) {
+					m_chatSessionService->removeSession(id);
+				}
+			}
+			ui.ChatListWidget->clearConversations();
+			if (m_chatSessionService) {
+				m_chatSessionService->saveSessions();
+			}
+			// Clear current conversation
+			m_currentConversationId.clear();
+			ui.ChatShow->updateEmptyState();
+		}
+	});
 	
 	// 设置搜索回调函数
 	ui.ChatListWidget->setSearchCallback([this](const QString& conversationId) -> QString {

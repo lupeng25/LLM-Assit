@@ -29,6 +29,7 @@
 #include "ChatSessionTypes.h"
 #include "AppConfigRepository.h"
 #include "LLMClientManager.h"
+#include "AIParamWidget.h"
 class Frm_AIAssit : public QWidget
 {
 	Q_OBJECT

@@ -140,24 +140,12 @@ Frm_AIAssit::Frm_AIAssit(QWidget *parent)
 	ui.setupUi(this);
 	applyBaseStyles();
 
-	if (ui.AIParams)
-	{
-		m_paramWidget = ui.AIParams;
-		if (ui.mainHorizontalLayout)
-		{
-			ui.mainHorizontalLayout->removeWidget(m_paramWidget);
-		}
-		m_paramWidget->setMinimumSize(QSize(0, 0));
-		m_paramWidget->setMaximumSize(QSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX));
-		m_paramWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-		m_paramWidget->setParent(nullptr);
-		m_paramWidget->hide();
-	}
-	else
-	{
-		m_paramWidget = new AIParamWidget(this);
-		m_paramWidget->hide();
-	}
+	m_paramWidget = new AIParamWidget(this);
+	m_paramWidget->setMinimumSize(QSize(0, 0));
+	m_paramWidget->setMaximumSize(QSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX));
+	m_paramWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	m_paramWidget->setParent(nullptr);
+	m_paramWidget->hide();
 
 	connect(m_clientManager.get(), &LLMClientManager::clientChanged, this, &Frm_AIAssit::attachToClient);
 	connect(m_clientManager.get(), &LLMClientManager::connectionCheckFailed, this, &Frm_AIAssit::onConnectionCheckFailed);

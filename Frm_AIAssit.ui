@@ -106,45 +106,6 @@
      </layout>
     </widget>
    </item>
-   <item>
-    <widget class="AIParamWidget" name="AIParams" native="true">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="minimumSize">
-      <size>
-       <width>280</width>
-       <height>0</height>
-      </size>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>320</width>
-       <height>16777215</height>
-      </size>
-     </property>
-     <layout class="QVBoxLayout" name="parameterLayout">
-      <property name="spacing">
-       <number>16</number>
-      </property>
-      <property name="leftMargin">
-       <number>16</number>
-      </property>
-      <property name="topMargin">
-       <number>16</number>
-      </property>
-      <property name="rightMargin">
-       <number>16</number>
-      </property>
-      <property name="bottomMargin">
-       <number>16</number>
-      </property>
-     </layout>
-    </widget>
-   </item>
   </layout>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
@@ -159,12 +120,6 @@
    <class>ChatShowWidget</class>
    <extends>QWidget</extends>
    <header location="global">AIAssit\chatshowwidget.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>AIParamWidget</class>
-   <extends>QWidget</extends>
-   <header location="global">AIAssit\aiparamwidget.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>

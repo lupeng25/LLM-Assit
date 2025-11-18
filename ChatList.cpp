@@ -136,6 +136,10 @@ ChatList::ChatList(QWidget *parent)
     , m_conversationList(nullptr)
     , searchTimer(nullptr)
     , searchCallback(nullptr)
+    , footerDivider(nullptr)
+    , footerWidget(nullptr)
+    , footerLayout(nullptr)
+    , btnParamSetting(nullptr)
 {
     setupUI();
     connectSignals();
@@ -231,6 +235,29 @@ void ChatList::setupUI()
     mainLayout->addWidget(searchWidget);
     mainLayout->addWidget(m_conversationList);
 
+    footerDivider = new QFrame(this);
+    footerDivider->setObjectName("footerDivider");
+    footerDivider->setFixedHeight(1);
+    footerDivider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    mainLayout->addWidget(footerDivider);
+
+    footerWidget = new QWidget(this);
+    footerWidget->setObjectName("footerWidget");
+    footerLayout = new QHBoxLayout(footerWidget);
+    footerLayout->setContentsMargins(4, 12, 4, 0);
+    footerLayout->setSpacing(10);
+
+    btnParamSetting = new QPushButton(tr("Param Setting"), footerWidget);
+    btnParamSetting->setObjectName("btnParamSetting");
+    btnParamSetting->setCursor(Qt::PointingHandCursor);
+    btnParamSetting->setMinimumHeight(44);
+
+    footerLayout->addStretch(1);
+    footerLayout->addWidget(btnParamSetting);
+    footerLayout->addStretch(1);
+
+    mainLayout->addWidget(footerWidget);
+
     applyStyles();
 }
 
@@ -252,6 +279,12 @@ void ChatList::connectSignals()
             this, &ChatList::onSearchTextChanged);
         connect(searchTimer, &QTimer::timeout,
             this, &ChatList::performSearch);
+    }
+
+    if (btnParamSetting)
+    {
+        connect(btnParamSetting, &QPushButton::clicked,
+            this, &ChatList::onParamSettingClicked);
     }
 }
 
@@ -572,6 +605,11 @@ void ChatList::setItemVisible(QListWidgetItem* item, bool visible)
     item->setHidden(!visible);
 }
 
+void ChatList::onParamSettingClicked()
+{
+    emit paramSettingRequested();
+}
+
 void ChatList::setConversationTimestamp(const QString& id, const QString& timestamp)
 {
     if (auto* item = findItemById(id))
@@ -685,6 +723,40 @@ ChatList QLabel {
 ChatList QLabel[objectName="sectionTitle"] {
     border-bottom: 1px solid rgba(203, 213, 225, 0.5);
     margin-bottom: 8px;
+}
+
+ChatList QFrame#footerDivider {
+    background: rgba(203, 213, 225, 0.8);
+    border: none;
+    margin: 8px 12px 8px 12px;
+}
+
+ChatList QWidget#footerWidget {
+    background: transparent;
+    border: none;
+    margin-top: 0;
+    padding: 12px 8px 4px 8px;
+}
+
+ChatList QPushButton#btnParamSetting {
+    background-color: rgba(37, 99, 235, 0.12);
+    border: 1px solid rgba(37, 99, 235, 0.35);
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1d4ed8;
+    padding: 10px 18px;
+    min-height: 44px;
+}
+
+ChatList QPushButton#btnParamSetting:hover {
+    background-color: rgba(37, 99, 235, 0.2);
+    border-color: rgba(37, 99, 235, 0.5);
+}
+
+ChatList QPushButton#btnParamSetting:pressed {
+    background-color: rgba(37, 99, 235, 0.32);
+    border-color: rgba(37, 99, 235, 0.6);
 })");
 
     setStyleSheet(kStyleSheet);

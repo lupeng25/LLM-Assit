@@ -199,7 +199,6 @@ void Frm_AIAssit::setupSignals()
 			LLMClient->CancelAllUpdateFiles(fileList);
 		}
 	});
-	connect(ui.ChatShow, &ChatShowWidget::paramSetButtonClicked, this, &Frm_AIAssit::ShowAIParam);
 	connect(ui.ChatShow, &ChatShowWidget::toggleButtonClicked, this, &Frm_AIAssit::toggleSidebar);
 	connect(ui.ChatListWidget, &ChatList::newConversationRequested, this, &Frm_AIAssit::createNewConversation, Qt::UniqueConnection);
 	connect(ui.ChatListWidget, &ChatList::conversationChanged, this, &Frm_AIAssit::onConversationSelected);
@@ -207,6 +206,7 @@ void Frm_AIAssit::setupSignals()
 	connect(ui.ChatListWidget, &ChatList::deleteRequested, this, &Frm_AIAssit::deleteCurrentConversation);
 	connect(ui.ChatListWidget, &ChatList::exportConversationRequested, this, &Frm_AIAssit::onExportConversationRequested);
 	connect(ui.ChatListWidget, &ChatList::showDetailsRequested, this, &Frm_AIAssit::onShowDetailsRequested);
+	connect(ui.ChatListWidget, &ChatList::paramSettingRequested, this, &Frm_AIAssit::ShowAIParam);
 	
 	// 设置搜索回调函数
 	ui.ChatListWidget->setSearchCallback([this](const QString& conversationId) -> QString {

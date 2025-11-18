@@ -4,6 +4,8 @@
 #include <QPushButton>
 #include <QListWidget>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QFrame>
 #include <QListWidgetItem>
 #include <QMenu>
 #include <QAction>
@@ -73,6 +75,7 @@ signals:
     void renameRequested();
     // 删除请求信号
     void deleteRequested();
+    void paramSettingRequested();
     // 导出对话请求信号
     void exportConversationRequested(const QString& conversationId, const QString& format);
     // 显示详情请求信号
@@ -89,6 +92,7 @@ signals:
     void onSearchTextChanged(const QString& text);
     // 执�?�搜�?
     void performSearch();
+    void onParamSettingClicked();
 
 private:
     // 设置UI
@@ -108,6 +112,10 @@ private:
     QPushButton* btnNewConversation;
     QLineEdit* searchEdit;  // 搜索输入�?
     QListWidget* m_conversationList;
+    QFrame* footerDivider;
+    QWidget* footerWidget;
+    QHBoxLayout* footerLayout;
+    QPushButton* btnParamSetting;
     // 搜索相关
     QTimer* searchTimer;  // 搜索防抖定时�?
     std::function<QString(const QString&)> searchCallback;  // 搜索回调函数

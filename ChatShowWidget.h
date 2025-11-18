@@ -23,7 +23,6 @@ public:
 	// 获取组件的访问器
 	QLabel* getChatTitle() const { return chatTitle; }
 	QPushButton* getToggleButton() const { return toggleButton; }
-	QPushButton* getParamSetButton() const { return btnParamSet; }
 	QListWidget* getChatFrame() const { return listWgChatFrame; }
 	// 设置标题
 	void setChatTitle(const QString& title);
@@ -42,8 +41,6 @@ public:
 signals:
 	// 切换按钮点击信号
 	void toggleButtonClicked();
-	// 参数设置按钮点击信号
-	void paramSetButtonClicked();
 
 protected:
 	// 大小改变事件
@@ -54,8 +51,6 @@ protected:
 	private slots:
 	// 切换按钮点击处理
 	void onToggleButtonClicked();
-	// 参数设置按钮点击处理
-	void onParamSetButtonClicked();
 	// 向上按钮点击处理
 	void onUpButtonClicked();
 	// 向下按钮点击处理
@@ -79,7 +74,6 @@ private:
 	// Header组件
 	QLabel* chatTitle;
 	QPushButton* toggleButton;
-	QPushButton* btnParamSet;
 	QPushButton* UpButton;
 	QPushButton* DownButton;
 	// Chat组件

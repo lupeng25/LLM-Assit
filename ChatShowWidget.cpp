@@ -37,7 +37,6 @@ ChatShowWidget::ChatShowWidget(QWidget *parent)
 	, frameLayout(nullptr)
 	, toggleButton(nullptr)
 	, chatTitle(nullptr)
-	, btnParamSet(nullptr)
 	, listWgChatFrame(nullptr)
 	, stackedWidget(nullptr)
 	, emptyStateWidget(nullptr)
@@ -119,17 +118,9 @@ void ChatShowWidget::setupUI()
 	titleFont.setBold(true);
 	chatTitle->setFont(titleFont);
 
-	// 参数设置按钮
-	btnParamSet = new QPushButton(headerWidget);
-	btnParamSet->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	btnParamSet->setMinimumSize(100, 32);
-	btnParamSet->setText(tr("Param Setting"));
-	btnParamSet->setObjectName("btnParamSet");
-
 	// 添加到头部布局
 	headerLayout->addWidget(toggleButton);
 	headerLayout->addWidget(chatTitle);
-	headerLayout->addWidget(btnParamSet);
 
 	// 创建聊天框架
 	chatFrame = new QFrame(this);
@@ -325,12 +316,6 @@ void ChatShowWidget::connectSignals()
 			Qt::UniqueConnection);
 	}
 
-	if (btnParamSet)
-	{
-		connect(btnParamSet, &QPushButton::clicked,
-			this, &ChatShowWidget::onParamSetButtonClicked,
-			Qt::UniqueConnection);
-	}
 	connect(UpButton, &QPushButton::clicked, this, &ChatShowWidget::onUpButtonClicked, Qt::UniqueConnection);
 	connect(DownButton, &QPushButton::clicked, this, &ChatShowWidget::onDownButtonClicked, Qt::UniqueConnection);
 	if (listWgChatFrame && listWgChatFrame->verticalScrollBar()) 
@@ -362,10 +347,6 @@ void ChatShowWidget::onToggleButtonClicked()
 	emit toggleButtonClicked();
 }
 
-void ChatShowWidget::onParamSetButtonClicked()
-{
-	emit paramSetButtonClicked();
-}
 
 void ChatShowWidget::onUpButtonClicked()
 {
@@ -496,26 +477,6 @@ QPushButton#toggleButton:hover {
 QPushButton#toggleButton:pressed {
     background-color: rgba(37, 99, 235, 0.28);
     border-color: rgba(37, 99, 235, 0.65);
-}
-
-QPushButton#btnParamSet {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-        stop:0 #f97316, stop:1 #ea580c);
-    color: #fff9f0;
-    border: none;
-    border-radius: 12px;
-    font-size: 14px;
-    padding: 10px 22px;
-}
-
-QPushButton#btnParamSet:hover {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-        stop:0 #fb923c, stop:1 #f97316);
-}
-
-QPushButton#btnParamSet:pressed {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-        stop:0 #ea580c, stop:1 #c2410c);
 }
 
 QFrame#frame {

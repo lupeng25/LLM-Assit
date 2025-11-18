@@ -6,6 +6,28 @@
 #include <QDebug>
 #include <QWheelEvent>
 #include <QScrollBar>
+#include <QRegion>
+
+namespace
+{
+	void applyCircularMask(QPushButton* button)
+	{
+		if (!button)
+		{
+			return;
+		}
+		const QSize size = button->size();
+		if (!size.isValid())
+		{
+			return;
+		}
+		const int diameter = qMin(size.width(), size.height());
+		const int offsetX = (size.width() - diameter) / 2;
+		const int offsetY = (size.height() - diameter) / 2;
+		const QRect circleRect(offsetX, offsetY, diameter, diameter);
+		button->setMask(QRegion(circleRect, QRegion::Ellipse));
+	}
+}
 ChatShowWidget::ChatShowWidget(QWidget *parent)
 	: QWidget(parent)
 	, mainLayout(nullptr)
@@ -57,6 +79,8 @@ void ChatShowWidget::resizeEvent(QResizeEvent* event)
 		DownButton->raise();
 		listWgChatFrame->setSpacing(2);
 		onScrollPositionChanged();
+		applyCircularMask(UpButton);
+		applyCircularMask(DownButton);
 	}
 }
 
@@ -79,6 +103,7 @@ void ChatShowWidget::setupUI()
 	// 切换按钮
 	toggleButton = new QPushButton(headerWidget);
 	toggleButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+	toggleButton->setFixedSize(20, 20);
 	toggleButton->setObjectName("toggleButton");
 	toggleButton->setText("");
 	setToggleIcon(QIcon(":/QtWidgetsApp/ICONs/icon_open.png"));
@@ -165,6 +190,8 @@ void ChatShowWidget::setupUI()
 	DownButton->setToolTip("Down");
 	DownButton->setObjectName("DownButton");
 	DownButton->setIcon(QIcon(":/QtWidgetsApp/ICONs/icon_down.png"));
+	applyCircularMask(UpButton);
+	applyCircularMask(DownButton);
 
 	// 添加到主布局
 	mainLayout->addWidget(headerWidget);
@@ -450,14 +477,14 @@ QLabel#chatTitle {
 }
 
 QPushButton#toggleButton {
-    background-color: rgba(37, 99, 235, 0.1);
+    background-color: rgba(253, 253, 253, 0.1);
     border: 1px solid rgba(37, 99, 235, 0.35);
-    border-radius: 12px;
-    padding: 10px;
-    min-width: 46px;
-    min-height: 46px;
-    max-width: 46px;
-    max-height: 46px;
+    border-radius: 10px;
+    padding: 4px;
+    min-width: 20px;
+    min-height: 20px;
+    max-width: 20px;
+    max-height: 20px;
     color: #2563eb;
 }
 
@@ -513,9 +540,9 @@ QLabel#emptyTextLabel {
 
 QPushButton#UpButton,
 QPushButton#DownButton {
-    background-color: rgba(37, 99, 235, 0.12);
+    background-color: rgba(253, 253, 253, 0.98);
     border: none;
-    border-radius: 16px;
+    border-radius: 999px;
     margin: 3px;
     min-width: 30px;
     min-height: 30px;

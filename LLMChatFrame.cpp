@@ -764,7 +764,7 @@ void LLMChatFrame::initButtons()
 	m_ui.buttons.collapseToggle->setStyleSheet(
 		"QPushButton {"
 		"    background-color: rgba(255, 255, 255, 0.8);"
-		"    border: 1px solid rgba(100, 116, 139, 0.3);"
+		"    border: none;"
 		"    color: #64748b;"
 		"    font-size: 16px;"
 		"    font-weight: bold;"
@@ -772,7 +772,6 @@ void LLMChatFrame::initButtons()
 		"}"
 		"QPushButton:hover {"
 		"    background-color: rgba(100, 116, 139, 0.15);"
-		"    border-color: rgba(100, 116, 139, 0.5);"
 		"}"
 		"QPushButton:pressed {"
 		"    background-color: rgba(100, 116, 139, 0.25);"
@@ -786,7 +785,7 @@ void LLMChatFrame::initButtons()
 	m_ui.buttons.reasoningCollapseToggle->setStyleSheet(
 		"QPushButton {"
 		"    background-color: rgba(255, 255, 255, 0.8);"
-		"    border: 1px solid rgba(100, 116, 139, 0.3);"
+		"    border: none;"
 		"    color: #64748b;"
 		"    font-size: 16px;"
 		"    font-weight: bold;"
@@ -794,7 +793,6 @@ void LLMChatFrame::initButtons()
 		"}"
 		"QPushButton:hover {"
 		"    background-color: rgba(100, 116, 139, 0.15);"
-		"    border-color: rgba(100, 116, 139, 0.5);"
 		"}"
 		"QPushButton:pressed {"
 		"    background-color: rgba(100, 116, 139, 0.25);"
@@ -1170,12 +1168,30 @@ void LLMChatFrame::layoutSingleMessage(const QSize& contentSize, int timeExtraHe
 {
 	int bubbleHeight = std::max(contentSize.height(), LayoutConstants::MIN_HEIGHT);
 	int bubbleTopY = timeExtraHeight + static_cast<int>(m_layoutData.iLineHeight * 0.75);
-	m_layoutData.rects.triangleLeft = QRect(LayoutConstants::ICON_SIZE + LayoutConstants::ICON_SPACING + LayoutConstants::ICON_BORDER_WIDTH,
-		timeExtraHeight + m_layoutData.iLineHeight / 2, LayoutConstants::TRIANGLE_WIDTH,
-		bubbleHeight - m_layoutData.iLineHeight);
-	m_layoutData.rects.triangleRight = QRect(width() - LayoutConstants::ICON_BORDER_WIDTH - LayoutConstants::ICON_SIZE - LayoutConstants::ICON_SPACING - LayoutConstants::TRIANGLE_WIDTH,
-		timeExtraHeight + m_layoutData.iLineHeight / 2, LayoutConstants::TRIANGLE_WIDTH,
-		bubbleHeight - m_layoutData.iLineHeight);
+	const int bubbleBottomY = bubbleTopY + bubbleHeight;
+	const auto clampTriangleTop = [&](int iconCenterY)
+	{
+		int desiredTop = iconCenterY - LayoutConstants::TRIANGLE_HEIGHT / 2;
+		int minTop = bubbleTopY + LayoutConstants::ICON_MARGIN;
+		int maxTop = bubbleBottomY - LayoutConstants::TRIANGLE_HEIGHT - LayoutConstants::ICON_MARGIN;
+		if (maxTop < minTop)
+		{
+			maxTop = minTop;
+		}
+		return qBound(minTop, desiredTop, maxTop);
+	};
+	int leftTriangleTop = clampTriangleTop(m_layoutData.rects.iconLeft.center().y());
+	int rightTriangleTop = clampTriangleTop(m_layoutData.rects.iconRight.center().y());
+	m_layoutData.rects.triangleLeft = QRect(
+		LayoutConstants::ICON_SIZE + LayoutConstants::ICON_SPACING + LayoutConstants::ICON_BORDER_WIDTH,
+		leftTriangleTop,
+		LayoutConstants::TRIANGLE_WIDTH,
+		LayoutConstants::TRIANGLE_HEIGHT);
+	m_layoutData.rects.triangleRight = QRect(
+		width() - LayoutConstants::ICON_BORDER_WIDTH - LayoutConstants::ICON_SIZE - LayoutConstants::ICON_SPACING - LayoutConstants::TRIANGLE_WIDTH,
+		rightTriangleTop,
+		LayoutConstants::TRIANGLE_WIDTH,
+		LayoutConstants::TRIANGLE_HEIGHT);
 	bool useContentWidth = contentSize.width() < (m_layoutData.iTextWidth + m_layoutData.iSpaceWidth);
 	int leftFrameWidth = useContentWidth
 		? computeFrameWidth(contentSize.width(), m_layoutData.iTextWidth, m_layoutData.iSpaceWidth)
@@ -1206,12 +1222,30 @@ void LLMChatFrame::layoutReasoningMessage(const QSize& reasoningSize, const QSiz
 	int reasoningHeight = std::max(reasoningSize.height(), LayoutConstants::MIN_HEIGHT);
 	int answerHeight = std::max(answerSize.height(), LayoutConstants::MIN_HEIGHT);
 	int bubbleTopY = timeExtraHeight + static_cast<int>(m_layoutData.iLineHeight * 0.75);
-	m_layoutData.rects.triangleLeft = QRect(LayoutConstants::ICON_SIZE + LayoutConstants::ICON_SPACING + LayoutConstants::ICON_BORDER_WIDTH,
-		timeExtraHeight + m_layoutData.iLineHeight / 2, LayoutConstants::TRIANGLE_WIDTH,
-		reasoningHeight - m_layoutData.iLineHeight);
-	m_layoutData.rects.triangleRight = QRect(width() - LayoutConstants::ICON_BORDER_WIDTH - LayoutConstants::ICON_SIZE - LayoutConstants::ICON_SPACING - LayoutConstants::TRIANGLE_WIDTH,
-		timeExtraHeight + m_layoutData.iLineHeight / 2, LayoutConstants::TRIANGLE_WIDTH,
-		reasoningHeight - m_layoutData.iLineHeight);
+	const int reasoningBottomY = bubbleTopY + reasoningHeight;
+	const auto clampTriangleTopReasoning = [&](int iconCenterY)
+	{
+		int desiredTop = iconCenterY - LayoutConstants::TRIANGLE_HEIGHT / 2;
+		int minTop = bubbleTopY + LayoutConstants::ICON_MARGIN;
+		int maxTop = reasoningBottomY - LayoutConstants::TRIANGLE_HEIGHT - LayoutConstants::ICON_MARGIN;
+		if (maxTop < minTop)
+		{
+			maxTop = minTop;
+		}
+		return qBound(minTop, desiredTop, maxTop);
+	};
+	int leftTriangleTop = clampTriangleTopReasoning(m_layoutData.rects.iconLeft.center().y());
+	int rightTriangleTop = clampTriangleTopReasoning(m_layoutData.rects.iconRight.center().y());
+	m_layoutData.rects.triangleLeft = QRect(
+		LayoutConstants::ICON_SIZE + LayoutConstants::ICON_SPACING + LayoutConstants::ICON_BORDER_WIDTH,
+		leftTriangleTop,
+		LayoutConstants::TRIANGLE_WIDTH,
+		LayoutConstants::TRIANGLE_HEIGHT);
+	m_layoutData.rects.triangleRight = QRect(
+		width() - LayoutConstants::ICON_BORDER_WIDTH - LayoutConstants::ICON_SIZE - LayoutConstants::ICON_SPACING - LayoutConstants::TRIANGLE_WIDTH,
+		rightTriangleTop,
+		LayoutConstants::TRIANGLE_WIDTH,
+		LayoutConstants::TRIANGLE_HEIGHT);
 	bool useContentWidth = answerSize.width() < (m_layoutData.iTextWidth + m_layoutData.iSpaceWidth);
 	int reasoningFrameWidth = useContentWidth
 		? computeFrameWidth(reasoningSize.width(), m_layoutData.iTextWidth, m_layoutData.iSpaceWidth)

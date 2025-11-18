@@ -45,6 +45,7 @@ public:
 		static constexpr int ICON_MARGIN = 2;              // 图标边距
 		static constexpr int ICON_RING_MARGIN = 6;         // 图标环边距
 		static constexpr int TRIANGLE_WIDTH = 10;          // 三角形宽度
+		static constexpr int TRIANGLE_HEIGHT = 20;         // 三角形高度
 		static constexpr int FRAME_MARGIN = 24;            // 框架边距
 		static constexpr int TEXT_PADDING = 16;            // 文本内边距
 		static constexpr int BUTTON_HEIGHT = 30;           // 按钮高度

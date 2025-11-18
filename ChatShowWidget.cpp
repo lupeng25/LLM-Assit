@@ -23,7 +23,8 @@ ChatShowWidget::ChatShowWidget(QWidget *parent)
 	, emptyTextLabel(nullptr)
 {
 	setupUI();
-	QTimer::singleShot(0, this, [this]() 
+	applyStyles();
+	QTimer::singleShot(0, this, [this]()
 	{
 		connectSignals();
 	});
@@ -138,7 +139,6 @@ void ChatShowWidget::setupUI()
 	// 优化视图设置
 	listWgChatFrame->setViewMode(QListView::ListMode);
 	listWgChatFrame->setUniformItemSizes(false); // 由于消息高度不同，不能使用uniform
-	listWgChatFrame->setStyleSheet("QListWidget{border:0px;}");
 	// 为列表安装事件过滤器以优化滚轮滚动
 	listWgChatFrame->installEventFilter(this);
 	// 设置空状态组件
@@ -427,4 +427,117 @@ bool ChatShowWidget::eventFilter(QObject* obj, QEvent* event)
 	}
 	
 	return QWidget::eventFilter(obj, event);
+}
+
+void ChatShowWidget::applyStyles()
+{
+	const QString style = QStringLiteral(R"(/* =================== 头部区域样式 =================== */
+QWidget#chatHeader {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 rgba(255, 255, 255, 0.96), stop:1 rgba(241, 245, 249, 0.94));
+    border: none;
+    border-radius: 14px 14px 0 0;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.75);
+    padding: 0;
+}
+
+QLabel#chatTitle {
+    color: #0f172a;
+    font-weight: 700;
+    font-size: 19px;
+    padding: 0 18px;
+    background: transparent;
+}
+
+QPushButton#toggleButton {
+    background-color: rgba(37, 99, 235, 0.1);
+    border: 1px solid rgba(37, 99, 235, 0.35);
+    border-radius: 12px;
+    padding: 10px;
+    min-width: 46px;
+    min-height: 46px;
+    max-width: 46px;
+    max-height: 46px;
+    color: #2563eb;
+}
+
+QPushButton#toggleButton:hover {
+    background-color: rgba(37, 99, 235, 0.18);
+    border-color: rgba(37, 99, 235, 0.55);
+}
+
+QPushButton#toggleButton:pressed {
+    background-color: rgba(37, 99, 235, 0.28);
+    border-color: rgba(37, 99, 235, 0.65);
+}
+
+QPushButton#btnParamSet {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #f97316, stop:1 #ea580c);
+    color: #fff9f0;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    padding: 10px 22px;
+}
+
+QPushButton#btnParamSet:hover {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #fb923c, stop:1 #f97316);
+}
+
+QPushButton#btnParamSet:pressed {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #ea580c, stop:1 #c2410c);
+}
+
+QFrame#frame {
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 0 0 14px 14px;
+    border: 1px solid rgba(203, 213, 225, 0.6);
+}
+
+QWidget#emptyStateWidget,
+QLabel#emptyIconLabel {
+    background: transparent;
+    border: none;
+}
+
+QLabel#emptyTextLabel {
+    color: #475569;
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+QPushButton#UpButton,
+QPushButton#DownButton {
+    background-color: rgba(37, 99, 235, 0.12);
+    border: none;
+    border-radius: 16px;
+    margin: 3px;
+    min-width: 30px;
+    min-height: 30px;
+    max-width: 30px;
+    max-height: 30px;
+    color: #1d4ed8;
+}
+
+QPushButton#UpButton:hover,
+QPushButton#DownButton:hover {
+    background-color: rgba(37, 99, 235, 0.24);
+}
+
+QPushButton#UpButton:pressed,
+QPushButton#DownButton:pressed {
+    background-color: rgba(37, 99, 235, 0.35);
+}
+
+QPushButton#UpButton:focus,
+QPushButton#DownButton:focus {
+    outline: none;
+})");
+
+	setStyleSheet(style);
 }

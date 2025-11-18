@@ -46,6 +46,87 @@ namespace
 		return QStringLiteral("\n ### 回答 \n\n%1").arg(answerPlain);
 	}
 }
+
+void Frm_AIAssit::applyBaseStyles()
+{
+	const QString style = QStringLiteral(R"(QWidget#Frm_AIAssit {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #eef2ff, stop:1 #e0f2fe);
+    border-radius: 18px;
+    font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif;
+    font-size: 14px;
+    color: #0f172a;
+}
+
+QWidget#Frm_AIAssit QPushButton {
+    font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif;
+    font-weight: 600;
+}
+
+QWidget#Frm_AIAssit QFrame,
+QWidget#Frm_AIAssit QListWidget,
+QWidget#Frm_AIAssit QScrollArea {
+    background: transparent;
+}
+
+QToolTip {
+    background: rgba(15, 23, 42, 0.92);
+    color: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    padding: 6px 10px;
+    border-radius: 6px;
+}
+
+QScrollBar:vertical {
+    background: transparent;
+    width: 12px;
+    margin: 4px;
+}
+
+QScrollBar::handle:vertical {
+    background: rgba(100, 116, 139, 0.35);
+    border-radius: 6px;
+    min-height: 40px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: rgba(59, 130, 246, 0.55);
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical,
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    height: 0;
+    width: 0;
+}
+
+QScrollBar:horizontal {
+    background: transparent;
+    height: 10px;
+    margin: 4px;
+}
+
+QScrollBar::handle:horizontal {
+    background: rgba(100, 116, 139, 0.35);
+    border-radius: 6px;
+    min-width: 40px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: rgba(59, 130, 246, 0.55);
+}
+
+QScrollBar::add-line:horizontal,
+QScrollBar::sub-line:horizontal,
+QScrollBar::add-page:horizontal,
+QScrollBar::sub-page:horizontal {
+    height: 0;
+    width: 0;
+})");
+
+	setStyleSheet(style);
+}
 Frm_AIAssit::Frm_AIAssit(QWidget *parent)
 	: QWidget(parent)
 	, m_configRepository(std::make_unique<AppConfigRepository>())
@@ -57,6 +138,7 @@ Frm_AIAssit::Frm_AIAssit(QWidget *parent)
 	m_bubblePoolHost->setAttribute(Qt::WA_DontShowOnScreen, true);
 	m_bubblePoolHost->hide();
 	ui.setupUi(this);
+	applyBaseStyles();
 
 	if (ui.AIParams)
 	{

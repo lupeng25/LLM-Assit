@@ -68,6 +68,8 @@ private:
 	void setupUI();
 	// 设置空状态组件
 	void setupEmptyStateWidget();
+	// 应用样式
+	void applyStyles();
 	 // UI组件
 	QVBoxLayout* mainLayout;
 	QWidget* headerWidget;

@@ -71,6 +71,8 @@ private:
 	void setSidebarVisible(bool visible, bool animated = true, bool triggeredByResponsive = false);
 	// 更新侧边栏宽度
 	void updateSidebarWidth(int windowWidth);
+	// 应用根样式
+	void applyBaseStyles();
 	//参数初始化
 	void initParams();
 	//初始化历史文件

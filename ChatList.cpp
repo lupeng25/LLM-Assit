@@ -179,26 +179,6 @@ void ChatList::setupUI()
     btnNewConversation->setText(tr("New Conversation"));
     btnNewConversation->setObjectName("btnNewConversation");
     btnNewConversation->setCursor(Qt::PointingHandCursor);
-    btnNewConversation->setStyleSheet(R"(
-        QPushButton {
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                stop:0 #3b82f6, stop:1 #2563eb);
-            border-radius: 18px;
-            border: none;
-            padding: 14px 18px;
-            color: #F8FAFC;
-            font-size: 15px;
-            font-weight: 600;
-        }
-        QPushButton:hover {
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                stop:0 #60a5fa, stop:1 #3b82f6);
-        }
-        QPushButton:pressed {
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                stop:0 #2563eb, stop:1 #1d4ed8);
-        }
-    )");
 
     m_conversationList = new QListWidget(this);
     m_conversationList->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
@@ -209,19 +189,6 @@ void ChatList::setupUI()
     m_conversationList->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
     m_conversationList->setFrameShape(QFrame::NoFrame);
     m_conversationList->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_conversationList->setStyleSheet(R"(
-        QListWidget {
-            background: transparent;
-            outline: none;
-        }
-        QListWidget::item {
-            margin: 0px;
-        }
-        QListWidget::indicator {
-            width: 0px;
-            height: 0px;
-        }
-    )");
     m_conversationList->setItemDelegate(new ChatListDelegate(m_conversationList));
 
     // ´´½¨ËÑË÷¿ò
@@ -263,6 +230,8 @@ void ChatList::setupUI()
     mainLayout->addWidget(btnNewConversation);
     mainLayout->addWidget(searchWidget);
     mainLayout->addWidget(m_conversationList);
+
+    applyStyles();
 }
 
 void ChatList::connectSignals()
@@ -610,4 +579,113 @@ void ChatList::setConversationTimestamp(const QString& id, const QString& timest
         item->setData(TimestampRole, timestamp);
         m_conversationList->update(m_conversationList->visualItemRect(item));
     }
+}
+
+void ChatList::applyStyles()
+{
+    static const QString kStyleSheet = QStringLiteral(R"(ChatList {
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 14px;
+    padding: 10px 6px;
+}
+
+ChatList QPushButton#btnNewConversation {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #2563eb, stop:1 #1d4ed8);
+    color: #f8fafc;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    padding: 14px 20px;
+    margin: 12px 10px 10px 10px;
+    min-height: 52px;
+    text-align: left;
+}
+
+ChatList QPushButton#btnNewConversation:hover {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #3b82f6, stop:1 #2563eb);
+}
+
+ChatList QPushButton#btnNewConversation:pressed {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 #1d4ed8, stop:1 #1e40af);
+}
+
+QListWidget#m_conversationList {
+    border: none;
+    background: transparent;
+    outline: 0;
+    padding: 6px 4px 12px 4px;
+    font-family: 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+}
+
+QListWidget#m_conversationList::item {
+    padding: 14px 18px;
+    margin: 6px 8px;
+    border-radius: 12px;
+    color: #1e293b;
+    font-weight: 500;
+    font-size: 14px;
+    background: rgba(248, 250, 252, 0.95);
+    border: 1px solid rgba(203, 213, 225, 0.6);
+    min-height: 26px;
+}
+
+QListWidget#m_conversationList::item:hover {
+    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.45);
+}
+
+QListWidget#m_conversationList::item:selected {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 rgba(37, 99, 235, 0.18), stop:1 rgba(37, 99, 235, 0.28));
+    color: #1d4ed8;
+    font-weight: 600;
+    border: 2px solid rgba(37, 99, 235, 0.35);
+}
+
+QListWidget#m_conversationList::item:selected:hover {
+    border-color: rgba(37, 99, 235, 0.58);
+}
+
+QListWidget#m_conversationList QScrollBar:vertical {
+    background: transparent;
+    width: 8px;
+    margin: 4px;
+}
+
+QListWidget#m_conversationList QScrollBar::handle:vertical {
+    background: rgba(100, 116, 139, 0.35);
+    border-radius: 4px;
+    min-height: 30px;
+}
+
+QListWidget#m_conversationList QScrollBar::handle:vertical:hover {
+    background: rgba(59, 130, 246, 0.6);
+}
+
+QListWidget#m_conversationList QScrollBar::add-line:vertical,
+QListWidget#m_conversationList QScrollBar::sub-line:vertical,
+QListWidget#m_conversationList QScrollBar::add-page:vertical,
+QListWidget#m_conversationList QScrollBar::sub-page:vertical {
+    height: 0;
+    width: 0;
+}
+
+ChatList QLabel {
+    color: #0f172a;
+    font-weight: 600;
+    font-size: 16px;
+    padding: 12px 16px 6px 16px;
+    background: transparent;
+}
+
+ChatList QLabel[objectName="sectionTitle"] {
+    border-bottom: 1px solid rgba(203, 213, 225, 0.5);
+    margin-bottom: 8px;
+})");
+
+    setStyleSheet(kStyleSheet);
 }

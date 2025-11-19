@@ -34,7 +34,7 @@ struct ClientNetWork //网络
     std::unique_ptr<QNetworkReply> clientNetWorkReply;
     QByteArray rawBuffer;
 };
-struct KnowledgeBase//知识库
+struct KnowledgeBase//知识�?
 {
     QString KnowledgeID;
     QString KnowledgeName;
@@ -55,20 +55,20 @@ public:
     virtual void setLLMParams(LLMParams* params);
     virtual QStringList getAvailableModels();// 获取可用模型列表
 
-                                             // 获取提供商信息
+                                             // 获取提供商信�?
     virtual AIProvider getProvider() const = 0;
     virtual QString getProviderName() const = 0;
     virtual QString getVersion() const = 0;
 
     // 创建body
     virtual QByteArray buildMessageBody(const ChatSendMessage& msg) = 0;
-    // 提问前的预处理
+    // 提问前的预处�?
     virtual void SendPreProcess(const ChatSendMessage& msg) = 0;
     // 返回数据处理
     virtual QJsonObject parseJsonReplyToMsg(const QByteArray &data) = 0;
-    // 发送消息到服务器
+    // 发送消息到服务�?
     virtual int send(const ChatSendMessage& msg) = 0;
-    // 发送消息到流式服务器
+    // 发送消息到流式服务�?
     virtual int StreamSend(const ChatSendMessage& msg) = 0;
     // 错误处理
     virtual QString GetError(const QString& errorLevel, const QString& errorContext) = 0;
@@ -78,13 +78,13 @@ public:
     virtual QNetworkRequest createApiRequest(const QUrl& url) = 0;
     // 发送API请求
     virtual void sendApiRequest(const QNetworkRequest& request, QTimer* timeoutTimer, int timeoutMs) = 0;
-    // 检查连接(异步)
+    // 检查连�?异步)
     virtual void checkServerConnectionAsync(int timeoutMs) = 0;
     // 解析模型ID列表
     virtual QStringList parseModelIds(const QByteArray &jsonData) = 0;
     // 获取模型列表(列表)
     virtual void fetchModelsAsync(int timeoutMs = 5000) = 0;
-    // 获取知识库信息
+    // 获取知识库信�?
     virtual void getKnowledgeBase() = 0;
     //上传文件
     virtual void uploadFile(const QString& filePath) = 0;
@@ -94,7 +94,7 @@ public:
     virtual void AnalysisBlockResponse(QJsonObject& response_obj) = 0;
     // 解析streaming数据
     virtual void AnalysisStreamResponse(QJsonObject& response_obj) = 0;
-    // 更变知识库
+    // 更变知识�?
     virtual void ChangeKnowledgeGraph(const QString& kownledgeID) = 0;
     // 取消某个要上传的文件
     virtual void CancelUpdateFile(const QString& file) = 0;
@@ -148,9 +148,9 @@ signals:
 
 protected:
     // 代码质量优化：通用错误解析工具
-    // 从 Qt 的错误字符串中提取 HTTP 错误短语（如 "Bad Request"、"Unauthorized" 等）
+    // �?Qt 的错误字符串中提�?HTTP 错误短语（如 "Bad Request"�?Unauthorized" 等）
     static QString extractHttpErrorCode(const QString& errorLevel);
-    // 从 JSON 文本中提取指定字段（顶层）
+    // �?JSON 文本中提取指定字段（顶层�?
     static QString extractJsonField(const QString& jsonText, const QString& fieldName);
 
 };

@@ -176,7 +176,7 @@ void ChatList::setupUI()
     appIconLabel = new QLabel(topHeaderWidget);
     appIconLabel->setObjectName("appIconLabel");
     appIconLabel->setFixedSize(32, 32);
-    appIconLabel->setPixmap(QIcon(":/QtWidgetsApp/ICONs/CustomerService.png").pixmap(32, 32));
+    appIconLabel->setPixmap(QIcon(":/QtWidgetsApp/ICONs/Chat.png").pixmap(32, 32));
 
     appTitleLabel = new QLabel(tr("Chatbox"), topHeaderWidget);
     appTitleLabel->setObjectName("appTitleLabel");
@@ -238,12 +238,13 @@ void ChatList::setupUI()
 
     // New conversation button
     btnNewConversation = new QPushButton(this);
-    btnNewConversation->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    btnNewConversation->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     btnNewConversation->setMinimumHeight(32);
-    btnNewConversation->setText(tr("New Conversation"));
+    btnNewConversation->setMaximumWidth(180); // 限制最大宽度
+    btnNewConversation->setText(tr("New Chat"));
     btnNewConversation->setObjectName("btnNewConversation");
     btnNewConversation->setCursor(Qt::PointingHandCursor);
-    btnNewConversation->setIcon(QIcon(":/QtWidgetsApp/ICONs/icon_open.png"));
+    btnNewConversation->setIcon(QIcon(":/QtWidgetsApp/ICONs/match.png"));
     btnNewConversation->setIconSize(QSize(14, 14));
 
     // Create search box
@@ -271,7 +272,7 @@ void ChatList::setupUI()
     // mainLayout->addWidget(conversationHeaderWidget); // Commented out to hide the entire header
     mainLayout->addWidget(searchWidget);
     mainLayout->addWidget(m_conversationList);
-    mainLayout->addWidget(btnNewConversation);
+    mainLayout->addWidget(btnNewConversation, 0, Qt::AlignHCenter); // 居中对齐
 
     footerDivider = new QFrame(this);
     footerDivider->setObjectName("footerDivider");
@@ -288,19 +289,23 @@ void ChatList::setupUI()
     btnParamSetting = new QPushButton(tr("Param Setting"), footerWidget);
     btnParamSetting->setObjectName("btnParamSetting");
     btnParamSetting->setCursor(Qt::PointingHandCursor);
+    btnParamSetting->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     btnParamSetting->setMinimumHeight(32);
-    btnParamSetting->setIcon(QIcon(":/QtWidgetsApp/ICONs/icon_open.png")); // Temporary icon
+    btnParamSetting->setMaximumWidth(180); // 限制最大宽度
+    btnParamSetting->setIcon(QIcon(":/QtWidgetsApp/ICONs/Setting.png")); // Temporary icon
     btnParamSetting->setIconSize(QSize(16, 16));
 
     btnAbout = new QPushButton(tr("About (1.17.1)"), footerWidget);
     btnAbout->setObjectName("btnAbout");
     btnAbout->setCursor(Qt::PointingHandCursor);
+    btnAbout->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     btnAbout->setMinimumHeight(32);
-    btnAbout->setIcon(QIcon(":/QtWidgetsApp/ICONs/icon_open.png")); // Temporary icon
+    btnAbout->setMaximumWidth(180); // 限制最大宽度
+    btnAbout->setIcon(QIcon(":/QtWidgetsApp/ICONs/about.png")); // Temporary icon
     btnAbout->setIconSize(QSize(16, 16));
 
-    footerLayout->addWidget(btnParamSetting);
-    footerLayout->addWidget(btnAbout);
+    footerLayout->addWidget(btnParamSetting, 0, Qt::AlignHCenter); // 居中对齐
+    footerLayout->addWidget(btnAbout, 0, Qt::AlignHCenter); // 居中对齐
 
     mainLayout->addWidget(footerWidget);
 

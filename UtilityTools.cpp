@@ -10,7 +10,6 @@
 #define _USE_MATH_DEFINES
 #endif
 #include <cmath>
-#include <QDomDocument>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -473,7 +472,8 @@ QJsonObject UtilityTools::validateJson(const QJsonObject& arguments)
 
 QJsonObject UtilityTools::validateXml(const QJsonObject& arguments)
 {
-    QString xmlString = arguments["xml_string"].toString();
+	return QJsonObject{};
+ /*   QString xmlString = arguments["xml_string"].toString();
     
     if (xmlString.isEmpty())
     {
@@ -502,6 +502,6 @@ QJsonObject UtilityTools::validateXml(const QJsonObject& arguments)
         data["root_element"] = doc.documentElement().tagName();
     }
     
-    return createSuccessResponse(data);
+    return createSuccessResponse(data);*/
 }
 

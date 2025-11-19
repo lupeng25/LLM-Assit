@@ -43,6 +43,7 @@ ChatShowWidget::ChatShowWidget(QWidget *parent)
 	, emptyIconLabel(nullptr)
 	, emptyTextLabel(nullptr)
 {
+	setAttribute(Qt::WA_StyledBackground,true);
 	setupUI();
 	applyStyles();
 	QTimer::singleShot(0, this, [this]()
@@ -204,6 +205,7 @@ void ChatShowWidget::setupEmptyStateWidget()
 	// 创建图标容器，确保居中
 	QWidget* iconContainer = new QWidget();
 	iconContainer->setFixedSize(100, 100);
+	iconContainer->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
 	QHBoxLayout* iconLayout = new QHBoxLayout(iconContainer);
 	iconLayout->setContentsMargins(0, 0, 0, 0);
 	iconLayout->setAlignment(Qt::AlignCenter);
@@ -269,8 +271,8 @@ void ChatShowWidget::setupEmptyStateWidget()
 
 	// 添加到布局
 	emptyLayout->addStretch(2);
-	emptyLayout->addWidget(iconContainer);
-	emptyLayout->addWidget(emptyTextLabel);
+	emptyLayout->addWidget(iconContainer,0,Qt::AlignHCenter);
+	emptyLayout->addWidget(emptyTextLabel,0,Qt::AlignHCenter);
 	emptyLayout->addStretch(3);
 }
 
@@ -440,6 +442,10 @@ bool ChatShowWidget::eventFilter(QObject* obj, QEvent* event)
 void ChatShowWidget::applyStyles()
 {
 	const QString style = QStringLiteral(R"(/* =================== 头部区域样式 =================== */
+ChatShowWidget {
+    background: transparent;
+    border:none;
+}
 QWidget#chatHeader {
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
         stop:0 rgba(255, 255, 255, 0.96), stop:1 rgba(241, 245, 249, 0.94));

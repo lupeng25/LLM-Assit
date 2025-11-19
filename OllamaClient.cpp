@@ -28,9 +28,9 @@ OllamaClient::~OllamaClient()
         m_NetWorkParams->clientNetWorkReply.reset();
     }
     // 注意：m_LLMParams 可能已被 setLLMParams() 设置为外部管理的对象
-    // setLLMParams() 已经处理了构造函数中创建的 m_LLMParams 的删除
+    // setLLMParams() 已经处理了构造函数中创建�?m_LLMParams 的删�?
     // 如果 m_LLMParams 是外部传入的，不应该在这里删除，由外部管理其生命周期
-    // 因此这里不删除 m_LLMParams，避免双重释放
+    // 因此这里不删�?m_LLMParams，避免双重释�?
     delete m_NetWorkParams;
     m_LLMParams = nullptr;
     m_NetWorkParams = nullptr;
@@ -66,7 +66,7 @@ QByteArray OllamaClient::buildMessageBody(const ChatSendMessage& msg)
     };
     messageObject["role"] = "user";//角色
 
-                                   //发送信息:输入信息+文档i...
+                                   //发送信�?输入信息+文档i...
     QString finalSendMsg = msg.SendText;
     if (msg.fileContext.size() > 0)
     {
@@ -304,7 +304,7 @@ QNetworkRequest OllamaClient::createApiRequest(const QUrl& url)
 {
     QNetworkRequest request(url);
 
-    // 设置通用请求头
+    // 设置通用请求�?
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setHeader(QNetworkRequest::UserAgentHeader, "OpenWebUIClient/1.0");
 
@@ -329,19 +329,19 @@ void OllamaClient::sendApiRequest(const QNetworkRequest& request, QTimer* timeou
     m_NetWorkParams->clientNetWorkReply = std::unique_ptr<QNetworkReply>(
         m_NetWorkParams->clientNetWorkManager->get(request));
 
-    // 根据请求类型连接相应的处理函数
+    // 根据请求类型连接相应的处理函�?
     if (m_currentRequestType == RequestType::FetchModels)
     {
         connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
             this, &OllamaClient::onFetchModelsFinished);
-        // 启动超时定时器
+        // 启动超时定时�?
         timeoutTimer->start(timeoutMs);
     }
     else if (m_currentRequestType == RequestType::ConnectionCheck)
     {
         connect(m_NetWorkParams->clientNetWorkReply.get(), &QNetworkReply::finished,
             this, &OllamaClient::onCheckConnectionFinished);
-        // 启动超时定时器
+        // 启动超时定时�?
         timeoutTimer->start(timeoutMs);
     }
     else if (m_currentRequestType == RequestType::GetKonwledgeBase)
@@ -400,7 +400,7 @@ QStringList OllamaClient::parseModelIds(const QByteArray &jsonData)
 
 void OllamaClient::checkServerConnectionAsync(int timeoutMs)
 {
-    // 取消之前的请求
+    // 取消之前的请�?
     cancelCurrentRequest();
 
     // 设置请求类型
@@ -413,7 +413,7 @@ void OllamaClient::checkServerConnectionAsync(int timeoutMs)
         return;
     }
 
-    // 构建请求并发送
+    // 构建请求并发�?
     QUrl testUrl = buildApiUrl("/api/version");
     QNetworkRequest testRequest = createApiRequest(testUrl);
     sendApiRequest(testRequest, m_connectionCheckTimer, timeoutMs);
@@ -425,7 +425,7 @@ void OllamaClient::onCheckConnectionFinished()
         return;
     }
 
-    // 检查是否超时
+    // 检查是否超�?
     if (!m_connectionCheckTimer->isActive()) {
         m_NetWorkParams->clientNetWorkReply.reset();
         return;
@@ -462,7 +462,7 @@ void OllamaClient::onCheckConnectionFinished()
 
 void OllamaClient::fetchModelsAsync(int timeoutMs)
 {
-    // 取消之前的请求
+    // 取消之前的请�?
     cancelCurrentRequest();
 
     // 设置请求类型
@@ -475,7 +475,7 @@ void OllamaClient::fetchModelsAsync(int timeoutMs)
         return;
     }
 
-    // 构建请求并发送
+    // 构建请求并发�?
     QUrl modelsUrl = buildApiUrl("/api/tags");
     QNetworkRequest modelsRequest = createApiRequest(modelsUrl);
     sendApiRequest(modelsRequest, m_fetchModelsTimer, timeoutMs);
@@ -487,7 +487,7 @@ void OllamaClient::onFetchModelsFinished()
         return;
     }
 
-    // 检查是否超时
+    // 检查是否超�?
     if (!m_fetchModelsTimer->isActive()) {
         m_NetWorkParams->clientNetWorkReply.reset();
         return;
@@ -514,7 +514,7 @@ void OllamaClient::onFetchModelsFinished()
                 m_availableModelIds = models;
                 success = true;
                 errorMessage = QString("Successfully fetched %1 models").arg(models.size());
-                // 发送模型更新信号
+                // 发送模型更新信�?
                 emit modelsListFetched(success, m_availableModelIds, errorMessage);
             }
             else

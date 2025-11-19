@@ -235,7 +235,7 @@ void ChatInputWidget::setupUI()
 	// 创建知识库子菜单
 	attachMenu = new QMenu(this);
 	addFileAction = new QAction(tr("Add File"), this);
-	selectKnowledgeBaseAction = new QAction(tr("Select KnowledgeBase"), this);
+	selectKnowledgeBaseAction = new QAction(tr("KnowledgeBase"), this);
 	addFileAction->setIcon(QIcon(":/QtWidgetsApp/ICONs/icon_text_file.png"));
 	selectKnowledgeBaseAction->setIcon(QIcon(":/QtWidgetsApp/ICONs/icon_konwledge.png"));
 	knowledgeBaseMenu = new QMenu(this);

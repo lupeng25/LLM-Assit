@@ -37,6 +37,8 @@ void LLMParams::copyFrom(const LLMParams& other)
 	streamChatIP = other.streamChatIP;
 	apiKey = other.apiKey;
 	iTimeOuts = other.iTimeOuts;
+	KnowledgeApi = other.KnowledgeApi;
+	llmPlatform = other.llmPlatform;
 }
 
 LLMParams* LLMParams::clone() const
@@ -176,7 +178,7 @@ int LLMParams::getLLMPlatForm() const
 
 void LLMParams::setKnowledgeApi(const QString &apikey)
 {
-	this->KnowledgeApi = apiKey;
+	this->KnowledgeApi = apikey;
 }
 
 QString LLMParams::getKnowledgeApi()const

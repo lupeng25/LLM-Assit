@@ -1,6 +1,7 @@
 ﻿#include "AIParamWidget.h"
 #include "ShortcutManager.h"
 #include "ShortcutEdit.h"
+#include "MessageManager.h"
 #include <QResizeEvent>
 #include <QPainter>
 #include <QTimer>
@@ -16,9 +17,11 @@ AIParamWidget::AIParamWidget(QWidget* parent)
 	, m_footerBar(nullptr)
 	, m_navSearchEdit(new QLineEdit(this))
 	, m_apiKeyEdit(new QLineEdit(this))
+	, m_knowledgeApiKeyEdit(new QLineEdit(this))
 	, m_chatIPEdit(new QLineEdit(this))
 	, m_streamIPEdit(new QLineEdit(this))
 	, m_chatModeCombo(new QComboBox(this))
+	, m_platformCombo(new QComboBox(this))
 	, m_temperatureSpinBox(new QDoubleSpinBox(this))
 	, m_maxTokenSpinBox(new QSpinBox(this))
 	, m_streamChatCheck(new QCheckBox(this))
@@ -129,6 +132,14 @@ void AIParamWidget::setupStyles()
 	m_chatModeCombo->addItem(QStringLiteral("Query"), 0);
 	m_chatModeCombo->addItem(QStringLiteral("Chat"), 1);
 
+	m_platformCombo->clear();
+	m_platformCombo->addItem(tr("Dify"), static_cast<int>(AIProvider::Dify));
+	m_platformCombo->addItem(tr("Open WebUI"), static_cast<int>(AIProvider::Open_WebUI));
+	m_platformCombo->addItem(tr("Ollama"), static_cast<int>(AIProvider::Ollama));
+	m_platformCombo->addItem(tr("AnythingLLM"), static_cast<int>(AIProvider::AnythingLLM));
+	m_platformCombo->addItem(tr("Custom"), static_cast<int>(AIProvider::Custom));
+	m_platformCombo->setCurrentIndex(0);
+
 	m_streamChatCheck->setObjectName("ToggleSwitch");
 	m_openThinkCheck->setObjectName("ToggleSwitch");
 	m_openNetSearchCheck->setObjectName("ToggleSwitch");
@@ -205,6 +216,14 @@ void AIParamWidget::setupToolTips()
 		}
 		m_apiKeyEdit->setToolTip(tooltip);
 	});
+
+	connect(m_knowledgeApiKeyEdit, &QLineEdit::textChanged, this, [this](const QString& text) {
+		QString tooltip = tr("Set the knowledge base API KEY");
+		if (!text.isEmpty()) {
+			tooltip += QString("\n\n%1: %2").arg(tr("Current knowledge API KEY"), text);
+		}
+		m_knowledgeApiKeyEdit->setToolTip(tooltip);
+	});
 }
 
 void AIParamWidget::setupDirtyTracking()
@@ -260,8 +279,10 @@ void AIParamWidget::setupDirtyTracking()
 	};
 
 	connectLineEditDirty(m_apiKeyEdit, 0);
+	connectLineEditDirty(m_knowledgeApiKeyEdit, 0);
 	connectLineEditDirty(m_chatIPEdit, 0);
 	connectLineEditDirty(m_streamIPEdit, 0);
+	connectComboDirty(m_platformCombo, 0);
 	connectComboDirty(m_chatModeCombo, 1);
 	connectDoubleSpinDirty(m_temperatureSpinBox, 1);
 	connectSpinDirty(m_maxTokenSpinBox, 1);
@@ -322,9 +343,20 @@ void AIParamWidget::updateUIFromParams()
 {
 	m_syncingUI = true;
 	m_apiKeyEdit->setText(llmParams->getApiKey());
+	m_knowledgeApiKeyEdit->setText(llmParams->getKnowledgeApi());
 	m_chatIPEdit->setText(llmParams->getBaseUrl());
 	m_streamIPEdit->setText(llmParams->getStreamUrl());
 	m_chatModeCombo->setCurrentIndex(llmParams->getChatMode());
+	if (m_platformCombo)
+	{
+		const int platformValue = llmParams->getLLMPlatForm();
+		int index = m_platformCombo->findData(platformValue);
+		if (index < 0)
+		{
+			index = 0;
+		}
+		m_platformCombo->setCurrentIndex(index);
+	}
 	m_temperatureSpinBox->setValue(llmParams->getTemperature());
 	m_maxTokenSpinBox->setValue(llmParams->getMaxToken());
 	m_streamChatCheck->setChecked(llmParams->getStreamChat());
@@ -354,14 +386,25 @@ void AIParamWidget::updateIPToolTips()
 		APITooltip += QString("\n\n%1: %2").arg(tr("Current API KEY"), m_apiKeyEdit->text());
 	}
 	m_apiKeyEdit->setToolTip(APITooltip);
+
+	QString knowledgeTooltip = tr("Set the knowledge base API KEY");
+	if (!m_knowledgeApiKeyEdit->text().isEmpty()) {
+		knowledgeTooltip += QString("\n\n%1: %2").arg(tr("Current knowledge API KEY"), m_knowledgeApiKeyEdit->text());
+	}
+	m_knowledgeApiKeyEdit->setToolTip(knowledgeTooltip);
 }
 
 void AIParamWidget::applyCurrentParams()
 {
 	llmParams->setApiKey(m_apiKeyEdit->text());
+	llmParams->setKnowledgeApi(m_knowledgeApiKeyEdit->text());
 	llmParams->setBaseUrl(m_chatIPEdit->text());
 	llmParams->setStreamUrl(m_streamIPEdit->text());
 	llmParams->setChatMode(m_chatModeCombo->currentIndex());
+	if (m_platformCombo)
+	{
+		llmParams->setLLMPlatForm(m_platformCombo->currentData().toInt());
+	}
 	llmParams->setTemperature(m_temperatureSpinBox->value());
 	llmParams->setMaxToken(m_maxTokenSpinBox->value());
 	llmParams->setStreamChat(m_streamChatCheck->isChecked());
@@ -462,8 +505,24 @@ QWidget* AIParamWidget::buildConnectionPage()
 	apiForm->setVerticalSpacing(16);
 	m_apiKeyEdit->setPlaceholderText(tr("sk-xxxxxxxxxxxxxxxxxxxx"));
 	apiForm->addRow(tr("API Key"), m_apiKeyEdit);
+	m_knowledgeApiKeyEdit->setPlaceholderText(tr("dataset-xxxxxxxxxxxx"));
+	apiForm->addRow(tr("Knowledge API Key"), m_knowledgeApiKeyEdit);
 	apiBody->addLayout(apiForm);
 	layout->addWidget(apiCard);
+
+	QVBoxLayout* platformBody = nullptr;
+	auto* platformCard = createSettingCard(
+		tr("LLM Platform"),
+		tr("Select which provider or backend you would like to use when sending requests."),
+		&platformBody);
+	auto* platformForm = new QFormLayout;
+	platformForm->setLabelAlignment(Qt::AlignLeft);
+	platformForm->setHorizontalSpacing(24);
+	platformForm->setVerticalSpacing(16);
+	m_platformCombo->setMinimumWidth(200);
+	platformForm->addRow(tr("Platform"), m_platformCombo);
+	platformBody->addLayout(platformForm);
+	layout->addWidget(platformCard);
 
 	QVBoxLayout* endpointBody = nullptr;
 	auto* endpointCard = createSettingCard(

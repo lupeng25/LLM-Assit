@@ -74,9 +74,11 @@ private:
 
 	// UI控件
 	QLineEdit* m_apiKeyEdit;
+	QLineEdit* m_knowledgeApiKeyEdit;
 	QLineEdit* m_chatIPEdit;
 	QLineEdit* m_streamIPEdit;
 	QComboBox* m_chatModeCombo;
+	QComboBox* m_platformCombo;
 	QDoubleSpinBox* m_temperatureSpinBox;
 	QSpinBox* m_maxTokenSpinBox;
 	QCheckBox* m_streamChatCheck;

@@ -4,6 +4,7 @@
 #include <QIcon>
 #include <QWheelEvent>
 #include <algorithm>
+#include "ModelSelectorWidget.h"
 
 namespace
 {
@@ -247,10 +248,12 @@ void ChatInputWidget::setupUI()
 	promptLibraryAction = new QAction(tr("Prompt Library"), this);
 	attachMenu->addAction(promptLibraryAction);
 
-	optionsComboBox = new QComboBox(bottomWidget);
+	optionsComboBox = new ModelComboBox(bottomWidget);
 	optionsComboBox->setToolTip(tr("Select AI Model"));
 	optionsComboBox->setFixedHeight(40);
-	optionsComboBox->setMinimumWidth(150);
+	optionsComboBox->setMinimumWidth(220);
+	optionsComboBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+	optionsComboBox->setInsertPolicy(QComboBox::NoInsert);
 
 	sendButton = new QPushButton(tr("Send"), bottomWidget);
 	sendButton->setObjectName("sendButton");
@@ -877,10 +880,26 @@ void ChatInputWidget::dropEvent(QDropEvent *event)
 
 void ChatInputWidget::UpdateModelList(bool success, QStringList modelList, const QString& errorMessage)
 {
-	this->optionsComboBox->clear();
-	for (auto it = modelList.constBegin(); it != modelList.constEnd(); ++it)
+	if (!success)
 	{
-		this->optionsComboBox->addItem(*it);
+		optionsComboBox->setEnabled(false);
+		optionsComboBox->clear();
+		optionsComboBox->addItem(errorMessage.isEmpty() ? tr("加载模型失败") : errorMessage);
+		return;
+	}
+
+	optionsComboBox->setEnabled(true);
+	if (auto* advancedCombo = qobject_cast<ModelComboBox*>(optionsComboBox))
+	{
+		advancedCombo->applyModelList(modelList);
+	}
+	else
+	{
+		optionsComboBox->clear();
+		for (const QString& name : modelList)
+		{
+			optionsComboBox->addItem(name);
+		}
 	}
 }
 

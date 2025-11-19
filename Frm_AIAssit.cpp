@@ -1,4 +1,5 @@
 ﻿#include "Frm_AIAssit.h"
+#include "ShortcutManager.h"
 #include <QResizeEvent>
 #include <QGraphicsOpacityEffect>
 #include <QEasingCurve>
@@ -156,6 +157,7 @@ Frm_AIAssit::Frm_AIAssit(QWidget *parent)
 	initParams();
 	setupSignals();
 	initUI();
+	setupShortcuts();
 }
 Frm_AIAssit::~Frm_AIAssit()
 {
@@ -278,6 +280,101 @@ void Frm_AIAssit::setupLLMClientSignals()
 	connect(LLMClient, &MessageManager::FollowSuggestSignal, this, &Frm_AIAssit::buildBubbleSuggest);
 
 }
+
+void Frm_AIAssit::setupShortcuts()
+{
+	ShortcutManager* manager = ShortcutManager::instance();
+	
+	// Register all shortcuts
+	for (int action = ShortcutManager::NewConversation; action <= ShortcutManager::DeleteConversation; ++action)
+	{
+		ShortcutManager::ShortcutAction shortcutAction = static_cast<ShortcutManager::ShortcutAction>(action);
+		manager->registerShortcut(shortcutAction, this);
+	}
+	
+	// Connect shortcut signals to actions
+	connect(manager, &ShortcutManager::shortcutTriggered, this, [this](ShortcutManager::ShortcutAction action) {
+		switch (action)
+		{
+		case ShortcutManager::NewConversation:
+			createNewConversation();
+			break;
+		case ShortcutManager::SearchConversations:
+			// Focus search box in ChatList
+			if (ui.ChatListWidget)
+			{
+				QLineEdit* searchEdit = ui.ChatListWidget->getSearchEdit();
+				if (searchEdit)
+				{
+					searchEdit->setFocus();
+					searchEdit->selectAll();
+				}
+			}
+			break;
+		case ShortcutManager::ToggleSidebar:
+			toggleSidebar();
+			break;
+		case ShortcutManager::FocusInput:
+			// Focus input widget
+			if (ui.ChatInput)
+			{
+				ui.ChatInput->focusInput();
+			}
+			break;
+		case ShortcutManager::SendMessage:
+			// Send message if input has text
+			if (ui.ChatInput)
+			{
+				ui.ChatInput->triggerSend();
+			}
+			break;
+		case ShortcutManager::StopGeneration:
+			// Stop current generation
+			if (LLMClient)
+			{
+				LLMClient->cancelCurrentRequest();
+			}
+			break;
+		case ShortcutManager::Settings:
+			ShowAIParam();
+			break;
+		case ShortcutManager::ClearCurrentChat:
+		{
+			// Clear current chat
+			if (m_currentConversationId.isEmpty())
+			{
+				return;
+			}
+			QListWidget* chatFrame = ui.ChatShow->getChatFrame();
+			if (chatFrame)
+			{
+				releaseAllBubbles();
+				ui.ChatShow->updateEmptyState();
+			}
+			break;
+		}
+		case ShortcutManager::ExportConversation:
+			// Export current conversation
+			if (!m_currentConversationId.isEmpty())
+			{
+				QListWidgetItem* currentItem = ui.ChatListWidget->getCurrentItem();
+				if (currentItem)
+				{
+					onExportConversationRequested(m_currentConversationId, "txt");
+				}
+			}
+			break;
+		case ShortcutManager::DeleteConversation:
+			// Delete current conversation
+			if (!m_currentConversationId.isEmpty())
+			{
+				deleteCurrentConversation();
+			}
+			break;
+		}
+	});
+}
+
 void Frm_AIAssit::ShowAIParam()
 {
 	ensureParamDialog();

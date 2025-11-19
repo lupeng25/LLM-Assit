@@ -29,6 +29,7 @@ public:
     // 获取组件的�?�问�?
     QPushButton* getNewConversationButton() const { return btnNewConversation; }
     QListWidget* getConversationList() const { return m_conversationList; }
+    QLineEdit* getSearchEdit() const { return searchEdit; }
     // 列表操作方法
     // 添加对话�?
     void addConversationItem(const QString& text, const QString& id);

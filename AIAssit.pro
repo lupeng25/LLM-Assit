@@ -8,7 +8,9 @@ SOURCES += \
     $$files($$PWD/*.cpp, true) \
     ChatList.cpp \
     MessageManager.cpp \
-    OllamaClient.cpp
+    OllamaClient.cpp \
+    ShortcutManager.cpp \
+    ShortcutEdit.cpp
 
 HEADERS += \
     $$files($$PWD/*.h, true) \
@@ -29,7 +31,9 @@ HEADERS += \
     SyntaxHighlighter.h \
     SystemInfoTools.h \
     TextProcessingTools.h \
-    UtilityTools.h
+    UtilityTools.h \
+    ShortcutManager.h \
+    ShortcutEdit.h
 
 FORMS += \
     $$files($$PWD/*.ui, true)

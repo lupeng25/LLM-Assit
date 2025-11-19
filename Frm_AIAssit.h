@@ -87,6 +87,8 @@ private:
 	void setupSignals();
 	// 设置LLMClient的信号槽连接
 	void setupLLMClientSignals();
+	// 设置快捷键
+	void setupShortcuts();
 	// 应用当前界面的模型参数 
 	void ApplyModelParam();
 	//设置显示对话

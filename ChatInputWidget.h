@@ -64,6 +64,10 @@ public:
 	void updateKnowledgeBaseMenu();
 	// 设置提示词库
 	void setPromptLibrary(PromptLibrary* library);
+	// 聚焦输入框
+	void focusInput();
+	// 触发发送（用于快捷键）
+	void triggerSend();
 
 signals:
 	// 发送信息信号

@@ -32,6 +32,7 @@
 #include <QEvent>
 #include <QVector>
 #include <QSet>
+#include <QTableWidget>
 #include "llmParams.h"
 
 class AIParamWidget : public QWidget {
@@ -113,6 +114,7 @@ private:
 	QWidget* buildConnectionPage();
 	QWidget* buildModelPage();
 	QWidget* buildFeaturePage();
+	QWidget* buildShortcutsPage();
 	QFrame* createSettingCard(const QString& title, const QString& description, QVBoxLayout** bodyLayout = nullptr);
 	QWidget* wrapInScrollArea(QWidget* page);
 

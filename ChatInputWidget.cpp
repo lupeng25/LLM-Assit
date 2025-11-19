@@ -335,6 +335,22 @@ void ChatInputWidget::SetButtonEnable(bool bEnable)
 	sendButton->setEnabled(bEnable);
 }
 
+void ChatInputWidget::focusInput()
+{
+	if (textEdit)
+	{
+		textEdit->setFocus();
+	}
+}
+
+void ChatInputWidget::triggerSend()
+{
+	if (sendButton && sendButton->isEnabled())
+	{
+		onSendButtonClicked();
+	}
+}
+
 void ChatInputWidget::setModelCurrIndex(int iModel)
 {
 	optionsComboBox->setCurrentIndex(iModel);

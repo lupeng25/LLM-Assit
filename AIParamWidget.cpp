@@ -1,7 +1,12 @@
 ﻿#include "AIParamWidget.h"
+#include "ShortcutManager.h"
+#include "ShortcutEdit.h"
 #include <QResizeEvent>
 #include <QPainter>
 #include <QTimer>
+#include <QHeaderView>
+#include <QTableWidget>
+#include <QPushButton>
 
 AIParamWidget::AIParamWidget(QWidget* parent)
 	: QWidget(parent)
@@ -297,6 +302,9 @@ void AIParamWidget::setupDefaultValues()
 	// 确保样式在最后应用，并且强制刷新
 	applyFontScale();
 	applyThemeStyles();
+	
+	// Load shortcuts configuration
+	ShortcutManager::instance()->loadConfig();
 	clearDirtyMarkers();
 	
 	// 强制更新样式
@@ -361,6 +369,10 @@ void AIParamWidget::applyCurrentParams()
 	llmParams->setOpenNetSearch(m_openNetSearchCheck->isChecked());
 
 	llmParams->serialize(QCoreApplication::applicationDirPath() + "/AIAssit/AIModelConfig.json");
+	
+	// Save shortcuts configuration
+	ShortcutManager::instance()->saveConfig();
+	
 	emit paramsChanged();
 	clearDirtyMarkers();
 }
@@ -406,7 +418,8 @@ void AIParamWidget::populateNavItems()
 	m_navEntries = {
 		{ tr("Connection"), tr("API & Endpoints"), tr("A"), QColor("#2563eb") },
 		{ tr("Models"), tr("Chat mode & tuning"), tr("M"), QColor("#ec4899") },
-		{ tr("Features"), tr("Runtime behavior"), tr("F"), QColor("#f97316") }
+		{ tr("Features"), tr("Runtime behavior"), tr("F"), QColor("#f97316") },
+		{ tr("Shortcuts"), tr("Keyboard shortcuts"), tr("K"), QColor("#8b5cf6") }
 	};
 
 	for (int i = 0; i < m_navEntries.size(); ++i)
@@ -426,6 +439,7 @@ void AIParamWidget::createPages()
 	m_stackWidget->addWidget(buildConnectionPage());
 	m_stackWidget->addWidget(buildModelPage());
 	m_stackWidget->addWidget(buildFeaturePage());
+	m_stackWidget->addWidget(buildShortcutsPage());
 }
 
 QWidget* AIParamWidget::buildConnectionPage()
@@ -637,6 +651,110 @@ QWidget* AIParamWidget::buildFeaturePage()
 
 	layout->addWidget(accessibilityCard);
 	layout->addStretch();
+	return wrapInScrollArea(container);
+}
+
+QWidget* AIParamWidget::buildShortcutsPage()
+{
+	auto* container = new QWidget;
+	container->setObjectName("SettingsPage");
+	auto* layout = new QVBoxLayout(container);
+	layout->setContentsMargins(32, 32, 32, 32);
+	layout->setSpacing(20);
+
+	QVBoxLayout* shortcutsBody = nullptr;
+	auto* shortcutsCard = createSettingCard(
+		tr("Keyboard Shortcuts"),
+		tr("Customize keyboard shortcuts for common actions. Click on a shortcut field and press the desired key combination."),
+		&shortcutsBody);
+	shortcutsCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+	// Create table for shortcuts
+	auto* shortcutsTable = new QTableWidget(shortcutsCard);
+	shortcutsTable->setColumnCount(3);
+	shortcutsTable->setHorizontalHeaderLabels({ tr("Action"), tr("Shortcut"), tr("Default") });
+	shortcutsTable->horizontalHeader()->setStretchLastSection(true);
+	shortcutsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+	shortcutsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+	shortcutsTable->setAlternatingRowColors(true);
+	shortcutsTable->verticalHeader()->setVisible(false);
+	shortcutsTable->setShowGrid(false);
+	shortcutsTable->verticalHeader()->setDefaultSectionSize(45); // 设置默认行高
+
+	ShortcutManager* manager = ShortcutManager::instance();
+	
+	// Populate table
+	int row = 0;
+	for (int action = ShortcutManager::NewConversation; action <= ShortcutManager::DeleteConversation; ++action)
+	{
+		ShortcutManager::ShortcutAction shortcutAction = static_cast<ShortcutManager::ShortcutAction>(action);
+		
+		shortcutsTable->insertRow(row);
+		
+		// Action name
+		QString description = manager->getShortcutDescription(shortcutAction);
+		auto* actionItem = new QTableWidgetItem(description);
+		actionItem->setData(Qt::UserRole, action);
+		shortcutsTable->setItem(row, 0, actionItem);
+		
+		// Current shortcut
+		QKeySequence currentSeq = manager->getShortcut(shortcutAction);
+		auto* shortcutEdit = new ShortcutEdit(shortcutsTable);
+		shortcutEdit->setKeySequence(currentSeq);
+		shortcutEdit->setProperty("action", action);
+		
+		connect(shortcutEdit, &ShortcutEdit::keySequenceChanged, this, [this, shortcutAction, manager](const QKeySequence& seq) {
+			manager->setShortcut(shortcutAction, seq);
+			markPageDirty(3); // Shortcuts page is index 3
+		});
+		
+		shortcutsTable->setCellWidget(row, 1, shortcutEdit);
+		
+		// Default shortcut
+		QKeySequence defaultSeq = manager->getDefaultShortcut(shortcutAction);
+		auto* defaultItem = new QTableWidgetItem(defaultSeq.toString(QKeySequence::NativeText));
+		defaultItem->setForeground(QColor("#64748b"));
+		shortcutsTable->setItem(row, 2, defaultItem);
+		
+		row++;
+	}
+	
+	shortcutsTable->resizeColumnsToContents();
+	shortcutsTable->setColumnWidth(0, 200);
+	shortcutsTable->setColumnWidth(1, 150);
+	
+	shortcutsBody->addWidget(shortcutsTable, 1); // 让表格填满可用空间
+	
+	// Reset button
+	auto* resetButton = new QPushButton(tr("Reset to Defaults"), shortcutsCard);
+	resetButton->setProperty("type", "ghost");
+	connect(resetButton, &QPushButton::clicked, this, [this, manager, shortcutsTable]() {
+		manager->resetToDefaults();
+		
+		// Update all shortcut edits
+		for (int row = 0; row < shortcutsTable->rowCount(); ++row)
+		{
+			auto* edit = qobject_cast<ShortcutEdit*>(shortcutsTable->cellWidget(row, 1));
+			if (edit)
+			{
+				int action = edit->property("action").toInt();
+				ShortcutManager::ShortcutAction shortcutAction = static_cast<ShortcutManager::ShortcutAction>(action);
+				edit->setKeySequence(manager->getShortcut(shortcutAction));
+			}
+			
+			// Update default column
+			int action = shortcutsTable->item(row, 0)->data(Qt::UserRole).toInt();
+			ShortcutManager::ShortcutAction shortcutAction = static_cast<ShortcutManager::ShortcutAction>(action);
+			QKeySequence defaultSeq = manager->getDefaultShortcut(shortcutAction);
+			shortcutsTable->item(row, 2)->setText(defaultSeq.toString(QKeySequence::NativeText));
+		}
+		
+		markPageDirty(3);
+	});
+	
+	shortcutsBody->addWidget(resetButton);
+	
+	layout->addWidget(shortcutsCard, 1); // 使用拉伸因子让卡片填满空间
 	return wrapInScrollArea(container);
 }
 
@@ -907,6 +1025,44 @@ void AIParamWidget::applyThemeStyles()
 			background: rgba(255, 255, 255, 0.98);
 			font-size: 14px;
 		}
+		QTableWidget {
+			border: none;
+			background: transparent;
+			font-size: 14px;
+			gridline-color: rgba(148, 163, 184, 0.2);
+		}
+		QTableWidget::item {
+			padding: 8px 12px;
+			border: none;
+			color: #1e293b;
+			min-height: 45px;
+		}
+		QTableWidget::item:selected {
+			background: rgba(37, 99, 235, 0.1);
+			color: #0f172a;
+		}
+		QTableWidget::item:hover {
+			background: rgba(37, 99, 235, 0.05);
+		}
+		QTableWidget QLineEdit {
+			font-size: 13px;
+			border: 1px solid rgba(148, 163, 184, 0.3);
+			border-radius: 6px;
+			padding: 4px 8px;
+			background: rgba(255, 255, 255, 0.98);
+		}
+		QTableWidget QLineEdit:focus {
+			border: 2px solid #3b82f6;
+		}
+		QHeaderView::section {
+			background: rgba(241, 245, 249, 0.8);
+			padding: 10px 12px;
+			border: none;
+			border-bottom: 2px solid rgba(148, 163, 184, 0.3);
+			font-size: 14px;
+			font-weight: 600;
+			color: #475569;
+		}
 		QCheckBox#ToggleSwitch {
 			spacing: 0px;
 			padding: 0px;
@@ -1022,6 +1178,46 @@ void AIParamWidget::applyThemeStyles()
 			background: rgba(15, 23, 42, 0.9);
 			color: #e2e8f0;
 		}
+		QTableWidget {
+			border: none;
+			background: transparent;
+			font-size: 14px;
+			gridline-color: rgba(148, 163, 184, 0.2);
+			color: #e2e8f0;
+		}
+		QTableWidget::item {
+			padding: 8px 12px;
+			border: none;
+			color: #e2e8f0;
+			min-height: 36px;
+		}
+		QTableWidget::item:selected {
+			background: rgba(59, 130, 246, 0.2);
+			color: #f8fafc;
+		}
+		QTableWidget::item:hover {
+			background: rgba(59, 130, 246, 0.1);
+		}
+		QTableWidget QLineEdit {
+			font-size: 14px;
+			border: 1px solid rgba(148, 163, 184, 0.3);
+			border-radius: 6px;
+			padding: 4px 8px;
+			background: rgba(15, 23, 42, 0.9);
+			color: #e2e8f0;
+		}
+		QTableWidget QLineEdit:focus {
+			border: 2px solid #3b82f6;
+		}
+		QHeaderView::section {
+			background: rgba(24, 32, 50, 0.8);
+			padding: 10px 12px;
+			border: none;
+			border-bottom: 2px solid rgba(96, 165, 250, 0.3);
+			font-size: 13px;
+			font-weight: 600;
+			color: #cbd5e1;
+		}
 		QLineEdit::placeholder {
 			color: #64748b;
 		}
@@ -1115,6 +1311,7 @@ QFrame* AIParamWidget::createSettingCard(const QString& title, const QString& de
 	auto* layout = new QVBoxLayout(card);
 	layout->setContentsMargins(28, 28, 28, 28);
 	layout->setSpacing(12);
+	layout->setSizeConstraint(QLayout::SetMinimumSize);
 
 	auto* titleLabel = new QLabel(title);
 	titleLabel->setObjectName("CardTitle");

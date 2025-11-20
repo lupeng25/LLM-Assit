@@ -39,7 +39,8 @@ FORMS += \
     $$files($$PWD/*.ui, true)
 
 RESOURCES += \
-    $$files($$PWD/*.qrc, true)
+    $$files($$PWD/*.qrc, true) \
+    AIIcon.qrc
 
 # cmark integration
 CMARK_INC = $$PWD/include/cmark

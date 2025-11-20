@@ -172,7 +172,8 @@ void Frm_AIAssit::setupSignals()
 {
 	connect(this, &Frm_AIAssit::Answer, this, &Frm_AIAssit::getAnswerShow);
 	connect(this, &Frm_AIAssit::AnswerStream, this, &Frm_AIAssit::getStreamAnswerShow);
-	connect(this, &Frm_AIAssit::PushBtnChanged, ui.ChatInput, &ChatInputWidget::SetButtonEnable);
+	connect(this, &Frm_AIAssit::PushBtnChanged, ui.ChatInput, &ChatInputWidget::SetButtonState);
+	connect(ui.ChatInput, &ChatInputWidget::CancelRequested, this, &Frm_AIAssit::onUserCancelRequested);
 	connect(this, &Frm_AIAssit::ChangeCurModel, ui.ChatInput, &ChatInputWidget::setModelCurrIndex);
 	if (m_paramWidget)
 	{
@@ -272,7 +273,7 @@ void Frm_AIAssit::setupLLMClientSignals()
 	// 连接LLMClient的通用信号
 	connect(LLMClient, &MessageManager::Answer, this, &Frm_AIAssit::getAnswerShow);
 	connect(LLMClient, &MessageManager::AnswerStream, this, &Frm_AIAssit::getStreamAnswerShow);
-	connect(LLMClient, &MessageManager::ChangeButtonStatus, ui.ChatInput, &ChatInputWidget::SetButtonEnable);
+	connect(LLMClient, &MessageManager::ChangeButtonStatus, ui.ChatInput, &ChatInputWidget::SetButtonState);
 	connect(LLMClient, &MessageManager::FunctionCallSignal, this, &Frm_AIAssit::preFuncall);
 	connect(LLMClient, &MessageManager::StreamEnded, this, &Frm_AIAssit::getStreamAnswerEnd);
 	connect(LLMClient, &MessageManager::modelsListFetched, ui.ChatInput, &ChatInputWidget::UpdateModelList);
@@ -475,7 +476,7 @@ void Frm_AIAssit::initUI()
 	applyResponsiveLayout(width());
 
 	// 初始化阶段禁用发送按钮，等待连接成功后再启用
-	PushBtnChanged(false);
+	PushBtnChanged(ChatInputWidget::SendButtonState::Disabled);
 
 	// 初始化时检查服务器连接（信号连接已在 setupLLMClientSignals() 中完成）
 	if (m_clientManager) {
@@ -666,6 +667,7 @@ void Frm_AIAssit::on_pushButton_clicked(ChatSendMessage msg)
 {
 	addChatBubble(msg.SendText, false);
 	const bool enableStream = m_paramWidget ? m_paramWidget->GetAIParambStream() : false;
+	m_lastRequestUsedStream = enableStream;
 	if (enableStream)
 		StreamSend(msg);
 	else
@@ -678,7 +680,7 @@ void Frm_AIAssit::ApplyModelParam()
 		return;
 	}
 	LLMClient->buildRequest();
-	PushBtnChanged(false);
+	PushBtnChanged(ChatInputWidget::SendButtonState::Disabled);
 	if (m_clientManager) {
 		m_clientManager->checkConnection(5000);
 	}
@@ -947,6 +949,11 @@ int Frm_AIAssit::StreamSend(const ChatSendMessage& msg)
 }
 void Frm_AIAssit::getStreamAnswerEnd()
 {
+	if (m_skipNextStreamFinalize)
+	{
+		m_skipNextStreamFinalize = false;
+		return;
+	}
 	//获取最新对应项
 	QListWidget* chatFrame = ui.ChatShow->getChatFrame();
 
@@ -1450,20 +1457,88 @@ void Frm_AIAssit::finalizeLatestBubble(LLMChatFrame* bubble, QListWidgetItem* it
 		bubble->ChangeStream();
 	}
 	refreshBubbleSize(bubble, item);
-	PushBtnChanged(true);
+	PushBtnChanged(ChatInputWidget::SendButtonState::Ready);
+	const QString bubbleId = bubble->getBubbleID();
+	if (bubbleId.isEmpty())
+	{
+		return;
+	}
 	sSingleMsg singleMsg(answerHtml,
 		QString::number(QDateTime::currentDateTime().toTime_t()),
 		bubble->getSize(),
 		LLMChatFrame::User_Customer,
 		dialogName,
 		reasoningHtml,
-		bubble->getBubbleID(),
+		bubbleId,
 		bubble->isImportant(),
 		bubble->userNote());
 	if (ChatSession* session = currentSession()) {
-		session->sMsg.append(singleMsg);
+		const int existingIndex = session->GetMsgIndex(bubbleId);
+		if (existingIndex >= 0 && existingIndex < session->sMsg.size()) {
+			session->sMsg[existingIndex] = singleMsg;
+		}
+		else {
+			session->sMsg.append(singleMsg);
+		}
 		session->SaveTime = QDateTime::currentDateTime();
 	}
+	m_lastRequestUsedStream = false;
+}
+
+void Frm_AIAssit::finalizeCancelledResponse()
+{
+	auto resetState = [this]()
+	{
+		m_pendingStreamChunk.clear();
+		PushBtnChanged(ChatInputWidget::SendButtonState::Ready);
+	};
+
+	QListWidget* chatFrame = ui.ChatShow->getChatFrame();
+	if (!chatFrame || chatFrame->count() == 0)
+	{
+		resetState();
+		return;
+	}
+
+	QListWidgetItem* latestItem = chatFrame->item(chatFrame->count() - 1);
+	if (!latestItem)
+	{
+		resetState();
+		return;
+	}
+
+	LLMChatFrame* latestWidget = qobject_cast<LLMChatFrame*>(chatFrame->itemWidget(latestItem));
+	if (!latestWidget)
+	{
+		resetState();
+		return;
+	}
+
+	if (!m_pendingStreamChunk.isEmpty())
+	{
+		latestWidget->appendText(m_pendingStreamChunk);
+	}
+	m_pendingStreamChunk.clear();
+
+	const bool hasReasoning = !latestWidget->getReasonRawText().trimmed().isEmpty();
+	const bool hasAnswer = !latestWidget->getRawText().trimmed().isEmpty();
+	if (!hasReasoning && !hasAnswer)
+	{
+		latestWidget->appendText(tr("Response cancelled by user."));
+	}
+
+	if (!latestWidget->getReasonRawText().trimmed().isEmpty())
+	{
+		latestWidget->fontRect(latestWidget->getReasonRawText(), latestWidget->getRawText());
+	}
+	else
+	{
+		latestWidget->fontRect(latestWidget->getRawText());
+	}
+
+	QString dialogName = updateDialogName(latestWidget->getRawText());
+	finalizeLatestBubble(latestWidget, latestItem, dialogName,
+		latestWidget->getRawText(), latestWidget->getReasonRawText(), m_lastRequestUsedStream);
 }
 void Frm_AIAssit::recalculateVisibleBubbles()
 {
@@ -1620,16 +1695,37 @@ void Frm_AIAssit::onBubbleImportantToggled(const QString& bubbleId, bool isImpor
 	}
 }
 
+void Frm_AIAssit::onUserCancelRequested()
+{
+	if (LLMClient)
+	{
+		LLMClient->cancelCurrentRequest();
+	}
+
+	if (m_streamDebounceTimer)
+	{
+		m_streamDebounceTimer->stop();
+	}
+
+	if (m_lastRequestUsedStream)
+	{
+		m_skipNextStreamFinalize = true;
+	}
+
+	finalizeCancelledResponse();
+	m_lastRequestUsedStream = false;
+}
+
 void Frm_AIAssit::onConnectionCheckFailed(const QString& errorMessage)
 {
 	const QString message = errorMessage.isEmpty() ? tr("Unable to connect to the server. Please check your network or configuration.") : errorMessage;
 	QMessageBox::warning(this, tr("Connection Failed"), message);
-	PushBtnChanged(false);
+	PushBtnChanged(ChatInputWidget::SendButtonState::Disabled);
 }
 
 void Frm_AIAssit::onConnectionCheckSucceeded()
 {
-	PushBtnChanged(true);
+	PushBtnChanged(ChatInputWidget::SendButtonState::Ready);
 	if (m_clientManager) {
 		m_clientManager->fetchModels(5000);
 	}

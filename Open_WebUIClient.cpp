@@ -231,7 +231,7 @@ int Open_WebUIClient::StreamSend(const ChatSendMessage& msg)
 
 QString Open_WebUIClient::GetError(const QString& errorLevel, const QString& errorContext)
 {
-	ChangeButtonStatus(true);
+	ChangeButtonStatus(ChatInputWidget::SendButtonState::Ready);
 	static const QMap<QString, QString> contextErrorMap = {
 		{ "Connection timed out", QStringLiteral("连接请求超时") },
 		{ "Permission denied",    QStringLiteral("权限不足") },
@@ -268,16 +268,29 @@ QString Open_WebUIClient::GetError(const QString& errorLevel, const QString& err
 
 void Open_WebUIClient::processStreamEnded()
 {
-	if (m_NetWorkParams->clientNetWorkReply->error())
+	QNetworkReply* reply = m_NetWorkParams->clientNetWorkReply.get();
+	if (!reply)
 	{
-		QString errorMsg = GetError(m_NetWorkParams->clientNetWorkReply->errorString(), m_NetWorkParams->clientNetWorkReply->readAll());
-		emit Answer(errorMsg, true);
+		// 请求在外部已被取消或清理
+		m_NetWorkParams->rawBuffer.clear();
+		emit StreamEnded();
 		return;
 	}
+
+	if (reply->error() && reply->error() != QNetworkReply::OperationCanceledError)
+	{
+		QString errorMsg = GetError(reply->errorString(), reply->readAll());
+		emit Answer(errorMsg, true);
+		m_NetWorkParams->rawBuffer.clear();
+		emit StreamEnded();
+		return;
+	}
+
 	if (m_isStreamingReasoning) {
 		emit AnswerStream(QStringLiteral("---REASONING_END---"));
 		m_isStreamingReasoning = false;
 	}
+
 	m_NetWorkParams->rawBuffer.clear();
 	emit StreamEnded();
 }
@@ -326,7 +339,7 @@ void Open_WebUIClient::getAnswer()
 		emit Answer(GetError(m_NetWorkParams->clientNetWorkReply->errorString(), m_NetWorkParams->clientNetWorkReply->readAll()), true);
 	}
 	m_NetWorkParams->clientNetWorkReply.reset();
-	ChangeButtonStatus(true);
+	ChangeButtonStatus(ChatInputWidget::SendButtonState::Ready);
 }
 
 void Open_WebUIClient::getStreamAnswer()

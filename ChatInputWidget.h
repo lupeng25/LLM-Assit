@@ -50,8 +50,16 @@ public:
 	explicit ChatInputWidget(QWidget *parent = nullptr);
 	// 析构函数
 	~ChatInputWidget();
-	// 设置发送按钮是否可点击
-	void SetButtonEnable(bool bEnable);
+	// 发送按钮状态
+	enum class SendButtonState
+	{
+		Disabled,
+		Ready,
+		Cancelable
+	};
+	// 设置发送按钮状态
+	void SetButtonState(SendButtonState state);
+	SendButtonState currentButtonState() const { return m_buttonState; }
 	// 获取模型选择下拉框
 	QComboBox * GetModelButton() { return optionsComboBox; };
 	// 设置当前模型索引
@@ -72,6 +80,8 @@ public:
 signals:
 	// 发送信息信号
 	void MessageUp(ChatSendMessage message);
+	// 取消当前请求
+	void CancelRequested();
 	// 模型更改信号
 	void ModelSelect(int iModel);
 	// 选择知识库信号
@@ -179,6 +189,7 @@ private:
 
 	PromptLibrary* m_promptLibrary;     // 提示词库对象
 	PromptLibraryDialog* m_promptDialog;// 提示词库对话框
+	SendButtonState m_buttonState = SendButtonState::Ready;
 
 signals:
 	// 文件初始化完成信号

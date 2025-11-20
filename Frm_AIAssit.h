@@ -22,6 +22,7 @@
 #include "LLMParams.h"
 #include "ui_Frm_AIAssit.h" 
 #include "LLMChatFrame.h"
+#include "ChatInputWidget.h"
 #include "LLMFunctionCall.h"
 #include "GitLogReader.h"
 #include "MessageManager.h"
@@ -104,6 +105,8 @@ private:
 	// 完成最新气泡的最终化处理
 	void finalizeLatestBubble(LLMChatFrame* bubble, QListWidgetItem* item, const QString& dialogName,
 		const QString& answerHtml, const QString& reasoningHtml, bool markStreamCompleted);
+	// 处理取消生成后的气泡
+	void finalizeCancelledResponse();
 	// 使用最新回答更新对话名
 	QString updateDialogName(const QString& dialogName);
 	// 连接气泡信号
@@ -151,6 +154,8 @@ private:
 	QWidget* m_bubblePoolHost = nullptr;
 	static constexpr int kBubblePoolMaxSize = 64;
 	bool m_enableBubblePool = false;
+	bool m_lastRequestUsedStream = false;
+	bool m_skipNextStreamFinalize = false;
 	// 获取当前会话（非const版本）
 	ChatSession* currentSession();
 	// 获取当前会话（const版本）
@@ -171,7 +176,7 @@ private:
 	using sMsgList = ChatSession;
 signals:
 	//发送按钮状态改变
-	void PushBtnChanged(bool bEnable);
+	void PushBtnChanged(ChatInputWidget::SendButtonState state);
 	//改变当前模型
 	void ChangeCurModel(int iModel);
 	// 发出答案信号 
@@ -197,6 +202,8 @@ signals:
 	void onBubbleNoteChanged(const QString& bubbleId, const QString& note);
 	// 气泡重要性切换处理
 	void onBubbleImportantToggled(const QString& bubbleId, bool isImportant);
+	// 用户取消生成
+	void onUserCancelRequested();
 	// 气泡折叠状态切换处理
 	void onBubbleCollapsedToggled(const QString& bubbleId, bool isCollapsed);
 	// 导出对话请求处理

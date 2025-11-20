@@ -1,157 +1,157 @@
 #pragma once
-#include <QNetworkAccessManager>
+#include <QNetworkAccessManager> 
 #include <QHttpMultiPart>
 #include <QNetworkReply>
 #include <QMimeDatabase>
 #include <QJsonArray>
 #include <QTimer>
-#include <memory>
+#include <memory> 
 #include "ChatInputWidget.h"
 #include "LLMParams.h"
-enum class AIProvider //å¹³å°
+enum class AIProvider //Æ½Ì¨
 {
-    Dify,
-    Open_WebUI,
-    Ollama,
-    AnythingLLM,
-    Custom
+	Dify,
+	Open_WebUI,
+	Ollama,
+	AnythingLLM,
+	Custom
 };
-enum class RequestType //APIè¯·æ±‚
+enum class RequestType //APIÇëÇó
 {
-    ConnectionCheck,
-    FetchModels,
-    ChatRequest,
-    FollowUpSuggest,
-    GetKonwledgeBase,
-    StopStreamAns,
-    FileUpload,
-    FileDelete
+	ConnectionCheck,
+	FetchModels,
+	ChatRequest,
+	FollowUpSuggest,
+	GetKonwledgeBase,
+	StopStreamAns,
+	FileUpload,
+	FileDelete
 };
-struct ClientNetWork //ç½‘ç»œ
+struct ClientNetWork //ÍøÂç
 {
-    QNetworkRequest clientRequest;
-    std::unique_ptr<QNetworkAccessManager> clientNetWorkManager;
-    std::unique_ptr<QNetworkReply> clientNetWorkReply;
-    QByteArray rawBuffer;
+	QNetworkRequest clientRequest;
+	std::unique_ptr<QNetworkAccessManager> clientNetWorkManager;
+	std::unique_ptr<QNetworkReply> clientNetWorkReply;
+	QByteArray rawBuffer;
 };
-struct KnowledgeBase//çŸ¥è¯†åº?
+struct KnowledgeBase//ÖªÊ¶¿â
 {
-    QString KnowledgeID;
-    QString KnowledgeName;
-    QString KnowledgeDescription;
+	QString KnowledgeID;
+	QString KnowledgeName;
+	QString KnowledgeDescription;
 };
 
 class MessageManager : public QObject
 {
-    Q_OBJECT
+	Q_OBJECT
 public:
-    explicit MessageManager(QObject *parent = nullptr);
-    virtual ~MessageManager() = default;
+	explicit MessageManager(QObject *parent = nullptr);
+	virtual ~MessageManager() = default;
 
-    virtual void buildRequest();
-    virtual QUrl buildApiUrl(const QString& apiPath);
-    virtual void cancelCurrentRequest();
-    virtual bool validateServerUrl();
-    virtual void setLLMParams(LLMParams* params);
-    virtual QStringList getAvailableModels();// èŽ·å–å¯ç”¨æ¨¡åž‹åˆ—è¡¨
+	virtual void buildRequest();
+	virtual QUrl buildApiUrl(const QString& apiPath);
+	virtual void cancelCurrentRequest();
+	virtual bool validateServerUrl();
+	virtual void setLLMParams(LLMParams* params);
+	virtual QStringList getAvailableModels();// »ñÈ¡¿ÉÓÃÄ£ÐÍÁÐ±í
 
-                                             // èŽ·å–æä¾›å•†ä¿¡æ?
-    virtual AIProvider getProvider() const = 0;
-    virtual QString getProviderName() const = 0;
-    virtual QString getVersion() const = 0;
+											 // »ñÈ¡Ìá¹©ÉÌÐÅÏ¢
+	virtual AIProvider getProvider() const = 0;
+	virtual QString getProviderName() const = 0;
+	virtual QString getVersion() const = 0;
 
-    // åˆ›å»ºbody
-    virtual QByteArray buildMessageBody(const ChatSendMessage& msg) = 0;
-    // æé—®å‰çš„é¢„å¤„ç?
-    virtual void SendPreProcess(const ChatSendMessage& msg) = 0;
-    // è¿”å›žæ•°æ®å¤„ç†
-    virtual QJsonObject parseJsonReplyToMsg(const QByteArray &data) = 0;
-    // å‘é€æ¶ˆæ¯åˆ°æœåŠ¡å™?
-    virtual int send(const ChatSendMessage& msg) = 0;
-    // å‘é€æ¶ˆæ¯åˆ°æµå¼æœåŠ¡å™?
-    virtual int StreamSend(const ChatSendMessage& msg) = 0;
-    // é”™è¯¯å¤„ç†
-    virtual QString GetError(const QString& errorLevel, const QString& errorContext) = 0;
-    // æµå¼è¾“å‡ºç»“æŸå¤„ç†
-    virtual void processStreamEnded() = 0;
-    // åˆ›å»ºAPIè¯·æ±‚
-    virtual QNetworkRequest createApiRequest(const QUrl& url) = 0;
-    // å‘é€APIè¯·æ±‚
-    virtual void sendApiRequest(const QNetworkRequest& request, QTimer* timeoutTimer, int timeoutMs) = 0;
-    // æ£€æŸ¥è¿žæŽ?å¼‚æ­¥)
-    virtual void checkServerConnectionAsync(int timeoutMs) = 0;
-    // è§£æžæ¨¡åž‹IDåˆ—è¡¨
-    virtual QStringList parseModelIds(const QByteArray &jsonData) = 0;
-    // èŽ·å–æ¨¡åž‹åˆ—è¡¨(åˆ—è¡¨)
-    virtual void fetchModelsAsync(int timeoutMs = 5000) = 0;
-    // èŽ·å–çŸ¥è¯†åº“ä¿¡æ?
-    virtual void getKnowledgeBase() = 0;
-    //ä¸Šä¼ æ–‡ä»¶
-    virtual void uploadFile(const QString& filePath) = 0;
-    //åˆ é™¤æ–‡ä»¶(æ ¹æ®å®¢æˆ·ç«¯è¿”å›žçš„æ–‡ä»¶ID)
-    virtual void DeleteFile(const QString& fileID) = 0;
-    // è§£æžblockingæ•°æ®
-    virtual void AnalysisBlockResponse(QJsonObject& response_obj) = 0;
-    // è§£æžstreamingæ•°æ®
-    virtual void AnalysisStreamResponse(QJsonObject& response_obj) = 0;
-    // æ›´å˜çŸ¥è¯†åº?
-    virtual void ChangeKnowledgeGraph(const QString& kownledgeID) = 0;
-    // å–æ¶ˆæŸä¸ªè¦ä¸Šä¼ çš„æ–‡ä»¶
-    virtual void CancelUpdateFile(const QString& file) = 0;
-    // æ’¤é”€æ‰€æœ‰å¾…ä¸Šä¼ æ–‡ä»¶
-    virtual void CancelAllUpdateFiles(const QStringList& fileList) = 0;
+	// ´´½¨body
+	virtual QByteArray buildMessageBody(const ChatSendMessage& msg) = 0;
+	// ÌáÎÊÇ°µÄÔ¤´¦Àí
+	virtual void SendPreProcess(const ChatSendMessage& msg) = 0;
+	// ·µ»ØÊý¾Ý´¦Àí
+	virtual QJsonObject parseJsonReplyToMsg(const QByteArray &data) = 0;
+	// ·¢ËÍÏûÏ¢µ½·þÎñÆ÷ 
+	virtual int send(const ChatSendMessage& msg) = 0;
+	// ·¢ËÍÏûÏ¢µ½Á÷Ê½·þÎñÆ÷ 
+	virtual int StreamSend(const ChatSendMessage& msg) = 0;
+	// ´íÎó´¦Àí
+	virtual QString GetError(const QString& errorLevel, const QString& errorContext) = 0;
+	// Á÷Ê½Êä³ö½áÊø´¦Àí
+	virtual void processStreamEnded() = 0;
+	// ´´½¨APIÇëÇó
+	virtual QNetworkRequest createApiRequest(const QUrl& url) = 0;
+	// ·¢ËÍAPIÇëÇó
+	virtual void sendApiRequest(const QNetworkRequest& request, QTimer* timeoutTimer, int timeoutMs) = 0;
+	// ¼ì²éÁ¬½Ó(Òì²½)
+	virtual void checkServerConnectionAsync(int timeoutMs) = 0;
+	// ½âÎöÄ£ÐÍIDÁÐ±í
+	virtual QStringList parseModelIds(const QByteArray &jsonData) = 0;
+	// »ñÈ¡Ä£ÐÍÁÐ±í(ÁÐ±í)
+	virtual void fetchModelsAsync(int timeoutMs = 5000) = 0;
+	// »ñÈ¡ÖªÊ¶¿âÐÅÏ¢
+	virtual void getKnowledgeBase() = 0;
+	//ÉÏ´«ÎÄ¼þ
+	virtual void uploadFile(const QString& filePath) = 0;
+	//É¾³ýÎÄ¼þ(¸ù¾Ý¿Í»§¶Ë·µ»ØµÄÎÄ¼þID)
+	virtual void DeleteFile(const QString& fileID) = 0;
+	// ½âÎöblockingÊý¾Ý 
+	virtual void AnalysisBlockResponse(QJsonObject& response_obj) = 0;
+	// ½âÎöstreamingÊý¾Ý
+	virtual void AnalysisStreamResponse(QJsonObject& response_obj) = 0;
+	// ¸ü±äÖªÊ¶¿â
+	virtual void ChangeKnowledgeGraph(const QString& kownledgeID) = 0;
+	// È¡ÏûÄ³¸öÒªÉÏ´«µÄÎÄ¼þ
+	virtual void CancelUpdateFile(const QString& file) = 0;
+	// ³·ÏúËùÓÐ´ýÉÏ´«ÎÄ¼þ
+	virtual void CancelAllUpdateFiles(const QStringList& fileList) = 0;
 
-    ClientNetWork *m_NetWorkParams;
-    LLMParams *m_LLMParams;
-    QTimer *m_connectionCheckTimer = nullptr;
-    QTimer* m_fetchModelsTimer = nullptr;
-    RequestType m_currentRequestType; //è®°å½•å½“å‰è¯·æ±‚APIç±»åž‹
-    QStringList m_availableModelIds;  // å­˜å‚¨å¯ç”¨çš„æ¨¡åž‹IDåˆ—è¡¨
-    std::vector<KnowledgeBase> KnowledgeInfo;
-    QMap<QString, QString>m_UpFiles;
+	ClientNetWork *m_NetWorkParams;
+	LLMParams *m_LLMParams;
+	QTimer *m_connectionCheckTimer = nullptr;
+	QTimer* m_fetchModelsTimer = nullptr;
+	RequestType m_currentRequestType; //¼ÇÂ¼µ±Ç°ÇëÇóAPIÀàÐÍ
+	QStringList m_availableModelIds;  // ´æ´¢¿ÉÓÃµÄÄ£ÐÍIDÁÐ±í
+	std::vector<KnowledgeBase> KnowledgeInfo;
+	QMap<QString, QString>m_UpFiles;
 
-    public slots:
-    virtual void onFetchModelsFinished() = 0;
-    virtual void onFetchModelsTimeout() = 0;
-    virtual void onCheckConnectionFinished() = 0;
-    virtual void onCheckConnectionTimeout() = 0;
-    virtual QStringList GetFollowUpSuggestions() = 0;
-    virtual void onGetKnowledgeBaseFinished() = 0;
-    virtual void onFileUploadFinished() = 0;
-    virtual void onDeleteFileFinished() = 0;
+	public slots:
+	virtual void onFetchModelsFinished() = 0;
+	virtual void onFetchModelsTimeout() = 0;
+	virtual void onCheckConnectionFinished() = 0;
+	virtual void onCheckConnectionTimeout() = 0;
+	virtual QStringList GetFollowUpSuggestions() = 0;
+	virtual void onGetKnowledgeBaseFinished() = 0;
+	virtual void onFileUploadFinished() = 0;
+	virtual void onDeleteFileFinished() = 0;
 
-    private slots:
-    // å¤„ç†Blockingæ•°æ®
-    virtual void getAnswer() = 0;
-    // å¤„ç†Streamingæ•°æ®
-    virtual void getStreamAnswer() = 0;
+	private slots:
+	// ´¦ÀíBlockingÊý¾Ý
+	virtual void getAnswer() = 0;
+	// ´¦ÀíStreamingÊý¾Ý
+	virtual void getStreamAnswer() = 0;
 
 signals:
-    // å‘å‡ºBlockingä¿¡å·
-    void Answer(const QString& word, bool bError);
-    // å‘å‡ºStreamingä¿¡å·
-    void AnswerStream(const QString& word);
+	// ·¢³öBlockingÐÅºÅ 
+	void Answer(const QString& word, bool bError);
+	// ·¢³öStreamingÐÅºÅ
+	void AnswerStream(const QString& word);
 
-    void ChangeButtonStatus(bool received);
+	void ChangeButtonStatus(ChatInputWidget::SendButtonState state);
 
-    void FunctionCallSignal(QJsonObject& Content);
+	void FunctionCallSignal(QJsonObject& Content);
 
-    void StreamEnded();
+	void StreamEnded();
 
-    void serverConnectionCheckFinished(bool isConnected, const QString &errorMessage);
+	void serverConnectionCheckFinished(bool isConnected, const QString &errorMessage);
 
-    void modelsListFetched(bool success, const QStringList& models, const QString& errorMessage);
+	void modelsListFetched(bool success, const QStringList& models, const QString& errorMessage);
 
-    void KonwledgeBaseSignal(std::map<QString, std::pair<QString, QString>> knowBase);
+	void KonwledgeBaseSignal(std::map<QString, std::pair<QString, QString>> knowBase);
 
-    void FollowSuggestSignal(QStringList suggestions);
+	void FollowSuggestSignal(QStringList suggestions);
 
 protected:
-    // ä»£ç è´¨é‡ä¼˜åŒ–ï¼šé€šç”¨é”™è¯¯è§£æžå·¥å…·
-    // ä»?Qt çš„é”™è¯¯å­—ç¬¦ä¸²ä¸­æå?HTTP é”™è¯¯çŸ­è¯­ï¼ˆå¦‚ "Bad Request"ã€?Unauthorized" ç­‰ï¼‰
-    static QString extractHttpErrorCode(const QString& errorLevel);
-    // ä»?JSON æ–‡æœ¬ä¸­æå–æŒ‡å®šå­—æ®µï¼ˆé¡¶å±‚ï¼?
-    static QString extractJsonField(const QString& jsonText, const QString& fieldName);
+	// ´úÂëÖÊÁ¿ÓÅ»¯£ºÍ¨ÓÃ´íÎó½âÎö¹¤¾ß
+	// ´Ó Qt µÄ´íÎó×Ö·û´®ÖÐÌáÈ¡ HTTP ´íÎó¶ÌÓï£¨Èç "Bad Request"¡¢"Unauthorized" µÈ£©
+	static QString extractHttpErrorCode(const QString& errorLevel);
+	// ´Ó JSON ÎÄ±¾ÖÐÌáÈ¡Ö¸¶¨×Ö¶Î£¨¶¥²ã£©
+	static QString extractJsonField(const QString& jsonText, const QString& fieldName);
 
 };
 

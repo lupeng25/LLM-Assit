@@ -217,7 +217,7 @@ int DifyClient::StreamSend(const ChatSendMessage& msg)
 
 QString DifyClient::GetError(const QString& errorLevel, const QString& errorContext)
 {
-	ChangeButtonStatus(true);
+	ChangeButtonStatus(ChatInputWidget::SendButtonState::Ready);
 
 	static const QMap<QString, QString> contextErrorMap = {
 		{ "Connection timed out", QStringLiteral("连接请求超时") },
@@ -425,7 +425,7 @@ void DifyClient::getAnswer()
 			m_NetWorkParams->clientNetWorkReply->readAll()), true);
 	}
 	m_NetWorkParams->clientNetWorkReply.reset();
-	ChangeButtonStatus(true);
+	ChangeButtonStatus(ChatInputWidget::SendButtonState::Ready);
 }
 
 void DifyClient::AnalysisBlockResponse(QJsonObject& response_obj)

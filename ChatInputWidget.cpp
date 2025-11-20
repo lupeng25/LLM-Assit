@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QIcon>
 #include <QWheelEvent>
+#include <QStyle>
 #include <algorithm>
 #include "ModelSelectorWidget.h"
 
@@ -192,6 +193,7 @@ ChatInputWidget::ChatInputWidget(QWidget *parent)
 	setupStyles();
 	setConnect();
 	setAcceptDrops(true);
+	SetButtonState(SendButtonState::Ready);
 }
 
 ChatInputWidget::~ChatInputWidget()
@@ -320,22 +322,73 @@ void ChatInputWidget::setConnect()
 
 void ChatInputWidget::onSendButtonClicked()
 {
-	QString UserMessage = textEdit->toPlainText();
-	ChatSendMessage msgBody;
-	msgBody.SendText = UserMessage;
-	if (UserMessage.isEmpty())
+	if (!sendButton || m_buttonState == SendButtonState::Disabled)
+	{
 		return;
+	}
+
+	if (m_buttonState == SendButtonState::Cancelable)
+	{
+		emit CancelRequested();
+		SetButtonState(SendButtonState::Ready);
+		return;
+	}
+
+	const QString userMessage = textEdit->toPlainText();
+	if (userMessage.trimmed().isEmpty())
+	{
+		return;
+	}
+
+	ChatSendMessage msgBody;
+	msgBody.SendText = userMessage;
 	msgBody.Image64 = ImageBase64;
 	msgBody.fileContext = attachedTextContents;
-	sendButton->setEnabled(false);
+	SetButtonState(SendButtonState::Cancelable);
 	textEdit->clear();
 	clearAllFiles();
-	MessageUp(msgBody);
+	emit MessageUp(msgBody);
 }
 
-void ChatInputWidget::SetButtonEnable(bool bEnable)
+void ChatInputWidget::SetButtonState(SendButtonState state)
 {
-	sendButton->setEnabled(bEnable);
+	if (!sendButton)
+	{
+		m_buttonState = state;
+		return;
+	}
+
+	if (m_buttonState == state && sendButton->property("cancelMode").toBool() == (state == SendButtonState::Cancelable))
+	{
+		return;
+	}
+
+	m_buttonState = state;
+	const bool isCancelable = (state == SendButtonState::Cancelable);
+	sendButton->setProperty("cancelMode", isCancelable);
+
+	switch (state)
+	{
+	case SendButtonState::Disabled:
+		sendButton->setEnabled(false);
+		sendButton->setCursor(Qt::ArrowCursor);
+		sendButton->setText(tr("Send"));
+		break;
+	case SendButtonState::Ready:
+		sendButton->setEnabled(true);
+		sendButton->setCursor(Qt::PointingHandCursor);
+		sendButton->setText(tr("Send"));
+		break;
+	case SendButtonState::Cancelable:
+		sendButton->setEnabled(true);
+		sendButton->setCursor(Qt::PointingHandCursor);
+		sendButton->setText(tr("Cancel"));
+		break;
+	}
+
+	sendButton->style()->unpolish(sendButton);
+	sendButton->style()->polish(sendButton);
+	sendButton->update();
 }
 
 void ChatInputWidget::focusInput()
@@ -959,6 +1012,16 @@ void ChatInputWidget::setupStyles()
 		"QPushButton#sendButton:disabled {"
 		"background: #bdc3c7;"
 		"color: #7f8c8d;"
+		"}"
+
+		"QPushButton#sendButton[cancelMode=\"true\"] {"
+		"background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+		"stop:0 #fb7185, stop:1 #f43f5e);"
+		"}"
+
+		"QPushButton#sendButton[cancelMode=\"true\"]:hover:enabled {"
+		"background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+		"stop:0 #fda4af, stop:1 #fb7185);"
 		"}"
 
 		"QPushButton#attachButton {"

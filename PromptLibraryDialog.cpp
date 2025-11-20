@@ -305,9 +305,10 @@ void PromptLibraryDialog::setupStyles()
 		}
 		
 		#formLabel {
-			color: #475569;
+			color: #0f172a;
 			font-size: 14px;
-			font-weight: 600;
+			font-weight: 700;
+			letter-spacing: 0.2px;
 			background: transparent;
 			margin-bottom: 6px;
 		}

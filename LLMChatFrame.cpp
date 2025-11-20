@@ -38,6 +38,7 @@ const QColor LLMChatFrame::ColorScheme::SHADOW_COLOR(15, 23, 42, 36);
 const QColor LLMChatFrame::ColorScheme::ICON_RING_OUTER(59, 130, 246, 96);
 const QColor LLMChatFrame::ColorScheme::ICON_RING_INNER(129, 140, 248, 55);
 const QColor LLMChatFrame::ColorScheme::TIME_BACKGROUND(148, 163, 184, 60);
+const QColor LLMChatFrame::ColorScheme::SECTION_HEADER_TEXT(15, 23, 42, 210);
 namespace
 {
 	QPainterPath createBubblePath(const QRect& bubbleRect, const QRect& triangleRect, bool alignLeft, int radius)
@@ -824,8 +825,16 @@ void LLMChatFrame::updateButtonsPosition()
 		return;
 	}
 	// 计算按钮位置 - 放在聊天框下方
-	int frameBottom = qMax(m_layoutData.rects.frameLeftReason.bottom(), m_layoutData.rects.frameLeft.bottom());
-	int buttonY = frameBottom + LayoutConstants::SHADOW_OFFSET + LayoutConstants::BUTTON_SPACING;
+	int reasoningBottom = m_layoutData.rects.frameLeftReason.isValid()
+		? (m_layoutData.rects.frameLeftReason.bottom() - LayoutConstants::SECTION_HEADER_HEIGHT)
+		: m_layoutData.rects.frameLeftReason.bottom();
+	int answerBottom = m_layoutData.rects.frameLeft.bottom() - LayoutConstants::SECTION_HEADER_HEIGHT;
+	int frameBottom = qMax(reasoningBottom, answerBottom);
+	if (frameBottom <= 0)
+	{
+		frameBottom = m_layoutData.rects.frameLeft.bottom();
+	}
+	int buttonY = frameBottom + LayoutConstants::BUTTON_SPACING + LayoutConstants::BUTTON_HEIGHT / 2;
 	int buttonStartX = m_layoutData.rects.frameLeft.x();
 	const int buttonWidth = 96;
 	const int buttonHeight = LayoutConstants::BUTTON_HEIGHT;
@@ -931,6 +940,30 @@ void LLMChatFrame::updateButtonsVisibility()
 		if (m_ui.buttons.copyAnswer) m_ui.buttons.copyAnswer->hide();
 		if (m_ui.buttons.regenerate) m_ui.buttons.regenerate->hide();
 	}
+}
+
+void LLMChatFrame::drawSectionHeader(QPainter& painter, const QRect& frameRect, const QString& title)
+{
+	if (!frameRect.isValid())
+	{
+		return;
+	}
+	QRect headerRect = frameRect.adjusted(
+		LayoutConstants::TEXT_PADDING,
+		LayoutConstants::ICON_MARGIN,
+		-LayoutConstants::TEXT_PADDING,
+		0);
+	headerRect.setHeight(LayoutConstants::SECTION_HEADER_HEIGHT - LayoutConstants::SECTION_HEADER_MARGIN);
+
+	painter.save();
+	QFont headerFont = font();
+	headerFont.setFamily("Microsoft YaHei");
+	headerFont.setPointSize(11);
+	headerFont.setBold(true);
+	painter.setFont(headerFont);
+	painter.setPen(ColorScheme::SECTION_HEADER_TEXT);
+	painter.drawText(headerRect, Qt::AlignLeft | Qt::AlignVCenter, title);
+	painter.restore();
 }
 void LLMChatFrame::onCopyThinkingClicked()
 {
@@ -1167,6 +1200,10 @@ static int computeFrameWidth(int contentWidth, int textWidth, int spaceWidth)
 void LLMChatFrame::layoutSingleMessage(const QSize& contentSize, int timeExtraHeight)
 {
 	int bubbleHeight = std::max(contentSize.height(), LayoutConstants::MIN_HEIGHT);
+	if (m_UserType == User_Customer)
+	{
+		bubbleHeight += LayoutConstants::SECTION_HEADER_HEIGHT;
+	}
 	int bubbleTopY = timeExtraHeight + static_cast<int>(m_layoutData.iLineHeight * 0.75);
 	const int bubbleBottomY = bubbleTopY + bubbleHeight;
 	const auto clampTriangleTop = [&](int iconCenterY)
@@ -1216,11 +1253,20 @@ void LLMChatFrame::layoutSingleMessage(const QSize& contentSize, int timeExtraHe
 		m_layoutData.rects.frameRight.width() - 2 * LayoutConstants::TEXT_PADDING,
 		m_layoutData.rects.frameRight.height() - LayoutConstants::ICON_MARGIN - LayoutConstants::TEXT_PADDING);
 	m_layoutData.rects.textLeftReason = QRect();
+
+	if (m_UserType == User_Customer)
+	{
+		m_layoutData.rects.textLeft.translate(0, LayoutConstants::SECTION_HEADER_HEIGHT);
+		m_layoutData.rects.textLeft.setHeight(std::max(0,
+			m_layoutData.rects.textLeft.height() - LayoutConstants::SECTION_HEADER_HEIGHT));
+	}
 }
 void LLMChatFrame::layoutReasoningMessage(const QSize& reasoningSize, const QSize& answerSize, int timeExtraHeight)
 {
-	int reasoningHeight = std::max(reasoningSize.height(), LayoutConstants::MIN_HEIGHT);
-	int answerHeight = std::max(answerSize.height(), LayoutConstants::MIN_HEIGHT);
+	int reasoningHeight = std::max(reasoningSize.height(), LayoutConstants::MIN_HEIGHT)
+		+ LayoutConstants::SECTION_HEADER_HEIGHT;
+	int answerHeight = std::max(answerSize.height(), LayoutConstants::MIN_HEIGHT)
+		+ LayoutConstants::SECTION_HEADER_HEIGHT;
 	int bubbleTopY = timeExtraHeight + static_cast<int>(m_layoutData.iLineHeight * 0.75);
 	const int reasoningBottomY = bubbleTopY + reasoningHeight;
 	const auto clampTriangleTopReasoning = [&](int iconCenterY)
@@ -1278,6 +1324,13 @@ void LLMChatFrame::layoutReasoningMessage(const QSize& reasoningSize, const QSiz
 		m_layoutData.rects.frameRight.y() + LayoutConstants::ICON_MARGIN,
 		m_layoutData.rects.frameRight.width() - 2 * LayoutConstants::TEXT_PADDING,
 		m_layoutData.rects.frameRight.height() - LayoutConstants::ICON_MARGIN - LayoutConstants::TEXT_PADDING);
+
+	m_layoutData.rects.textLeftReason.translate(0, LayoutConstants::SECTION_HEADER_HEIGHT);
+	m_layoutData.rects.textLeftReason.setHeight(std::max(0,
+		m_layoutData.rects.textLeftReason.height() - LayoutConstants::SECTION_HEADER_HEIGHT));
+	m_layoutData.rects.textLeft.translate(0, LayoutConstants::SECTION_HEADER_HEIGHT);
+	m_layoutData.rects.textLeft.setHeight(std::max(0,
+		m_layoutData.rects.textLeft.height() - LayoutConstants::SECTION_HEADER_HEIGHT));
 }
 void LLMChatFrame::setText(QString text, QString time, QSize allSize, LLMChatFrame::User_Type userType)
 {
@@ -1714,6 +1767,12 @@ void LLMChatFrame::drawCustomerMessage(QPainter& painter)
 		answerShadow, LayoutConstants::BORDER_RADIUS, LayoutConstants::SHADOW_OFFSET);
 	const QString primaryTextColor = QStringLiteral("#0F172A");
 	const bool hasReasoningBubble = m_layoutData.rects.frameLeftReason.isValid();
+
+	if (hasReasoningBubble)
+	{
+		drawSectionHeader(painter, m_layoutData.rects.frameLeftReason, tr("Think"));
+	}
+	drawSectionHeader(painter, m_layoutData.rects.frameLeft, tr("Answer"));
 	
 	// 获取或创建缓存的文档（优化性能）
 	// 注意：需要传入折叠状态以确保缓存正确性

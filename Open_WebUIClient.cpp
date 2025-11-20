@@ -91,7 +91,6 @@ QByteArray Open_WebUIClient::buildMessageBody(const ChatSendMessage& msg)
 			finalSendMsg += QStringLiteral("\n 文档%1内容:").arg(i) + msg.fileContext[i];
 		}
 	}
-	finalSendMsg += m_LLMParams->getOpenThink() ? "\\think" : "\\no_think";
 	messageObject["content"] = finalSendMsg;
 	//图像:目前仅支持转base64格式
 	if (msg.Image64.size() > 0)

@@ -67,6 +67,8 @@ public:
 		static constexpr int TIME_VERTICAL_PADDING = 4;    // 时间标签垂直内边距
 		static constexpr int ExButton_Height = 15;         // 扩展按钮高度
 		static constexpr int ExButton_Spacing = 10;        // 扩展按钮间距
+		static constexpr int SECTION_HEADER_HEIGHT = 26;   // 推理/回答标题高度
+		static constexpr int SECTION_HEADER_MARGIN = 8;    // 标题上下内边距
 	};
 	// 配色方案结构
 	struct ColorScheme
@@ -81,6 +83,7 @@ public:
 		static const QColor ICON_RING_OUTER;      // 图标外环颜色
 		static const QColor ICON_RING_INNER;      // 图标内环颜色
 		static const QColor TIME_BACKGROUND;      // 时间背景色
+		static const QColor SECTION_HEADER_TEXT;  // 标题文字颜色
 	};
 	//消息设置接口
 	// 设置消息文本
@@ -231,6 +234,8 @@ private:
 	void updateButtonsPosition();
 	// 更新按钮可见性
 	void updateButtonsVisibility();
+	// 绘制标题头
+	void drawSectionHeader(QPainter& painter, const QRect& frameRect, const QString& title);
 	// 绘制时间标签
 	void drawTimeLabel(QPainter& painter);
 	// 绘制用户消息

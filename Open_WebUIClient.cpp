@@ -276,7 +276,7 @@ void Open_WebUIClient::processStreamEnded()
 		return;
 	}
 	if (m_isStreamingReasoning) {
-		emit AnswerStream(QStringLiteral("</think>"));
+		emit AnswerStream(QStringLiteral("---REASONING_END---"));
 		m_isStreamingReasoning = false;
 	}
 	m_NetWorkParams->rawBuffer.clear();
@@ -296,12 +296,14 @@ void Open_WebUIClient::getAnswer()
 		{
 			const QString reasoning = Content.value("reasoning_content").toString();
 			const QString content = Content.value("content").toString();
+			const bool shouldShowReasoning = m_LLMParams->getOpenThink() && !reasoning.isEmpty();
+
 			if (!content.isEmpty() || !reasoning.isEmpty())
 			{
-				if (!reasoning.isEmpty())
+				if (shouldShowReasoning)
 				{
-					textresponse = QStringLiteral("<think>%1</think>%2")
-						.arg(reasoning.trimmed(), content);
+					textresponse = reasoning.trimmed() +
+						QStringLiteral("\n\n---REASONING_END---\n\n") + content;
 				}
 				else
 				{
@@ -359,10 +361,11 @@ void Open_WebUIClient::getStreamAnswer()
 			QJsonObject deltaObj = parseJsonReplyToMsg(chunk);
 			const QString reasoningChunk = deltaObj.value("reasoning_content").toString();
 			const QString contentChunk = deltaObj.value("content").toString();
+			const bool shouldShowReasoning = m_LLMParams->getOpenThink();
 
-			if (!reasoningChunk.isEmpty()) {
+			if (!reasoningChunk.isEmpty() && shouldShowReasoning) {
 				if (!m_isStreamingReasoning) {
-					emit AnswerStream(QStringLiteral("<think>%1").arg(reasoningChunk));
+					emit AnswerStream(QStringLiteral("---REASONING_START---") + reasoningChunk);
 					m_isStreamingReasoning = true;
 				}
 				else {
@@ -371,8 +374,8 @@ void Open_WebUIClient::getStreamAnswer()
 			}
 
 			if (!contentChunk.isEmpty()) {
-				if (m_isStreamingReasoning) {
-					emit AnswerStream(QStringLiteral("</think>%1").arg(contentChunk));
+				if (m_isStreamingReasoning && shouldShowReasoning) {
+					emit AnswerStream(QStringLiteral("---REASONING_END---") + contentChunk);
 					m_isStreamingReasoning = false;
 				}
 				else {

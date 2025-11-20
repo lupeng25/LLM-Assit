@@ -788,20 +788,10 @@ void Frm_AIAssit::getAnswerShow(const QString& word, bool bError)
 	static const QString REASONING_NOT_SUPPORTED = QStringLiteral("本模型不支持推理");
 	static const QString ERROR_TEXT = QStringLiteral("error");
 
-	// 使用静态正则表达式避免重复编译
-	static const QRegularExpression regexResult(
-		R"(</think>(.*))",
-		QRegularExpression::DotMatchesEverythingOption);
-	static const QRegularExpression regexThinking(
-		R"(<think>(.*)</think>)",
-		QRegularExpression::DotMatchesEverythingOption);
-	static const QRegularExpression regexReasoningStart(
-		QStringLiteral("<think>"));
-	static const QRegularExpression regexReasoningEnd(
-		QStringLiteral("</think>"));
+	static const QString REASONING_END_MARKER = QStringLiteral("---REASONING_END---");
+	static const QString THINK_START_TAG = QStringLiteral("<think>");
+	static const QString THINK_END_TAG = QStringLiteral("</think>");
 
-	QRegularExpressionMatch match = regexResult.match(word);
-	QRegularExpressionMatch matchThinking = regexThinking.match(word);
 	QString TextAnswer;
 	QString TextReasoning;
 	QString tempWord;
@@ -815,25 +805,30 @@ void Frm_AIAssit::getAnswerShow(const QString& word, bool bError)
 	}
 	else
 	{
-		// 检查是否包含推理标识符
-		if (matchThinking.hasMatch())
+		const int reasoningEndPos = word.indexOf(REASONING_END_MARKER);
+		if (reasoningEndPos != -1)
 		{
-			// 包含 <think></think> 标识符的情况
-			TextAnswer = match.captured(1).trimmed();
-			TextReasoning = REASONING_HEADER + (matchThinking.captured(1).trimmed().isEmpty() ?
-				REASONING_NOT_ENABLED : matchThinking.captured(1).trimmed());
-			// 替换标识符
-			tempWord = word;
-			tempWord.replace(regexReasoningStart, REASONING_HEADER);
-			tempWord.replace(regexReasoningEnd, ANSWER_HEADER);
+			TextReasoning = word.left(reasoningEndPos).trimmed();
+			TextAnswer = word.mid(reasoningEndPos + REASONING_END_MARKER.length()).trimmed();
+			tempWord = REASONING_HEADER + TextReasoning + ANSWER_HEADER + TextAnswer;
 		}
 		else
 		{
-			// 不包含推理标识符的情况 - 将整个内容作为回答
-			TextAnswer = ANSWER_HEADER_NEWLINE + word.trimmed();
-			TextReasoning = REASONING_HEADER + REASONING_NOT_SUPPORTED;
-			// 构造tempWord保持相同的结构
-			tempWord = REASONING_HEADER + REASONING_NOT_SUPPORTED + ANSWER_HEADER + word.trimmed();
+			const int thinkStartPos = word.indexOf(THINK_START_TAG);
+			const int thinkEndPos = word.indexOf(THINK_END_TAG, thinkStartPos + THINK_START_TAG.length());
+			if (thinkStartPos != -1 && thinkEndPos != -1 && thinkEndPos > thinkStartPos)
+			{
+				const int reasoningStart = thinkStartPos + THINK_START_TAG.length();
+				TextReasoning = word.mid(reasoningStart, thinkEndPos - reasoningStart).trimmed();
+				TextAnswer = word.mid(thinkEndPos + THINK_END_TAG.length()).trimmed();
+				tempWord = REASONING_HEADER + TextReasoning + ANSWER_HEADER + TextAnswer;
+			}
+			else
+			{
+				TextAnswer = word.trimmed();
+				TextReasoning.clear();
+				tempWord = ANSWER_HEADER_NEWLINE + word.trimmed();
+			}
 		}
 	}
 
@@ -855,7 +850,14 @@ void Frm_AIAssit::getAnswerShow(const QString& word, bool bError)
 		return;
 	}
 
-	latestWidget->fontRect(TextReasoning, TextAnswer);
+	if (!TextReasoning.trimmed().isEmpty())
+	{
+		latestWidget->fontRect(TextReasoning, TextAnswer);
+	}
+	else
+	{
+		latestWidget->fontRect(TextAnswer);
+	}
 	// 注意：fontRect()内部已经调用了update()，这里不需要再次调用
 	QString DialogName = updateDialogName(tempWord);
 	finalizeLatestBubble(latestWidget, latestItem, DialogName, TextAnswer, TextReasoning, false);
@@ -863,12 +865,7 @@ void Frm_AIAssit::getAnswerShow(const QString& word, bool bError)
 
 void Frm_AIAssit::getStreamAnswerShow(const QString& word)
 {
-	static const QString REASONING_END = QStringLiteral("</think>");
-
 	m_pendingStreamChunk.append(word);
-	if (word.contains(REASONING_END)) {
-		m_pendingReasoningEnd = true;
-	}
 
 	const int DEFAULT_INTERVAL_MS = 75;
 	const int MIN_INTERVAL_MS = 30;
@@ -883,53 +880,34 @@ void Frm_AIAssit::getStreamAnswerShow(const QString& word)
 			QListWidget* chatFrame = ui.ChatShow->getChatFrame();
 			if (!chatFrame || chatFrame->count() == 0) {
 				m_pendingStreamChunk.clear();
-				m_pendingReasoningEnd = false;
 				return;
 			}
 
 			QListWidgetItem* latestItem = chatFrame->item(chatFrame->count() - 1);
 			if (!latestItem) {
 				m_pendingStreamChunk.clear();
-				m_pendingReasoningEnd = false;
 				return;
 			}
 
 			LLMChatFrame* latestWidget = qobject_cast<LLMChatFrame*>(chatFrame->itemWidget(latestItem));
 			if (!latestWidget) {
 				m_pendingStreamChunk.clear();
-				m_pendingReasoningEnd = false;
 				return;
 			}
 
 			if (!m_pendingStreamChunk.isEmpty()) {
-				const QString chunk = m_pendingStreamChunk;
-				const QString reasoningEndTag = QStringLiteral("</think>");
-				if (m_pendingReasoningEnd) {
-					int closePos = chunk.indexOf(reasoningEndTag);
-					if (closePos == -1) {
-						latestWidget->appendText(chunk);
-					}
-					else {
-						QString reasoningPart = chunk.left(closePos);
-						if (!reasoningPart.isEmpty()) {
-							latestWidget->appendText(reasoningPart);
-						}
-						latestWidget->ChangeAccpetStatus();
-						QString answerPart = chunk.mid(closePos + reasoningEndTag.length());
-						if (!answerPart.isEmpty()) {
-							latestWidget->appendText(answerPart);
-						}
-					}
-				}
-				else {
-					latestWidget->appendText(chunk);
-				}
+				latestWidget->appendText(m_pendingStreamChunk);
 			}
 
 			m_pendingStreamChunk.clear();
-			m_pendingReasoningEnd = false;
 
-			latestWidget->fontRect(latestWidget->getReasonRawText(), latestWidget->getRawText());
+			const QString reasoningHtml = latestWidget->getReasonRawText();
+			if (!reasoningHtml.trimmed().isEmpty()) {
+				latestWidget->fontRect(reasoningHtml, latestWidget->getRawText());
+			}
+			else {
+				latestWidget->fontRect(latestWidget->getRawText());
+			}
 			refreshBubbleSize(latestWidget, latestItem);
 			//scheduleScrollToBottom();
 		});
@@ -983,9 +961,13 @@ void Frm_AIAssit::getStreamAnswerEnd()
 		latestWidget->appendText(m_pendingStreamChunk);
 		m_pendingStreamChunk.clear();
 	}
-	if (m_pendingReasoningEnd) {
-		latestWidget->ChangeAccpetStatus();
-		m_pendingReasoningEnd = false;
+
+	const QString reasoningHtml = latestWidget->getReasonRawText();
+	if (!reasoningHtml.trimmed().isEmpty()) {
+		latestWidget->fontRect(reasoningHtml, latestWidget->getRawText());
+	}
+	else {
+		latestWidget->fontRect(latestWidget->getRawText());
 	}
 
 	QString DialogName = updateDialogName(latestWidget->getRawText());

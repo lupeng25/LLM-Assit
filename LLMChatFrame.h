@@ -11,7 +11,14 @@
 #include <QGraphicsDropShadowEffect>
 #include <QMenu>
 #include <QUuid>
+#include <QColor>
+#include <QSize>
+#include <QString>
+#include <QRect>
+#include <QPixmap>
+#include <QHash>
 #include <memory>
+#include <vector>
 #include "include\cmark\cmark.h"
 #include "SyntaxHighlighter.h"
 class QPaintEvent;
@@ -305,7 +312,7 @@ private:
 	{
 		bool isSending = false;
 		bool isStreamEnd = false;
-		bool isReasoning = true;
+		bool isReasoning = false;
 		int savedScrollPosition = -1;
 		bool answerHeaderInserted = false;
 	} m_state;

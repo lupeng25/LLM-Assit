@@ -300,7 +300,7 @@ void LLMChatFrame::refreshLayoutAfterContentChange()
 	m_layoutCache.isValid = false;
 	m_docCache.invalidate(); // 使文档缓存失效
 	m_layoutDirty = true;
-	if (m_UserType == User_Customer)
+	if (m_UserType == User_Customer && !m_messageData.reasoningText.trimmed().isEmpty())
 	{
 		fontRect(m_messageData.reasoningText, m_messageData.msg);
 	}
@@ -1567,39 +1567,72 @@ void LLMChatFrame::calculateLayout()
 
 void LLMChatFrame::appendText(const QString& delta)
 {
-	static const QString REASONING_EMPTY = QStringLiteral("\n ### 推理 \n\n\n");
-	static const QString REASONING_HEADER = QStringLiteral("\n ### 推理 \n");
-	static const QString ANSWER_HEADER = QStringLiteral("\n ### 回答 ");
-	// 使用正确的标签：<think> 和 </think>
-	static const QRegularExpression regexReasoningStart(QStringLiteral("<think>"));
-	static const QRegularExpression regexReasoningEnd(QStringLiteral("</think>"));
+	static const QString REASONING_START_MARKER = QStringLiteral("---REASONING_START---");
+	static const QString REASONING_END_MARKER = QStringLiteral("---REASONING_END---");
+	static const QString THINK_START_TAG = QStringLiteral("<think>");
+	static const QString THINK_END_TAG = QStringLiteral("</think>");
 
-	if (!m_state.isReasoning && m_messageData.rawReasoningMsg == REASONING_EMPTY)
+	auto appendSegment = [this](const QString& segment)
 	{
-		m_messageData.rawReasoningMsg.append(tr("Reasoning not enabled"));
-	}
-	if (m_state.isReasoning)
-	{
-		m_messageData.reasoningText += delta;
-		m_messageData.rawReasoningMsg += delta;
-		m_messageData.rawReasoningMsg.replace(regexReasoningStart, REASONING_HEADER);
-		m_messageData.rawReasoningMsg.replace(regexReasoningEnd, QString());
-	}
-	else
-	{
-		const QString trimmedDelta = delta.trimmed();
-		if (!trimmedDelta.isEmpty() &&
-			!m_messageData.rawMsg.contains(QStringLiteral("### 回答")) &&
-			!trimmedDelta.startsWith(QStringLiteral("### 回答")))
+		if (segment.isEmpty())
 		{
-			const QString header = QStringLiteral("\n ### 回答 \n\n");
-			m_messageData.msg += header;
-			m_messageData.rawMsg += header;
+			return;
 		}
-		m_messageData.msg += delta;
-		m_messageData.rawMsg += delta;
-		m_messageData.rawMsg.replace(regexReasoningStart, REASONING_HEADER);
-		m_messageData.rawMsg.replace(regexReasoningEnd, QString());
+
+		if (m_state.isReasoning)
+		{
+			m_messageData.reasoningText += segment;
+			m_messageData.rawReasoningMsg += segment;
+		}
+		else
+		{
+			m_messageData.msg += segment;
+			m_messageData.rawMsg += segment;
+		}
+	};
+
+	QString remaining = delta;
+	while (!remaining.isEmpty())
+	{
+		int nextIndex = -1;
+		QString nextMarker;
+
+		auto considerMarker = [&remaining, &nextIndex, &nextMarker](const QString& marker)
+		{
+			int idx = remaining.indexOf(marker);
+			if (idx != -1 && (nextIndex == -1 || idx < nextIndex))
+			{
+				nextIndex = idx;
+				nextMarker = marker;
+			}
+		};
+
+		considerMarker(REASONING_START_MARKER);
+		considerMarker(REASONING_END_MARKER);
+		considerMarker(THINK_START_TAG);
+		considerMarker(THINK_END_TAG);
+
+		if (nextIndex == -1)
+		{
+			appendSegment(remaining);
+			break;
+		}
+
+		if (nextIndex > 0)
+		{
+			appendSegment(remaining.left(nextIndex));
+		}
+
+		if (nextMarker == REASONING_START_MARKER || nextMarker == THINK_START_TAG)
+		{
+			m_state.isReasoning = true;
+		}
+		else
+		{
+			m_state.isReasoning = false;
+		}
+
+		remaining = remaining.mid(nextIndex + nextMarker.length());
 	}
 }
 

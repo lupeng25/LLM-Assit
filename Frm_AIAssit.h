@@ -144,7 +144,6 @@ private:
 	QTimer* m_scrollTimer = nullptr; // UI性能优化：流式更新时的滚动定时器
 	QTimer* m_streamDebounceTimer = nullptr;
 	QString m_pendingStreamChunk;
-	bool m_pendingReasoningEnd = false;
 	std::unique_ptr<AppConfigRepository> m_configRepository;
 	std::unique_ptr<ChatSessionService> m_chatSessionService;
 	std::unique_ptr<LLMClientManager> m_clientManager;

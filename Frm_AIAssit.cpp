@@ -970,16 +970,20 @@ void Frm_AIAssit::getStreamAnswerEnd()
 	}
 
 	const QString reasoningHtml = latestWidget->getReasonRawText();
+	const QString answerHtml = latestWidget->getRawText();
 	if (!reasoningHtml.trimmed().isEmpty()) {
-		latestWidget->fontRect(reasoningHtml, latestWidget->getRawText());
+		latestWidget->fontRect(reasoningHtml, answerHtml);
 	}
 	else {
-		latestWidget->fontRect(latestWidget->getRawText());
+		latestWidget->fontRect(answerHtml);
 	}
 
-	QString DialogName = updateDialogName(latestWidget->getRawText());
+	// 构造包含标记的文本用于提取对话名称
+	static const QString ANSWER_HEADER = QStringLiteral("\n ### 回答 \n");
+	QString textForName = answerHtml.trimmed().isEmpty() ? QString() : (ANSWER_HEADER + answerHtml.trimmed());
+	QString DialogName = updateDialogName(textForName);
 	finalizeLatestBubble(latestWidget, latestItem, DialogName,
-		latestWidget->getRawText(), latestWidget->getReasonRawText(), true);
+		answerHtml, reasoningHtml, true);
 	chatFrame->scrollToBottom();
 }
 void Frm_AIAssit::createNewConversation() {
@@ -1136,7 +1140,7 @@ QString Frm_AIAssit::updateDialogName(const QString& dialogName)
 	QString tempName;
 	if (index != -1)
 	{
-		tempName = dialogName.mid(index + ANSWER_HEADER.length() + 1, 15);
+		tempName = dialogName.mid(index + ANSWER_HEADER.length() + 0, 15);
 		tempName = tempName.trimmed();
 		if (tempName.length() > MAX_NAME_LENGTH)
 		{
@@ -1481,6 +1485,11 @@ void Frm_AIAssit::finalizeLatestBubble(LLMChatFrame* bubble, QListWidgetItem* it
 			session->sMsg.append(singleMsg);
 		}
 		session->SaveTime = QDateTime::currentDateTime();
+		
+		// 如果这是最后一条消息，更新对话列表的显示名称
+		if (!session->sMsg.isEmpty() && session->sMsg.last().m_BubbleID == bubbleId) {
+			ui.ChatListWidget->setCurrentItemText(dialogName);
+		}
 	}
 	m_lastRequestUsedStream = false;
 }

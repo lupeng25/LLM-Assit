@@ -278,6 +278,7 @@ void Open_WebUIClient::processStreamEnded()
 	}
 
 	if (reply->error() && reply->error() != QNetworkReply::OperationCanceledError)
+
 	{
 		QString errorMsg = GetError(reply->errorString(), reply->readAll());
 		emit Answer(errorMsg, true);

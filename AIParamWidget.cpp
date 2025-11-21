@@ -994,7 +994,6 @@ void AIParamWidget::applyThemeStyles()
 			color: #0f172a;
 			font-size: 18px;
 			font-weight: 600;
-			letter-spacing: 0.3px;
 		}
 		#NavSearch {
 			border: 1px solid rgba(148, 163, 184, 0.4);
@@ -1004,7 +1003,6 @@ void AIParamWidget::applyThemeStyles()
 		}
 		#NavSearch:focus {
 			border-color: #2563eb;
-			box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
 		}
 		#NavList {
 			border: none;
@@ -1180,7 +1178,6 @@ void AIParamWidget::applyThemeStyles()
 		}
 		#NavSearch:focus {
 			border-color: #60a5fa;
-			box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.35);
 		}
 		#NavList {
 			color: #cbd5f5;

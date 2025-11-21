@@ -245,7 +245,7 @@ static const QString kTemplate = QStringLiteral(
 <title>%1</title>
 <style>
 body { font-family: "Helvetica Neue", "Microsoft YaHei", sans-serif; background-color: #f9fafb; padding: 40px; color: #0f172a; }
-.chat-bubble { max-width: 680px; margin: 0 auto; background: #ffffff; border-radius: 20px; box-shadow: 0 24px 48px rgba(15, 23, 42, 0.08); padding: 32px 40px; line-height: 1.75; }
+.chat-bubble { max-width: 680px; margin: 0 auto; background: #ffffff; border-radius: 20px;  padding: 32px 40px; line-height: 1.75; }
 .chat-bubble.assistant { border-top: 6px solid #3b82f6; }
 .chat-bubble.user { border-top: 6px solid #10b981; }
 .chat-bubble.system { border-top: 6px solid #6366f1; }

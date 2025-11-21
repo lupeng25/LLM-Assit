@@ -282,7 +282,6 @@ void PromptLibraryDialog::setupStyles()
 			color: #475569;
 			font-size: 13px;
 			font-weight: 600;
-			letter-spacing: 0.3px;
 			text-transform: uppercase;
 			background: transparent;
 			margin-bottom: 4px;
@@ -308,7 +307,6 @@ void PromptLibraryDialog::setupStyles()
 			color: #0f172a;
 			font-size: 14px;
 			font-weight: 700;
-			letter-spacing: 0.2px;
 			background: transparent;
 			margin-bottom: 6px;
 		}
@@ -326,7 +324,6 @@ void PromptLibraryDialog::setupStyles()
 		#searchEdit:focus, #categoryCombo:focus, #formInput:focus {
 			border-color: #2563eb;
 			background: rgba(255, 255, 255, 1);
-			box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 		}
 		
 		#searchEdit:hover, #categoryCombo:hover, #formInput:hover {
@@ -351,7 +348,6 @@ void PromptLibraryDialog::setupStyles()
 		#formTextArea:focus {
 			border-color: #2563eb;
 			background: rgba(255, 255, 255, 1);
-			box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 		}
 		
 		#formTextArea:hover {
@@ -422,7 +418,6 @@ void PromptLibraryDialog::setupStyles()
 		#promptList::item:hover #promptItemWidget {
 			background: rgba(255, 255, 255, 0.95);
 			border-color: rgba(37, 99, 235, 0.3);
-			box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
 		}
 		
 		/* 空状态样式 */
@@ -916,7 +911,6 @@ void PromptLibraryDialog::onPromptItemSelectionChanged()
 				? R"(
 					background: rgba(37, 99, 235, 0.08);
 					border: 1px solid rgba(37, 99, 235, 0.4);
-					box-shadow: 0 2px 12px rgba(37, 99, 235, 0.12);
 				)"
 				: R"(
 					background: rgba(255, 255, 255, 0.8);

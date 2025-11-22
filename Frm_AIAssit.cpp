@@ -751,7 +751,7 @@ void Frm_AIAssit::ProcessFunctionCall(QJsonObject FunctionMsg)
 	toolMsg.insert("content", FunctionMsg["content"]);
 	toolmsg.append(toolMsg);
 	QJsonObject requestBody;
-	requestBody.insert("model", "gkg");
+    requestBody.insert("model", "qwen3:14b");
 	requestBody.insert("messages", toolmsg);
 	requestBody["tools"] = m_FunctionTools;
 	QJsonDocument doc(requestBody);

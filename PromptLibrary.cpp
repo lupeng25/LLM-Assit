@@ -1,4 +1,5 @@
 #include "PromptLibrary.h"
+#include "AppConfigRepository.h"
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
@@ -8,7 +9,6 @@
 #include <algorithm>
 
 namespace {
-	constexpr const char* kPromptLibraryFileName = "PromptLibrary.json";
 	const QString kDefaultCategory = QStringLiteral("Default");
 }
 
@@ -52,7 +52,7 @@ bool PromptItem::isValid() const
 PromptLibrary::PromptLibrary(QObject* parent)
 	: QObject(parent)
 {
-	m_storagePath = QCoreApplication::applicationDirPath() + "/AIAssit/" + kPromptLibraryFileName;
+	m_storagePath = AppConfigRepository::instance()->promptLibraryFile();
 	load();
 }
 

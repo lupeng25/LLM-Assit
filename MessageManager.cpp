@@ -5,6 +5,10 @@
 #include <QUuid>
 #include <QDateTime>
 #include <QUrlQuery>
+#include <QSslConfiguration>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QRegularExpression>
 #include <QDebug>
 
 MessageManager::MessageManager(QObject *parent)
@@ -70,6 +74,46 @@ QUrl MessageManager::buildApiUrl(const QString& apiPath)
 QStringList MessageManager::getAvailableModels()
 {
     return m_availableModelIds;
+}
+
+void MessageManager::configureRequestSsl(const QSslConfiguration& config)
+{
+	if (!m_NetWorkParams)
+	{
+		return;
+	}
+	m_NetWorkParams->clientRequest.setSslConfiguration(config);
+}
+
+QNetworkRequest MessageManager::currentRequest() const
+{
+	if (!m_NetWorkParams)
+	{
+		return QNetworkRequest();
+	}
+	return m_NetWorkParams->clientRequest;
+}
+
+QNetworkReply* MessageManager::postRequest(const QByteArray& data)
+{
+	if (!m_NetWorkParams || !m_NetWorkParams->clientNetWorkManager)
+	{
+		return nullptr;
+	}
+	return m_NetWorkParams->clientNetWorkManager->post(m_NetWorkParams->clientRequest, data);
+}
+
+// 初始化网络管理器（用于 LLMClientManager 等外部类）
+void MessageManager::initializeNetworkManager()
+{
+	if (!m_NetWorkParams)
+	{
+		return;
+	}
+	if (!m_NetWorkParams->clientNetWorkManager)
+	{
+		m_NetWorkParams->clientNetWorkManager = std::make_unique<QNetworkAccessManager>();
+	}
 }
 
 // 提取 HTTP 错误短语（如 "Bad Request"、"Unauthorized" 等）

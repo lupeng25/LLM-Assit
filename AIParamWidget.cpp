@@ -2,6 +2,7 @@
 #include "ShortcutManager.h"
 #include "ShortcutEdit.h"
 #include "MessageManager.h"
+#include "AppConfigRepository.h"
 #include <QResizeEvent>
 #include <QPainter>
 #include <QTimer>
@@ -411,7 +412,7 @@ void AIParamWidget::applyCurrentParams()
 	llmParams->setOpenThink(m_openThinkCheck->isChecked());
 	llmParams->setOpenNetSearch(m_openNetSearchCheck->isChecked());
 
-	llmParams->serialize(QCoreApplication::applicationDirPath() + "/AIAssit/AIModelConfig.json");
+	llmParams->serialize(AppConfigRepository::instance()->modelConfigFile());
 	
 	// Save shortcuts configuration
 	ShortcutManager::instance()->saveConfig();

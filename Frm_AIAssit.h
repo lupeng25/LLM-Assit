@@ -176,7 +176,7 @@ private:
 	using sMsgList = ChatSession;
 signals:
 	//发送按钮状态改变
-	void PushBtnChanged(ChatInputWidget::SendButtonState state);
+	void PushBtnChanged(SendButtonState state);
 	//改变当前模型
 	void ChangeCurModel(int iModel);
 	// 发出答案信号 

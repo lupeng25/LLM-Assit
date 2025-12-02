@@ -1,36 +1,29 @@
 ﻿#pragma once 
-#include <QNetworkAccessManager> 
-#include <QPropertyAnimation>
-#include <QNetworkReply> 
-#include <QJsonDocument> 
-#include <QInputDialog>
-#include <QMessageBox>
-#include <QJsonObject> 
-#include <QJsonArray> 
-#include <QFileInfo>
 #include <QObject> 
 #include <QWidget> 
-#include <QDebug> 
+#include <QJsonObject> 
+#include <QJsonArray> 
 #include <QTimer>
-#include <QFile> 
-#include <QUuid>
-#include <QDir>
+#include <QResizeEvent>
 #include <memory> 
 #include <QVector>
 #include <QPointer>
-#include <QDialog>
+#include <QListWidgetItem>
 #include "LLMParams.h"
 #include "ui_Frm_AIAssit.h" 
 #include "LLMChatFrame.h"
 #include "ChatInputWidget.h"
-#include "LLMFunctionCall.h"
-#include "GitLogReader.h"
-#include "MessageManager.h"
-#include "ChatSessionService.h"
 #include "ChatSessionTypes.h"
-#include "AppConfigRepository.h"
-#include "LLMClientManager.h"
-#include "AIParamWidget.h"
+#include "CommonTypes.h"
+
+// 前向声明：使用指针/引用/unique_ptr 时只需要前向声明
+class LLMFunctionCall;
+class MessageManager;
+class AppConfigRepository;
+class ChatSessionService;
+class LLMClientManager;
+class AIParamWidget;
+class QDialog;
 class Frm_AIAssit : public QWidget
 {
 	Q_OBJECT

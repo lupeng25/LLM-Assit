@@ -6,6 +6,8 @@ INCLUDEPATH += $$PWD
 
 SOURCES += \
     $$files($$PWD/*.cpp, true) \
+    ../3D_Vision/LicenceGenerator/LicenceGenerator.cpp \
+    ../3D_Vision/LicenceGenerator/qaesencryption.cpp \
     ChatList.cpp \
     MessageManager.cpp \
     OllamaClient.cpp \
@@ -14,6 +16,9 @@ SOURCES += \
 
 HEADERS += \
     $$files($$PWD/*.h, true) \
+    ../3D_Vision/LicenceGenerator/LicenceGenerator.h \
+    ../3D_Vision/LicenceGenerator/qaesencryption.h \
+    ChatController.h \
     ChatList.h \
     ClipboardTools.h \
     FunctionCallRouter.h \

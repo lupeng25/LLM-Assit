@@ -1,11 +1,20 @@
 ﻿#include "Frm_AIAssit.h"
 #include "ShortcutManager.h"
+#include "LLMFunctionCall.h"
+#include "MessageManager.h"
+#include "AppConfigRepository.h"
+#include "ChatSessionService.h"
+#include "LLMClientManager.h"
+#include "AIParamWidget.h"
+
 #include <QResizeEvent>
 #include <QGraphicsOpacityEffect>
+#include <QPropertyAnimation>
 #include <QEasingCurve>
 #include <QSignalBlocker>
 #include <QTextDocument>
 #include <QFileDialog>
+#include <QInputDialog>
 #include <QTextStream>
 #include <QStandardPaths>
 #include <QDir>

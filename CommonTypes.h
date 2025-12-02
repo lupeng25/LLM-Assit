@@ -11,6 +11,16 @@ enum class SendButtonState
     Cancelable  // 可取消状态（正在生成，可以取消）
 };
 
+// AI 提供商类型（从 MessageManager.h 中提取为公共类型）
+enum class AIProvider
+{
+    Dify,
+    Open_WebUI,
+    Ollama,
+    AnythingLLM,
+    Custom
+};
+
 // 聊天发送消息结构（从 ChatInputWidget 中提取为公共类型）
 struct ChatSendMessage
 {

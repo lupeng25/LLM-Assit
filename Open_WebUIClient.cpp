@@ -1,6 +1,8 @@
 ﻿#include "Open_WebUIClient.h"
 #include <QFileInfo>
 #include <QFile>
+#include <QHttpMultiPart>
+#include <QMimeDatabase>
 
 Open_WebUIClient::Open_WebUIClient(QObject *parent)
 	: MessageManager(parent)

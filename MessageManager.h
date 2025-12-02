@@ -1,22 +1,24 @@
 #pragma once
-#include <QNetworkAccessManager> 
-#include <QHttpMultiPart>
-#include <QNetworkReply>
-#include <QMimeDatabase>
+#include <QNetworkRequest>
 #include <QJsonArray>
 #include <QTimer>
 #include <QSslConfiguration>
-#include <memory> 
+#include <QByteArray>
+#include <QUrl>
+#include <QString>
+#include <QStringList>
+#include <QMap>
+#include <memory>
+#include <vector>
+#include <map>
 #include "CommonTypes.h"
 #include "LLMParams.h"
-enum class AIProvider //平台
-{
-	Dify,
-	Open_WebUI,
-	Ollama,
-	AnythingLLM,
-	Custom
-};
+
+// 前向声明：使用 std::unique_ptr 时只需要前向声明
+class QNetworkAccessManager;
+class QNetworkReply;
+// AIProvider 已移到 CommonTypes.h
+
 enum class RequestType //API请求
 {
 	ConnectionCheck,

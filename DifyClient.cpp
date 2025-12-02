@@ -1,6 +1,8 @@
 #include "DifyClient.h"
 #include <QFileInfo>
 #include <QFile>
+#include <QHttpMultiPart>
+#include <QMimeDatabase>
 
 DifyClient::DifyClient(QObject *parent)
 	: MessageManager(parent)

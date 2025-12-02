@@ -8,6 +8,8 @@
 #include <QSslConfiguration>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QHttpMultiPart>
+#include <QMimeDatabase>
 #include <QRegularExpression>
 #include <QDebug>
 

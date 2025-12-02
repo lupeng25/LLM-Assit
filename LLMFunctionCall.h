@@ -1,27 +1,19 @@
 ﻿#pragma once
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
-#include <QJsonDocument>
+#include <QObject>
 #include <QJsonObject>
 #include <QJsonArray>
-#include <QObject>
-#include <QDebug>
-#include <QList>
+#include <QString>
+#include <QStringList>
+#include <QSet>
+#include <QHash>
 #include <QMutex>
-#include <thread>
 #include <memory>
-#include "GitLogReader.h"
-#include "FileSystemTools.h"
-#include "TextProcessingTools.h"
-#include "ClipboardTools.h"
-#include "SystemInfoTools.h"
-#include "DateTimeTools.h"
-#include "UtilityTools.h"
-#include "DataFormatTools.h"
+#include <functional>
 #include "FunctionCallRouter.h"
-#include <QFileSystemWatcher>
-#include "VisionTools.h"
-#include "GitTools.h"
+
+// 前向声明：使用 std::unique_ptr 时只需要前向声明
+class GitLogReader;
+class QFileSystemWatcher;
 class LLMFunctionCall : public QObject
 {
 	Q_OBJECT

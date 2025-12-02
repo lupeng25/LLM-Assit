@@ -27,7 +27,7 @@ void LLMClientManager::initialize(AIProvider provider, LLMParams* params) {
 		return;
 	}
 	m_client->setLLMParams(params);
-	m_client->m_NetWorkParams->clientNetWorkManager = std::make_unique<QNetworkAccessManager>();
+	m_client->initializeNetworkManager();
 	m_client->buildRequest();
 	connectClientSignals();
 	resetRetryContexts();

@@ -1,11 +1,20 @@
 ﻿#include "Frm_AIAssit.h"
 #include "ShortcutManager.h"
+#include "LLMFunctionCall.h"
+#include "MessageManager.h"
+#include "AppConfigRepository.h"
+#include "ChatSessionService.h"
+#include "LLMClientManager.h"
+#include "AIParamWidget.h"
+
 #include <QResizeEvent>
 #include <QGraphicsOpacityEffect>
+#include <QPropertyAnimation>
 #include <QEasingCurve>
 #include <QSignalBlocker>
 #include <QTextDocument>
 #include <QFileDialog>
+#include <QInputDialog>
 #include <QTextStream>
 #include <QStandardPaths>
 #include <QDir>
@@ -476,7 +485,7 @@ void Frm_AIAssit::initUI()
 	applyResponsiveLayout(width());
 
 	// 初始化阶段禁用发送按钮，等待连接成功后再启用
-	PushBtnChanged(ChatInputWidget::SendButtonState::Disabled);
+	PushBtnChanged(SendButtonState::Disabled);
 
 	// 初始化时检查服务器连接（信号连接已在 setupLLMClientSignals() 中完成）
 	if (m_clientManager) {
@@ -680,7 +689,7 @@ void Frm_AIAssit::ApplyModelParam()
 		return;
 	}
 	LLMClient->buildRequest();
-	PushBtnChanged(ChatInputWidget::SendButtonState::Disabled);
+	PushBtnChanged(SendButtonState::Disabled);
 	if (m_clientManager) {
 		m_clientManager->checkConnection(5000);
 	}
@@ -759,8 +768,9 @@ void Frm_AIAssit::ProcessFunctionCall(QJsonObject FunctionMsg)
 	QSslConfiguration config = QSslConfiguration::defaultConfiguration();
 	config.setProtocol(QSsl::AnyProtocol);
 	config.setPeerVerifyMode(QSslSocket::VerifyNone);
-	LLMClient->m_NetWorkParams->clientRequest.setSslConfiguration(config);
-	QNetworkReply *reply = LLMClient->m_NetWorkParams->clientNetWorkManager->post(LLMClient->m_NetWorkParams->clientRequest, data);;
+	// 使用封装接口配置 SSL 并发送请求，避免直接访问内部网络成员
+	LLMClient->configureRequestSsl(config);
+	QNetworkReply *reply = LLMClient->postRequest(data);
 	connect(reply, &QNetworkReply::finished, this, [this, reply]() {
 		if (reply->error())
 		{
@@ -1461,7 +1471,7 @@ void Frm_AIAssit::finalizeLatestBubble(LLMChatFrame* bubble, QListWidgetItem* it
 		bubble->ChangeStream();
 	}
 	refreshBubbleSize(bubble, item);
-	PushBtnChanged(ChatInputWidget::SendButtonState::Ready);
+			PushBtnChanged(SendButtonState::Ready);
 	const QString bubbleId = bubble->getBubbleID();
 	if (bubbleId.isEmpty())
 	{
@@ -1499,7 +1509,7 @@ void Frm_AIAssit::finalizeCancelledResponse()
 	auto resetState = [this]()
 	{
 		m_pendingStreamChunk.clear();
-		PushBtnChanged(ChatInputWidget::SendButtonState::Ready);
+		PushBtnChanged(SendButtonState::Ready);
 	};
 
 	QListWidget* chatFrame = ui.ChatShow->getChatFrame();
@@ -1729,12 +1739,12 @@ void Frm_AIAssit::onConnectionCheckFailed(const QString& errorMessage)
 {
 	const QString message = errorMessage.isEmpty() ? tr("Unable to connect to the server. Please check your network or configuration.") : errorMessage;
 	QMessageBox::warning(this, tr("Connection Failed"), message);
-	PushBtnChanged(ChatInputWidget::SendButtonState::Disabled);
+	PushBtnChanged(SendButtonState::Disabled);
 }
 
 void Frm_AIAssit::onConnectionCheckSucceeded()
 {
-	PushBtnChanged(ChatInputWidget::SendButtonState::Ready);
+	PushBtnChanged(SendButtonState::Ready);
 	if (m_clientManager) {
 		m_clientManager->fetchModels(5000);
 	}

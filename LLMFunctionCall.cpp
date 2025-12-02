@@ -8,11 +8,24 @@
 #include <QDir>
 #include <QTimer>
 #include <QSet>
+#include<QJsonDocument>
+#include <QFileSystemWatcher>
+#include "GitLogReader.h"
+#include "VisionTools.h"
+#include "GitTools.h"
+#include "FileSystemTools.h"
+#include "TextProcessingTools.h"
+#include "ClipboardTools.h"
+#include "SystemInfoTools.h"
+#include "DateTimeTools.h"
+#include "UtilityTools.h"
+#include "DataFormatTools.h"
+#include "AppConfigRepository.h"
 using namespace std;
 
 LLMFunctionCall::LLMFunctionCall()
 {
-	FunctionFilePath = QCoreApplication::applicationDirPath() + "/AIAssit/FunctionCall.json";
+	FunctionFilePath = AppConfigRepository::instance()->functionCallConfigFile();
 	// default: enable all modules
 	m_enabledModules.insert(QStringLiteral("vision"));
 	m_enabledModules.insert(QStringLiteral("git"));

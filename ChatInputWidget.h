@@ -31,14 +31,7 @@
 #include <QTextEdit>
 #include "PromptLibrary.h"
 #include "PromptLibraryDialog.h"
-
-//输入信息:文本，图片，文件
-struct ChatSendMessage
-{
-	QString SendText="";
-	QStringList Image64;
-	QStringList fileContext;
-};
+#include "CommonTypes.h"
 
 //多功能输入框
 class ChatInputWidget : public QWidget
@@ -50,13 +43,6 @@ public:
 	explicit ChatInputWidget(QWidget *parent = nullptr);
 	// 析构函数
 	~ChatInputWidget();
-	// 发送按钮状态
-	enum class SendButtonState
-	{
-		Disabled,
-		Ready,
-		Cancelable
-	};
 	// 设置发送按钮状态
 	void SetButtonState(SendButtonState state);
 	SendButtonState currentButtonState() const { return m_buttonState; }

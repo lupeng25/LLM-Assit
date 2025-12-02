@@ -1,4 +1,8 @@
 ﻿#include "Open_WebUIClient.h"
+#include <QFileInfo>
+#include <QFile>
+#include <QHttpMultiPart>
+#include <QMimeDatabase>
 
 Open_WebUIClient::Open_WebUIClient(QObject *parent)
 	: MessageManager(parent)
@@ -231,7 +235,7 @@ int Open_WebUIClient::StreamSend(const ChatSendMessage& msg)
 
 QString Open_WebUIClient::GetError(const QString& errorLevel, const QString& errorContext)
 {
-	ChangeButtonStatus(ChatInputWidget::SendButtonState::Ready);
+	ChangeButtonStatus(SendButtonState::Ready);
 	static const QMap<QString, QString> contextErrorMap = {
 		{ "Connection timed out", QStringLiteral("连接请求超时") },
 		{ "Permission denied",    QStringLiteral("权限不足") },
@@ -340,7 +344,7 @@ void Open_WebUIClient::getAnswer()
 		emit Answer(GetError(m_NetWorkParams->clientNetWorkReply->errorString(), m_NetWorkParams->clientNetWorkReply->readAll()), true);
 	}
 	m_NetWorkParams->clientNetWorkReply.reset();
-	ChangeButtonStatus(ChatInputWidget::SendButtonState::Ready);
+	ChangeButtonStatus(SendButtonState::Ready);
 }
 
 void Open_WebUIClient::getStreamAnswer()

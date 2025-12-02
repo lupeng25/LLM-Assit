@@ -1,21 +1,24 @@
 #pragma once
-#include <QNetworkAccessManager> 
-#include <QHttpMultiPart>
-#include <QNetworkReply>
-#include <QMimeDatabase>
+#include <QNetworkRequest>
 #include <QJsonArray>
 #include <QTimer>
-#include <memory> 
-#include "ChatInputWidget.h"
+#include <QSslConfiguration>
+#include <QByteArray>
+#include <QUrl>
+#include <QString>
+#include <QStringList>
+#include <QMap>
+#include <memory>
+#include <vector>
+#include <map>
+#include "CommonTypes.h"
 #include "LLMParams.h"
-enum class AIProvider //平台
-{
-	Dify,
-	Open_WebUI,
-	Ollama,
-	AnythingLLM,
-	Custom
-};
+
+// 前向声明：使用 std::unique_ptr 时只需要前向声明
+class QNetworkAccessManager;
+class QNetworkReply;
+// AIProvider 已移到 CommonTypes.h
+
 enum class RequestType //API请求
 {
 	ConnectionCheck,
@@ -78,6 +81,16 @@ public:
 	virtual QNetworkRequest createApiRequest(const QUrl& url) = 0;
 	// 发送API请求
 	virtual void sendApiRequest(const QNetworkRequest& request, QTimer* timeoutTimer, int timeoutMs) = 0;
+
+	// === 公共接口：封装私有成员访问 ===
+	// 配置网络请求的 SSL 设置
+	void configureRequestSsl(const QSslConfiguration& config);
+	// 获取当前网络请求对象（只读拷贝）
+	QNetworkRequest currentRequest() const;
+	// 发送 POST 请求（用于工具调用等场景）
+	QNetworkReply* postRequest(const QByteArray& data);
+	// 初始化网络管理器（用于 LLMClientManager 等外部类）
+	void initializeNetworkManager();
 	// 检查连接(异步)
 	virtual void checkServerConnectionAsync(int timeoutMs) = 0;
 	// 解析模型ID列表
@@ -101,8 +114,9 @@ public:
 	// 撤销所有待上传文件
 	virtual void CancelAllUpdateFiles(const QStringList& fileList) = 0;
 
-	ClientNetWork *m_NetWorkParams;
-	LLMParams *m_LLMParams;
+protected:
+	ClientNetWork *m_NetWorkParams = nullptr;
+	LLMParams *m_LLMParams = nullptr;
 	QTimer *m_connectionCheckTimer = nullptr;
 	QTimer* m_fetchModelsTimer = nullptr;
 	RequestType m_currentRequestType; //记录当前请求API类型
@@ -132,7 +146,7 @@ signals:
 	// 发出Streaming信号
 	void AnswerStream(const QString& word);
 
-	void ChangeButtonStatus(ChatInputWidget::SendButtonState state);
+	void ChangeButtonStatus(SendButtonState state);
 
 	void FunctionCallSignal(QJsonObject& Content);
 

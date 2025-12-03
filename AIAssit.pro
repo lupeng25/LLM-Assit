@@ -5,46 +5,80 @@ TARGET = AIAssit
 INCLUDEPATH += $$PWD
 
 SOURCES += \
-    $$files($$PWD/*.cpp, true) \
-    ../3D_Vision/LicenceGenerator/LicenceGenerator.cpp \
-    ../3D_Vision/LicenceGenerator/qaesencryption.cpp \
+    AIParamWidget.cpp \
+    AppConfigRepository.cpp \
+    ChatInputWidget.cpp \
     ChatList.cpp \
+    ChatSessionService.cpp \
+    ChatShowWidget.cpp \
+    ClipboardTools.cpp \
+    DataFormatTools.cpp \
+    DateTimeTools.cpp \
+    DifyClient.cpp \
+    FileSystemTools.cpp \
+    Frm_AIAssit.cpp \
+    FunctionCallRouter.cpp \
+    GitLogReader.cpp \
+    GitTools.cpp \
+    LLMChatFrame.cpp \
+    LLMClientManager.cpp \
+    LLMFunctionCall.cpp \
+    LLMParams.cpp \
+    main.cpp \
     MessageManager.cpp \
+    ModelSelectorWidget.cpp \
     OllamaClient.cpp \
+    Open_WebUIClient.cpp \
+    PromptLibrary.cpp \
+    PromptLibraryDialog.cpp \
+    ShortcutEdit.cpp \
     ShortcutManager.cpp \
-    ShortcutEdit.cpp
+    SyntaxHighlighter.cpp \
+    SystemInfoTools.cpp \
+    TextProcessingTools.cpp \
+    UtilityTools.cpp \
+    VisionTools.cpp
 
 HEADERS += \
-    $$files($$PWD/*.h, true) \
-    ../3D_Vision/LicenceGenerator/LicenceGenerator.h \
-    ../3D_Vision/LicenceGenerator/qaesencryption.h \
-    ChatController.h \
+    AIParamWidget.h \
+    AppConfigRepository.h \
+    ChatInputWidget.h \
     ChatList.h \
+    ChatSessionService.h \
+    ChatSessionTypes.h \
+    ChatShowWidget.h \
     ClipboardTools.h \
-    FunctionCallRouter.h \
-    VisionTools.h \
-    GitTools.h \
+    CommonTypes.h \
     DataFormatTools.h \
     DateTimeTools.h \
     DifyClient.h \
     FileSystemTools.h \
+    Frm_AIAssit.h \
+    FunctionCallRouter.h \
+    GitLogReader.h \
+    GitTools.h \
+    LLMChatFrame.h \
+    LLMClientManager.h \
+    LLMFunctionCall.h \
     LLMParams.h \
     MessageManager.h \
+    ModelSelectorWidget.h \
     OllamaClient.h \
+    Open_WebUIClient.h \
     PromptLibrary.h \
     PromptLibraryDialog.h \
+    ShortcutEdit.h \
+    ShortcutManager.h \
     SyntaxHighlighter.h \
     SystemInfoTools.h \
     TextProcessingTools.h \
     UtilityTools.h \
-    ShortcutManager.h \
-    ShortcutEdit.h
+    VisionTools.h
 
 FORMS += \
-    $$files($$PWD/*.ui, true)
+    Frm_AIAssit.ui
 
 RESOURCES += \
-    $$files($$PWD/*.qrc, true) \
     AIIcon.qrc
 
 # cmark integration
@@ -60,9 +94,9 @@ win32:msvc {
 
 # output directories
 CONFIG(debug, debug|release) {
-    DESTDIR = $$PWD/debug
+    DESTDIR = $$PWD/bin/debug
 } else {
-    DESTDIR = $$PWD/release
+    DESTDIR = $$PWD/bin/release
 }
 
 # Copy FunctionCall.json to output directory

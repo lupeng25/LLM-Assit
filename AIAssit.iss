@@ -23,7 +23,7 @@ AllowNoIcons=yes
 LicenseFile=
 InfoBeforeFile=
 InfoAfterFile=
-OutputDir=installer
+OutputDir=bin\installer
 OutputBaseFilename=AIAssit-Setup-{#MyAppVersion}
 SetupIconFile=
 Compression=lzma
@@ -47,31 +47,31 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 
 [Files]
 ; 主程序
-Source: "release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Qt 核心 DLL (只包含 Release 版本，不包含 Debug 版本)
 ; 注意：打包前请确保 release 目录中只保留 Release 版本的 DLL（不带 'd' 后缀）
 ; 建议使用 windeployqt 工具来准备发布文件：windeployqt.exe release\AIAssit.exe
-Source: "release\Qt5Core.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "release\Qt5Gui.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "release\Qt5Network.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "release\Qt5Widgets.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\release\Qt5Core.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\release\Qt5Gui.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\release\Qt5Network.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\release\Qt5Widgets.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 ; cmark DLL
-Source: "release\cmark.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\release\cmark.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Qt platforms 插件目录（只包含 Release 版本）
 ; 注意：确保只打包不带 'd' 后缀的 DLL
-Source: "release\platforms\qwindows.dll"; DestDir: "{app}\platforms"; Flags: ignoreversion
-Source: "release\platforms\qminimal.dll"; DestDir: "{app}\platforms"; Flags: ignoreversion
-Source: "release\platforms\qoffscreen.dll"; DestDir: "{app}\platforms"; Flags: ignoreversion
+Source: "bin\release\platforms\qwindows.dll"; DestDir: "{app}\platforms"; Flags: ignoreversion
+Source: "bin\release\platforms\qminimal.dll"; DestDir: "{app}\platforms"; Flags: ignoreversion
+Source: "bin\release\platforms\qoffscreen.dll"; DestDir: "{app}\platforms"; Flags: ignoreversion
 
 ; 注意：不要包含 Debug 版本的 DLL（带 'd' 后缀的，如 qwindowsd.dll）
 ; 建议在打包前清理 release 目录中的 Debug DLL，或使用 windeployqt 工具
 
 ; 配置文件模板（如果存在）
-Source: "release\AIAssit\AIModelConfig.json"; DestDir: "{app}\AIAssit"; Flags: ignoreversion onlyifdoesntexist
-Source: "release\AIAssit\FunctionCall.json"; DestDir: "{app}\AIAssit"; Flags: ignoreversion onlyifdoesntexist
+Source: "bin\release\AIAssit\AIModelConfig.json"; DestDir: "{app}\AIAssit"; Flags: ignoreversion onlyifdoesntexist
+Source: "bin\release\AIAssit\FunctionCall.json"; DestDir: "{app}\AIAssit"; Flags: ignoreversion onlyifdoesntexist
 ;Source: "release\AIAssit\PromptLibrary.json"; DestDir: "{app}\AIAssit"; Flags: ignoreversion onlyifdoesntexist
 
 ; Visual C++ 运行时库（如果需要）
@@ -104,6 +104,6 @@ end;
 
 [UninstallDelete]
 ; 卸载时删除用户数据（可选，根据需要调整）
-; Type: filesandordirs; Name: "{app}\AIAssit\LLMChatHistory"
-; Type: filesandordirs; Name: "{localappdata}\{#MyAppName}"
+Type: filesandordirs; Name: "{app}\AIAssit\LLMChatHistory"
+Type: filesandordirs; Name: "{localappdata}\{#MyAppName}"
 

@@ -19,7 +19,7 @@
 #include <QHash>
 #include <memory>
 #include <vector>
-#include "include\cmark\cmark.h"
+#include <cmark.h>
 #include "SyntaxHighlighter.h"
 class QPaintEvent;
 class QPainter;

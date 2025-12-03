@@ -82,8 +82,10 @@ RESOURCES += \
     AIIcon.qrc
 
 # cmark integration
-CMARK_INC = $$PWD/include/cmark
-CMARK_LIB_DIR_MSVS = $$PWD/Lib
+# 项目根目录（.pro 文件在 src/LLM/ 目录下，需要回到项目根目录）
+PROJECT_ROOT = $$_PRO_FILE_PWD_/../..
+CMARK_INC = $$PROJECT_ROOT/include/cmark
+CMARK_LIB_DIR_MSVS = $$PROJECT_ROOT/Lib
 INCLUDEPATH += $$CMARK_INC
 win32:msvc {
     CMARK_LIB_FILE = $$CMARK_LIB_DIR_MSVS/cmark.lib
@@ -94,9 +96,9 @@ win32:msvc {
 
 # output directories
 CONFIG(debug, debug|release) {
-    DESTDIR = $$PWD/bin/debug
+    DESTDIR = $$PROJECT_ROOT/bin/debug
 } else {
-    DESTDIR = $$PWD/bin/release
+    DESTDIR = $$PROJECT_ROOT/bin/release
 }
 
 # Copy FunctionCall.json to output directory

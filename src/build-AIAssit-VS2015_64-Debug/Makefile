@@ -467,11 +467,11 @@ make_first: debug-make_first release-make_first  FORCE
 all: debug-all release-all  FORCE
 clean: debug-clean release-clean  FORCE
 	-$(DEL_FILE) AIAssit.vc.pdb
-	-$(DEL_FILE) ..\..\bin\debug\AIAssit.ilk
-	-$(DEL_FILE) ..\..\bin\debug\AIAssit.idb
+	-$(DEL_FILE) ..\LLM\bin\debug\AIAssit.ilk
+	-$(DEL_FILE) ..\LLM\bin\debug\AIAssit.idb
 distclean: debug-distclean release-distclean  FORCE
 	-$(DEL_FILE) Makefile
-	-$(DEL_FILE) .qmake.stash ..\..\bin\debug\AIAssit.pdb
+	-$(DEL_FILE) .qmake.stash ..\LLM\bin\debug\AIAssit.pdb
 
 debug-mocclean:
 	@set MAKEFLAGS=$(MAKEFLAGS)

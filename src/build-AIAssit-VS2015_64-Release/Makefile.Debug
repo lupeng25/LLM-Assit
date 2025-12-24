@@ -360,6 +360,7 @@ debug\qrc_AIIcon.cpp: ..\LLM\AIIcon.qrc \
 		..\LLM\ICONs\insertbreak.png \
 		..\LLM\ICONs\UNDO.png \
 		..\LLM\ICONs\CustomerService.png \
+		..\LLM\ICONs\app_icon.ico \
 		..\LLM\ICONs\showline.png \
 		..\LLM\ICONs\continue.png \
 		..\LLM\ICONs\??.png \

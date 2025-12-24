@@ -93,5 +93,6 @@
         <file>ICONs/运行模式.png</file>
         <file>ICONs/专业模式.png</file>
         <file>ICONs/最小化.png</file>
+        <file>ICONs/app_icon.ico</file>
     </qresource>
 </RCC>
